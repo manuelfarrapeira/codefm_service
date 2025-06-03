@@ -56,7 +56,12 @@ jobs:
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: |
-            docker pull ${{ secrets.DOCKERHUB_USER }}/codefm:latest
-            docker stop codefm || true
-            docker rm codefm || true
-            docker run -d --name codefm -p 80:80 ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+            if ! [ -x /usr/local/bin/docker ]; then
+              echo "❌ ERROR: Docker no encontrado en /usr/local/bin/docker"
+              exit 1
+            fi
+
+            /usr/local/bin/docker pull ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+            /usr/local/bin/docker stop codefm || true
+            /usr/local/bin/docker rm codefm || true
+            /usr/local/bin/docker run -d --name codefm -p 80:80 ${{ secrets.DOCKERHUB_USER }}/codefm:latest
