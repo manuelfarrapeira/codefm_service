@@ -79,11 +79,11 @@ jobs:
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose up -d --remove-orphans
 
-  - name: Limpiar imágenes no usadas en Synology
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SYNOLOGY_HOST }}
-          username: ${{ secrets.SYNOLOGY_USER }}
-          password: ${{ secrets.SYNOLOGY_PASS }}
-          script: |
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker image prune -f
+      - name: Limpiar imágenes no usadas en Synology
+          uses: appleboy/ssh-action@v1
+          with:
+            host: ${{ secrets.SYNOLOGY_HOST }}
+            username: ${{ secrets.SYNOLOGY_USER }}
+            password: ${{ secrets.SYNOLOGY_PASS }}
+            script: |
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker image prune -f
