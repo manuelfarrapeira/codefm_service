@@ -1,0 +1,110 @@
+openapi: 3.0.3
+info:
+  title: API Pública de CodeFm
+  description: API servicios públicos de CodeFm (no requieren autenticación)
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8081
+    description: Servidor de desarrollo
+
+tags:
+  - name: PublicHelloWorld
+    description: Operaciones públicas relacionadas con el saludo
+  - name: Auth
+    description: Operaciones de autenticación
+
+
+paths:
+  /public/saludo/hola:
+    get:
+      tags:
+        - PublicHelloWorld
+      x-controller-name: PublicHelloWorld
+      operationId: hello
+      summary: Endpoint de saludo básico público
+      description: Retorna un saludo simple
+      responses:
+        '200':
+          description: Saludo exitoso
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "¡Hola!"
+  /public/auth/login:
+    post:
+      tags:
+        - Auth
+      operationId: login
+      summary: Autenticar usuario
+      description: Autenticar usuario usando credenciales
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+          description: Token de autorización en formato Basic o Bearer
+      responses:
+        '200':
+          description: Autenticación exitosa
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Autenticated successful"
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /public/auth/refresh:
+    post:
+      tags:
+        - Auth
+      operationId: refreshToken
+      summary: Refrescar token
+      description: Refrescar token de acceso usando refresh token
+      responses:
+        '200':
+          description: Token refrescado exitosamente
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Token refreshed successfully"
+        '401':
+          description: Token de refresco inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /public/auth/logout:
+    post:
+      tags:
+        - Auth
+      operationId: logout
+      summary: Borrar token
+      description: Eliminar token
+      responses:
+        '200':
+          description: Tolen eliminado exitosamente
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Token deleted successfully"
+        '401':
+          description: Token de refresco inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+components:
+  schemas:
+    ErrorResponseDTO:
+      $ref: './common-schemas.yaml#/ErrorResponseDTO'
+    DetailDTO:
+      $ref: './common-schemas.yaml#/DetailDTO'

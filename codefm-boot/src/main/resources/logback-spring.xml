@@ -1,0 +1,43 @@
+<configuration>
+  <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <providers>
+        <!-- Timestamp ISO8601 -->
+        <timestamp>
+          <fieldName>timestamp</fieldName>
+        </timestamp>
+
+        <!-- Nivel de log -->
+        <logLevel>
+          <fieldName>level</fieldName>
+        </logLevel>
+
+        <!-- Hilo -->
+        <threadName>
+          <fieldName>thread</fieldName>
+        </threadName>
+
+        <!-- Clase, método y línea -->
+        <callerData>
+          <classFieldName>caller_class</classFieldName>
+          <methodFieldName>caller_method</methodFieldName>
+          <lineFieldName>caller_line</lineFieldName>
+        </callerData>
+
+        <!-- Mensaje filtrado con regex: extrae contenido de los corchetes -->
+        <pattern>
+          <pattern>
+            {
+            "message": "%replace(%msg){'.*\\[([^\\[\\]]+)\\].*', '$1'}",
+            "stack_trace": "%exception"
+            }
+          </pattern>
+        </pattern>
+      </providers>
+    </encoder>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="JSON_CONSOLE" />
+  </root>
+</configuration>

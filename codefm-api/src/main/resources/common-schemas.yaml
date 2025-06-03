@@ -1,0 +1,24 @@
+ErrorResponseDTO:
+  type: 'object'
+  required:
+    - code
+    - description
+  properties:
+    code:
+      type: 'string'
+    description:
+      type: 'string'
+    detail:
+      type: 'string'
+    details:
+      type: array
+      items:
+        $ref: '#/DetailDTO'
+
+DetailDTO:
+  type: 'object'
+  properties:
+    field:
+      type: 'string'
+    reason:
+      type: 'string'

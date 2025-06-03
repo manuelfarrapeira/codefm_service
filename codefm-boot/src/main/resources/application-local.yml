@@ -1,0 +1,15 @@
+server:
+  port: 8081
+
+logging:
+  config: classpath:logback-default.xml
+
+spring:
+  datasource:
+    url: jdbc:p6spy:mariadb://192.168.18.10:3306/codefm_pre
+    username: codefm
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://codefm.synology.me:8480/realms/codefm

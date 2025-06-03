@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: API Privada de CodeFm
+  description: API servicios privados de CodeFm (requieren autenticación)
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8081
+    description: Servidor de desarrollo
+
+tags:
+  - name: PrivateHelloWorld
+    description: Operaciones privadas relacionadas con el saludo
+
+paths:
+  /saludo/hola:
+    get:
+      tags:
+        - PrivateHelloWorld
+      operationId: hello
+      summary: Endpoint de saludo básico (autenticado)
+      description: Retorna un saludo simple
+      parameters:
+        - name: usuario
+          in: query
+          required: true
+          description: Usuario para el saludo
+          schema:
+            type: string
+            example: "Manuel"
+      responses:
+        '200':
+          description: Saludo exitoso
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "¡Hola!"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+components:
+  schemas:
+    ErrorResponseDTO:
+      $ref: './common-schemas.yaml#/ErrorResponseDTO'
+    DetailDTO:
+      $ref: './common-schemas.yaml#/DetailDTO'
