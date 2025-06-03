@@ -57,6 +57,14 @@ jobs:
           source: "docker-compose.yml"
           target: "~/codefm"
 
+      - name: Crear carpeta logs en Synology
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SYNOLOGY_HOST }}
+          username: ${{ secrets.SYNOLOGY_USER }}
+          password: ${{ secrets.SYNOLOGY_PASS }}
+          script: mkdir -p ~/codefm/logs
+
       - name: Deploy on Synology via SSH
         uses: appleboy/ssh-action@v1
         with:
