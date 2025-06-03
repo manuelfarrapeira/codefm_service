@@ -84,4 +84,4 @@ jobs:
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: |
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S docker image prune -f
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker image prune -f
