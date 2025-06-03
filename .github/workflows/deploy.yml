@@ -8,12 +8,17 @@ on:
 
 jobs:
   deploy:
-    if: |
-      (github.event.issue.title startsWith 'deploy ' && github.event_name == 'issues') ||
-      (github.event.issue.pull_request && github.event.comment.body startsWith 'deploy ' && github.event_name == 'issue_comment')
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validar trigger
+        run: |
+          if [[ "${{ github.event_name }}" == "issues" ]]; then
+            [[ "${{ github.event.issue.title }}" == deploy\ * ]] || exit 1
+          else
+            [[ "${{ github.event.comment.body }}" == deploy\ * ]] || exit 1
+          fi
+
       - name: Extraer rama a desplegar
         id: branch
         run: |
