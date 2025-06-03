@@ -60,8 +60,7 @@ jobs:
               echo "❌ ERROR: Docker no encontrado en /usr/local/bin/docker"
               exit 1
             fi
-
-            /usr/local/bin/docker pull ${{ secrets.DOCKERHUB_USER }}/codefm:latest
-            /usr/local/bin/docker stop codefm || true
-            /usr/local/bin/docker rm codefm || true
-            /usr/local/bin/docker run -d --name codefm -p 80:80 ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+            sudo /usr/local/bin/docker pull ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+            sudo /usr/local/bin/docker stop codefm || true
+            sudo /usr/local/bin/docker rm codefm || true
+            sudo /usr/local/bin/docker run -d --name codefm -p 80:80 ${{ secrets.DOCKERHUB_USER }}/codefm:latest
