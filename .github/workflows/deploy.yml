@@ -1,3 +1,6 @@
+Debes anteponer `echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S` a cada comando que use `sudo` en los scripts SSH, para que funcione en modo no interactivo. Aquí tienes el workflow adaptado:
+
+  ```yaml
 name: Deploy Blue-Green to Synology
 
 on:
@@ -72,7 +75,7 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: |
             cd ~/codefm
-            ACTIVE=$(sudo /usr/local/bin/docker ps --format '{{.Names}}' | grep codefm-blue && echo blue || echo green)
+            ACTIVE=$(echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker ps --format '{{.Names}}' | grep codefm-blue && echo blue || echo green)
             if [ "$ACTIVE" = "blue" ]; then
               OLD=codefm-blue
               NEW=codefm-green
@@ -84,34 +87,34 @@ jobs:
             fi
 
             # Arrancar el nuevo en puerto alternativo y conectar a 3 redes
-            sudo /usr/local/bin/docker pull $NEW_IMAGE
-            sudo /usr/local/bin/docker run -d --name $NEW -p 8082:8080 -v ~/codefm/logs:/app/logs -e profile=prod --network logging $NEW_IMAGE
-            sudo /usr/local/bin/docker network connect infisical_external $NEW
-            sudo /usr/local/bin/docker network connect keycloak $NEW
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker pull $NEW_IMAGE
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker run -d --name $NEW -p 8082:8080 -v ~/codefm/logs:/app/logs -e profile=prod --network logging $NEW_IMAGE
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker network connect infisical_external $NEW
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker network connect keycloak $NEW
 
             # Healthcheck
             for i in {1..10}; do
               sleep 5
-              if curl -sSf http://localhost:8082/actuator/health > /dev/null; then
+              if echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S curl -sSf http://localhost:8082/actuator/health > /dev/null; then
                 break
               fi
               if [ $i -eq 10 ]; then
                 echo "Healthcheck fallido"
-                sudo /usr/local/bin/docker rm -f $NEW
+                echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker rm -f $NEW
                 exit 1
               fi
             done
 
             # Parar y eliminar el antiguo
-            sudo /usr/local/bin/docker stop $OLD || true
-            sudo /usr/local/bin/docker rm $OLD || true
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker stop $OLD || true
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker rm $OLD || true
 
             # Levantar el nuevo en el puerto público y conectar a 3 redes
-            sudo /usr/local/bin/docker stop $NEW || true
-            sudo /usr/local/bin/docker rm $NEW || true
-            sudo /usr/local/bin/docker run -d --name $NEW -p 8081:8080 -v ~/codefm/logs:/app/logs -e profile=prod --network logging $NEW_IMAGE
-            sudo /usr/local/bin/docker network connect infisical_external $NEW
-            sudo /usr/local/bin/docker network connect keycloak $NEW
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker stop $NEW || true
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker rm $NEW || true
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker run -d --name $NEW -p 8081:8080 -v ~/codefm/logs:/app/logs -e profile=prod --network logging $NEW_IMAGE
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker network connect infisical_external $NEW
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker network connect keycloak $NEW
 
       - name: Limpiar imágenes no usadas en Synology
         uses: appleboy/ssh-action@v1
@@ -120,4 +123,4 @@ jobs:
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: |
-            sudo /usr/local/bin/docker image prune -f
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker image prune -f
