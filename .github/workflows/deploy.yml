@@ -1,4 +1,4 @@
-name: Deploy Blue-Green to Synology
+name: Deploy to Synology Container Manager
 
 on:
   issues:
@@ -46,15 +46,19 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push blue image
+      - name: Build and push image to Docker Hub
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USER }}/codefm:blue .
-          docker push ${{ secrets.DOCKERHUB_USER }}/codefm:blue
+          docker compose build
+          docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
 
-      - name: Build and push green image
-        run: |
-          docker build -t ${{ secrets.DOCKERHUB_USER }}/codefm:green .
-          docker push ${{ secrets.DOCKERHUB_USER }}/codefm:green
+      - name: Copiar docker-compose.yml a Synology
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SYNOLOGY_HOST }}
+          username: ${{ secrets.SYNOLOGY_USER }}
+          password: ${{ secrets.SYNOLOGY_PASS }}
+          source: "docker-compose.yml"
+          target: "~/codefm"
 
       - name: Crear carpeta logs en Synology
         uses: appleboy/ssh-action@v1
@@ -64,7 +68,7 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: mkdir -p ~/codefm/logs
 
-      - name: Blue-Green Deploy en Synology
+      - name: Deploy on Synology via SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SYNOLOGY_HOST }}
@@ -72,46 +76,9 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: |
             cd ~/codefm
-            ACTIVE=$(echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker ps --format '{{.Names}}' | grep codefm-blue && echo blue || echo green)
-            if [ "$ACTIVE" = "blue" ]; then
-              OLD=codefm-blue
-              NEW=codefm-green
-              NEW_IMAGE=${{ secrets.DOCKERHUB_USER }}/codefm:green
-            else
-              OLD=codefm-green
-              NEW=codefm-blue
-              NEW_IMAGE=${{ secrets.DOCKERHUB_USER }}/codefm:blue
-            fi
-
-            # Arrancar el nuevo en puerto alternativo y conectar a 3 redes
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker pull $NEW_IMAGE
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker run -d --name $NEW -p 8082:8080 -v ~/codefm/logs:/app/logs -e profile=prod --network logging $NEW_IMAGE
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker network connect infisical_external $NEW
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker network connect keycloak $NEW
-
-            # Healthcheck
-            for i in {1..10}; do
-              sleep 5
-              if echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S curl -sSf http://localhost:8082/actuator/health > /dev/null; then
-                break
-              fi
-              if [ $i -eq 10 ]; then
-                echo "Healthcheck fallido"
-                echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker rm -f $NEW
-                exit 1
-              fi
-            done
-
-            # Parar y eliminar el antiguo
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker stop $OLD || true
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker rm $OLD || true
-
-            # Levantar el nuevo en el puerto público y conectar a 3 redes
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker stop $NEW || true
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker rm $NEW || true
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker run -d --name $NEW -p 8081:8080 -v ~/codefm/logs:/app/logs -e profile=prod --network logging $NEW_IMAGE
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker network connect infisical_external $NEW
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker network connect keycloak $NEW
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose down --remove-orphans
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose up -d
 
       - name: Limpiar imágenes no usadas en Synology
         uses: appleboy/ssh-action@v1
