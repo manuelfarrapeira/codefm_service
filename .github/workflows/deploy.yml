@@ -49,6 +49,15 @@ jobs:
           docker tag codefm:latest ${{ secrets.DOCKERHUB_USER }}/codefm:latest
           docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
 
+      - name: Copiar docker-compose.yml a Synology
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SYNOLOGY_HOST }}
+          username: ${{ secrets.SYNOLOGY_USER }}
+          password: ${{ secrets.SYNOLOGY_PASS }}
+          source: "docker-compose.yml"
+          target: "~/codefm"
+
       - name: Deploy on Synology via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -56,11 +65,7 @@ jobs:
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: |
-            if ! [ -x /usr/local/bin/docker ]; then
-              echo "❌ ERROR: Docker no encontrado en /usr/local/bin/docker"
-              exit 1
-            fi
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker pull ${{ secrets.DOCKERHUB_USER }}/codefm:latest
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker stop codefm || true
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker rm codefm || true
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker run -d --name codefm -p 8081:8080 ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+            cd ~/codefm
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker compose pull
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker compose down
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker compose up -d
