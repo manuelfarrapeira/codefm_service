@@ -76,9 +76,8 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: |
             cd ~/codefm
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose down --remove-orphans
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose up -d
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose up -d --remove-orphans          
 
       - name: Limpiar imágenes no usadas en Synology
         uses: appleboy/ssh-action@v1
