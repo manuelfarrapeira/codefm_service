@@ -1,6 +1,3 @@
-Debes anteponer `echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S` a cada comando que use `sudo` en los scripts SSH, para que funcione en modo no interactivo. Aquí tienes el workflow adaptado:
-
-  ```yaml
 name: Deploy Blue-Green to Synology
 
 on:
