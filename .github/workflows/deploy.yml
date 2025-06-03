@@ -46,7 +46,6 @@ jobs:
       - name: Build and push image to Docker Hub
         run: |
           docker compose build
-          docker tag codefm:latest ${{ secrets.DOCKERHUB_USER }}/codefm:latest
           docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
 
       - name: Copiar docker-compose.yml a Synology
