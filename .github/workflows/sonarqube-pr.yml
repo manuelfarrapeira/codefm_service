@@ -33,7 +33,11 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: mvn verify sonar:sonar -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.projectKey=org.web:codeFm
+        run: mvn verify sonar:sonar \
+          -Dsonar.login=$SONAR_TOKEN \
+          -Dsonar.host.url=$SONAR_HOST_URL \
+          -Dsonar.projectKey=org.web:codeFm \
+          -Dsonar.branch.name=${GITHUB_HEAD_REF}
 
       - name: Buscar report-task.txt
         id: find_report
@@ -49,6 +53,6 @@ jobs:
       - name: SonarQube Quality Gate Check
         uses: sonarsource/sonarqube-quality-gate-action@v1
         with:
-          scanMetadataReportFile: ${{ steps.find_report.outputs.file }}
+          scanMetadataReportFile: ./target/sonar/report-task.txt
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
