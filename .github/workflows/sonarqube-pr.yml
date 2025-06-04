@@ -35,20 +35,24 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: mvn verify sonar:sonar -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.projectKey=org.web:codeFm
 
-      - name: Buscar report-task.txt
-        id: find_report
-        run: |
-          FILE=$(find . -type f -name report-task.txt | head -n 1)
-          if [ -z "$FILE" ]; then
-            echo "No se encontró report-task.txt"
-            exit 1
-          fi
-          echo "Ruta encontrada: $FILE"
-          echo "file=$FILE" >> $GITHUB_OUTPUT
-
       - name: SonarQube Quality Gate Check
         uses: sonarsource/sonarqube-quality-gate-action@v1
         with:
           scanMetadataReportFile: ./target/sonar/report-task.txt
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Comentar enlace de SonarQube en el PR
+        if: failure()  # solo si falló el análisis anterior
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+          SONAR_LINK="${{ secrets.SONAR_HOST_URL }}/dashboard?id=org.web:codeFm&branch=${{ github.head_ref }}"
+          COMMENT="🚨 La compuerta de calidad de SonarQube ha fallado. [Ver análisis completo]($SONAR_LINK)"
+
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\": \"$COMMENT\"}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments"
