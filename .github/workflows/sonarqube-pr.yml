@@ -50,4 +50,5 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            http://codefm.synology.me:9000/dashboard?id=org.web:codeFm
+            🔎### Mostrar análisis Sonar
+            <a href="http://codefm.synology.me:9000/dashboard?id=org.web:codeFm" target="_blank">🔎 Ver análisis en SonarQube</a>
