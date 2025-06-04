@@ -10,6 +10,7 @@ on:
 jobs:
   sonarqube:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,19 +55,13 @@ jobs:
           mode: delete-and-new
 
       - name: Obtener detalles del fallo del Quality Gate
-        if: always()
+        if: failure()
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
           STATUS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
-          COVERAGE=$(echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.metricKey=="coverage") | .actualValue')
-          if [ -n "$COVERAGE" ] && [ "$COVERAGE" != "null" ]; then
-            echo "### 📊 Cobertura de tests reportada por SonarQube: $COVERAGE%" > qualitygate-details.txt
-          else
-            echo "### ⚠️ No se pudo obtener la cobertura de SonarQube" > qualitygate-details.txt
-          fi
-          echo "### ❌ Detalles del fallo del Quality Gate:" >> qualitygate-details.txt
+          echo "### ❌ Detalles del fallo del Quality Gate:" > qualitygate-details.txt
           echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.status=="ERROR") | "- \(.metricKey): \(.actualValue) (umbral: \(.errorThreshold))"' >> qualitygate-details.txt
         shell: bash
 
