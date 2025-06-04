@@ -52,6 +52,7 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             🔎 <a href="http://codefm.synology.me:9000/dashboard?id=org.web:codeFm" target="_blank"> Ver análisis en SonarQube</a>
+          mode: delete-and-new
 
       - name: Obtener detalles del fallo del Quality Gate
         if: failure()
@@ -70,6 +71,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: qualitygate-details.txt
+        mode: delete-and-new
 
       - name: Instalar xmllint
         if: always()
