@@ -1,6 +1,3 @@
-Tu workflow funciona, pero para que el paso de Quality Gate funcione correctamente, debes especificar el parámetro `scanMetadataReportFile` apuntando a `.scannerwork/report-task.txt` en la acción de Quality Gate. Además, usa el mismo `sonar.projectKey` que tienes en `sonar-project.properties` (`org.web:codeFm`). Aquí tienes el workflow actualizado y optimizado:
-
-  ```yaml
 name: SonarQube PR Analysis
 
 on:
@@ -76,6 +73,3 @@ jobs:
             - Bugs: ${{ steps.sonar.outputs.bugs }}
             - Vulnerabilidades: ${{ steps.sonar.outputs.vulnerabilities }}
             - Code Smells: ${{ steps.sonar.outputs.code_smells }}
-  ```
-  
-  Este flujo asegura que el archivo `.scannerwork/report-task.txt` esté disponible y que el análisis y Quality Gate usen el mismo `projectKey`.
