@@ -45,16 +45,9 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      - name: Comentar enlace de SonarQube en la PR
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
-          SONAR_LINK="${{ secrets.SONAR_HOST_URL }}/dashboard?id=org.web:codeFm"
-          COMMENT="🚨 La compuerta de calidad ha fallado.\n\n🔍 [Ver análisis en SonarQube]($SONAR_LINK)"
-          
-          curl -s -X POST \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{\"body\": \"$COMMENT\"}" \
-            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments"
+      - name: Comentar enlace a SonarQube en la PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            http://codefm.synology.me:9000/dashboard?id=org.web:codeFm
