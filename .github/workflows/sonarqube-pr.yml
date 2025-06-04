@@ -70,3 +70,28 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: qualitygate-details.txt
+
+      - name: Extraer cobertura de Jacoco
+        if: always()
+        run: |
+          COVERAGE=$(xmllint --xpath "string(//report/counter[@type='INSTRUCTION']/@covered)" target/site/jacoco/jacoco.xml)
+          MISSED=$(xmllint --xpath "string(//report/counter[@type='INSTRUCTION']/@missed)" target/site/jacoco/jacoco.xml)
+          TOTAL=$((COVERAGE + MISSED))
+          if [ "$TOTAL" -gt 0 ]; then
+          PERCENT=$(( 100 * COVERAGE / TOTAL ))
+          else
+          PERCENT=0
+          fi
+          echo "### 📊 Cobertura de tests: $PERCENT%" > coverage.txt
+
+          - name: Obtener detalles del fallo del Quality Gate
+            if: failure()
+            env:
+              SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+              SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+            run: |
+              STATUS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
+              cat coverage.txt > qualitygate-details.txt
+              echo "### ❌ Detalles del fallo del Quality Gate:" >> qualitygate-details.txt
+              echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.status=="ERROR") | "- \(.metricKey): \(.actualValue) (umbral: \(.errorThreshold))"' >> qualitygate-details.txt
+            shell: bash
