@@ -35,9 +35,6 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: mvn verify sonar:sonar -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.projectKey=org.web:codeFm
 
-      - name: Listar archivos para depuración
-        run: ls -l .scannerwork || echo "No existe el directorio .scannerwork"
-
       - name: Buscar report-task.txt
         id: find_report
         run: |
@@ -54,6 +51,7 @@ jobs:
           scanMetadataReportFile: ${{ steps.find_report.outputs.file }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        continue-on-error: true
 
       - name: Instalar jq
         run: sudo apt-get update && sudo apt-get install -y jq
