@@ -33,3 +33,5 @@ networks:
     external: true
   keycloak:
     external: true
+  sonarqube:
+    external: true

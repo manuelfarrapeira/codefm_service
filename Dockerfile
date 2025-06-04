@@ -9,12 +9,6 @@ FROM openjdk:17-slim
 RUN apt-get update && apt-get install -y bash curl && curl -1sLf \
 'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | bash \
 && apt-get update && apt-get install -y infisical
-#&& apt-get update && apt-get install -y infisical=0.41.1-1
-
-#instalamos infisical desde el archivo previamente descargado infisical_0.38.0.deb
-#RUN apt-get update && apt-get install -y bash
-#COPY infisical_0.38.0.deb /
-#RUN dpkg -i /infisical_0.38.0.deb || apt-get -f install -y
 
 
 WORKDIR /app
@@ -29,14 +23,3 @@ ENTRYPOINT ["infisical", "run", "--projectId", "491fe430-7bf6-40b0-aa05-58d7f526
 CMD ["java", "-jar", "app.jar"]
 
 #ENTRYPOINT ["java", "-jar", "app.jar"]
-
-
-
-# docker build -t "codefm" .  "nombre Dockerfile"  ----- el . indica el directorio,  si se llama Dockerfile no hace falta especicar nombre
-#como usar registro local
-#docker run -d -p 5000:5000 --name registry registry:2.7    creamos registro
-#docker login     hacemos login 
-#docker pull demo      creamos imagen con el Dokerfile y hacemos el pull
-#docker tag demo localhost:5000/demo      creamos tag de la imagen para usar en deploy
-#docker push localhost:5000/demo      hacemos push de la imagen 
-#https://www.docker.com/blog/how-to-use-your-own-registry-2/
