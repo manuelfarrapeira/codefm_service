@@ -3,7 +3,6 @@ name: SonarQube PR Analysis
 on:
   pull_request:
     types: [ opened, synchronize, reopened ]
-name: Build
 
 jobs:
   build:
