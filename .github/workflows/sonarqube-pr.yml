@@ -5,32 +5,69 @@ on:
     types: [ opened, synchronize, reopened ]
 
 jobs:
-  build:
-    name: Build
+  sonarqube:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - name: Set up JDK 11
-        uses: actions/setup-java@v1
-        with:
-          java-version: 11
-      - name: Cache SonarQube packages
-        uses: actions/cache@v1
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-          restore-keys: ${{ runner.os }}-sonar
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Cache Maven packages
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-      - name: Build and analyze
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Ejecutar tests y generar cobertura
+        run: mvn -B clean verify jacoco:report
+
+      - name: SonarQube Scan
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=codefm
+        run: mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_HOST_URL
+
+      - name: SonarQube Quality Gate Check
+        uses: sonarsource/sonarqube-quality-gate-action@v1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Instalar jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Obtener resultados de SonarQube
+        id: sonar
+        run: |
+          PROJECT_KEY=codefm
+          SONAR_URL=${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN=${{ secrets.SONAR_TOKEN }}
+          ANALYSIS_URL="$SONAR_URL/api/measures/component?component=$PROJECT_KEY&metricKeys=coverage,bugs,vulnerabilities,code_smells"
+          RESULT=$(curl -s -u $SONAR_TOKEN: $ANALYSIS_URL)
+          COVERAGE=$(echo $RESULT | jq '.component.measures[] | select(.metric=="coverage") | .value')
+          BUGS=$(echo $RESULT | jq '.component.measures[] | select(.metric=="bugs") | .value')
+          VULNERABILITIES=$(echo $RESULT | jq '.component.measures[] | select(.metric=="vulnerabilities") | .value')
+          CODE_SMELLS=$(echo $RESULT | jq '.component.measures[] | select(.metric=="code_smells") | .value')
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "bugs=$BUGS" >> $GITHUB_OUTPUT
+          echo "vulnerabilities=$VULNERABILITIES" >> $GITHUB_OUTPUT
+          echo "code_smells=$CODE_SMELLS" >> $GITHUB_OUTPUT
+
+      - name: Comentar resultados en la PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            **Resultados SonarQube**
+            - [Ver análisis completo](${{ secrets.SONAR_HOST_URL }}/dashboard?id=codefm)
+            - Cobertura: ${{ steps.sonar.outputs.coverage }}%
+            - Bugs: ${{ steps.sonar.outputs.bugs }}
+            - Vulnerabilidades: ${{ steps.sonar.outputs.vulnerabilities }}
+            - Code Smells: ${{ steps.sonar.outputs.code_smells }}
