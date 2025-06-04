@@ -78,7 +78,3 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: qualitygate-details.txt
         mode: delete-and-new
-
-      - name: Instalar xmllint
-        if: always()
-        run: sudo apt-get update && sudo apt-get install -y libxml2-utils
