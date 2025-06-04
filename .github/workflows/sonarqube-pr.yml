@@ -1,5 +1,8 @@
 name: SonarQube PR Analysis
 
+permissions:
+  pull-requests: write
+
 on:
   pull_request:
     types: [ opened, synchronize, reopened ]
