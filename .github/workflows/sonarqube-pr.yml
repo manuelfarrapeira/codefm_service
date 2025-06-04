@@ -38,6 +38,16 @@ jobs:
       - name: Listar archivos para depuración
         run: ls -l .scannerwork || echo "No existe el directorio .scannerwork"
 
+      - name: Buscar report-task.txt
+        id: find_report
+        run: |
+          FILE=$(find . -type f -name report-task.txt | head -n 1)
+          if [ -z "$FILE" ]; then
+            echo "No se encontró report-task.txt"
+            exit 1
+          fi
+          echo "file=$FILE" >> $GITHUB_OUTPUT
+
       - name: SonarQube Quality Gate Check
         uses: sonarsource/sonarqube-quality-gate-action@v1
         with:
