@@ -36,10 +36,9 @@ jobs:
         run: mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_HOST_URL
 
       - name: SonarQube Quality Gate Check
-        uses: sonarsource/sonarqube-quality-gate-action@v1.1.0
-        with:
-          sonar-token: ${{ secrets.SONAR_TOKEN }}
-          server-url: ${{ secrets.SONAR_HOST_URL }}
+        uses: sonarsource/sonarqube-quality-gate-action@v1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Instalar jq
         run: sudo apt-get update && sudo apt-get install -y jq
