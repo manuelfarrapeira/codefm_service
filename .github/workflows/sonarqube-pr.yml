@@ -29,11 +29,11 @@ jobs:
       - name: Ejecutar tests y generar cobertura
         run: mvn -B clean verify jacoco:report
 
-      - name: SonarQube Scan
+      - name: SonarQube Scan (multi-módulo)
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        run: mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.projectKey=org.web:codeFm
+        run: mvn verify sonar:sonar -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.projectKey=org.web:codeFm
 
       - name: Listar archivos para depuración
         run: ls -l .scannerwork || echo "No existe el directorio .scannerwork"
