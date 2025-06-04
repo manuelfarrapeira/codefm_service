@@ -52,7 +52,6 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             🔎 <a href="http://codefm.synology.me:9000/dashboard?id=org.web:codeFm" target="_blank"> Ver análisis en SonarQube</a>
-          mode: delete-and-new
 
       - name: Obtener detalles del fallo del Quality Gate
         if: failure()
@@ -61,7 +60,13 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
           STATUS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
-          echo "### ❌ Detalles del fallo del Quality Gate:" > qualitygate-details.txt
+          COVERAGE=$(echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.metricKey=="coverage") | .actualValue')
+          if [ -n "$COVERAGE" ] && [ "$COVERAGE" != "null" ]; then
+            echo "### 📊 Cobertura de tests reportada por SonarQube: $COVERAGE%" > qualitygate-details.txt
+          else
+            echo "### ⚠️ No se pudo obtener la cobertura de SonarQube" > qualitygate-details.txt
+          fi
+          echo "### ❌ Detalles del fallo del Quality Gate:" >> qualitygate-details.txt
           echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.status=="ERROR") | "- \(.metricKey): \(.actualValue) (umbral: \(.errorThreshold))"' >> qualitygate-details.txt
         shell: bash
 
@@ -71,4 +76,3 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: qualitygate-details.txt
-        mode: delete-and-new
