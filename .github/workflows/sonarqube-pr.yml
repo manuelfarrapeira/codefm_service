@@ -45,8 +45,16 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      - name: Mostrar enlace al análisis de SonarQube
-        if: always()
+      - name: Comentar enlace de SonarQube en la PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "🔍 Ver análisis completo de SonarQube:"
-          echo "${{ secrets.SONAR_HOST_URL }}/dashboard?id=org.web:codeFm"
+          PR_NUMBER=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+          SONAR_LINK="${{ secrets.SONAR_HOST_URL }}/dashboard?id=org.web:codeFm"
+          COMMENT="🚨 La compuerta de calidad ha fallado.\n\n🔍 [Ver análisis en SonarQube]($SONAR_LINK)"
+          
+          curl -s -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\": \"$COMMENT\"}" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments"
