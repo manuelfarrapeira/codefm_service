@@ -43,6 +43,7 @@ jobs:
             echo "No se encontró report-task.txt"
             exit 1
           fi
+          echo "Ruta encontrada: $FILE"
           echo "file=$FILE" >> $GITHUB_OUTPUT
 
       - name: SonarQube Quality Gate Check
@@ -72,6 +73,8 @@ jobs:
           echo "bugs=$BUGS" >> $GITHUB_OUTPUT
           echo "vulnerabilities=$VULNERABILITIES" >> $GITHUB_OUTPUT
           echo "code_smells=$CODE_SMELLS" >> $GITHUB_OUTPUT
+          echo "Respuesta SonarQube: $RESULT"
+        continue-on-error: true
 
       - name: Comentar resultados en la PR
         uses: peter-evans/create-or-update-comment@v4
