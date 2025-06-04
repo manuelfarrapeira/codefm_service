@@ -51,5 +51,22 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            🔎### Mostrar análisis Sonar
-            <a href="http://codefm.synology.me:9000/dashboard?id=org.web:codeFm" target="_blank">🔎 Ver análisis en SonarQube</a>
+            🔎 <a href="http://codefm.synology.me:9000/dashboard?id=org.web:codeFm" target="_blank"> Ver análisis en SonarQube</a>
+
+      - name: Obtener detalles del fallo del Quality Gate
+        if: failure()
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          STATUS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
+          echo "### ❌ Detalles del fallo del Quality Gate:" > qualitygate-details.txt
+          echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.status=="ERROR") | "- \(.metricKey): \(.actualValue) (umbral: \(.errorThreshold))"' >> qualitygate-details.txt
+        shell: bash
+
+      - name: Comentar detalles del fallo en la PR
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: qualitygate-details.txt
