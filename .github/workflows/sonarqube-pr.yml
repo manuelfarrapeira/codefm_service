@@ -63,19 +63,25 @@ jobs:
 
           # Crear el reporte
           {
-            # Mostrar estado general
+            echo "## 🔍 Quality Gate Report"
+            echo
+
+            # Sección 1: Status
+            echo "### 🎯 Status"
             STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
             if [ "$STATUS" = "OK" ]; then
-              echo "### ✅ Quality Gate: PASSED"
+              echo "#### ✅ Quality Gate: PASSED"
             else
-              echo "### ❌ Quality Gate: FAILED"
+              echo "#### ❌ Quality Gate: FAILED"
             fi
             echo
             echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>"
             echo
-            echo "### 📊 New Code Metrics:"
 
-            # Procesar métricas combinando ambas respuestas
+            # Sección 2: Métricas
+            echo "### 📊 Metrics"
+
+            # Procesar métricas con umbrales
             echo "$METRICS_JSON" | jq -r --arg status "$STATUS_JSON" '.component.measures[] | . as $metric |
             ($status | fromjson).projectStatus.conditions[] as $condition |
             if $metric.metric == "new_coverage" and $condition.metricKey == "new_coverage" then
@@ -86,7 +92,7 @@ jobs:
               empty
             end'
 
-            # Añadir otras métricas que no tienen condiciones
+            # Añadir métricas sin umbrales
             echo "$METRICS_JSON" | jq -r '.component.measures[] | select(.metric | startswith("new_") and (. != "new_coverage" and . != "new_duplicated_lines_density")) |
             "- \(if .period.value=="0" then "✅" else "❌" end) [\(
             if .metric == "new_bugs" then "Bugs"
