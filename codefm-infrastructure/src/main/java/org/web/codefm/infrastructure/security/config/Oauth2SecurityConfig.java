@@ -162,7 +162,7 @@ public class Oauth2SecurityConfig {
 
             Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
             Optional.ofNullable(resourceAccess)
-                    .map(ra -> ((Map<String, Object>) ra).get("codefm"))
+                    .map(ra -> ra.get("codefm")
                     .map(codefm -> (Map<String, Object>) codefm)
                     .map(codefm -> (List<String>) codefm.get("roles"))
                     .ifPresent(roles -> roles.forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role))));

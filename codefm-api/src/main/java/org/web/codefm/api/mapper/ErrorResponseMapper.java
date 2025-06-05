@@ -16,10 +16,10 @@ public class ErrorResponseMapper {
         errorDTO.setCode(exception.getErrorCodeEnum().getCode());
         errorDTO.setDescription(exception.getErrorCodeEnum().getDescription());
 
-        if (exception instanceof ErrorMessageBaseException) {
-            errorDTO.setDetail(((ErrorMessageBaseException) exception).getErrorDescription());
-        } else if (exception instanceof ListErrorMessageBaseException) {
-            errorDTO.setDetails(((ListErrorMessageBaseException) exception).getErrors().stream()
+        if (exception instanceof ErrorMessageBaseException errMsgEx) {
+            errorDTO.setDetail(errMsgEx.getErrorDescription());
+        } else if (exception instanceof ListErrorMessageBaseException listErrMsgEx) {
+            errorDTO.setDetails(listErrMsgEx.getErrors().stream()
                     .map(ex -> new DetailDTO().field(ex.getParam()).reason(ex.getMessage())).toList());
         }
         return errorDTO;

@@ -12,7 +12,7 @@ import org.web.codefm.domain.usecase.HelloWorldUseCase;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
-public class privateHelloWorld implements PrivateHelloWorldApi {
+public class PrivateHelloWorld implements PrivateHelloWorldApi {
 
     private final HelloWorldUseCase helloWorldUseCase;
 
