@@ -1,4 +1,4 @@
-package org.web.codefm.infrastructure.security.config;
+package org.web.codefm.infrastructure.config;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

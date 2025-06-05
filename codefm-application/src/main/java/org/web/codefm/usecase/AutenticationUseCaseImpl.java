@@ -3,6 +3,7 @@ package org.web.codefm.usecase;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -10,9 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 import org.web.codefm.domain.exception.ErrorCodeEnum;
 import org.web.codefm.domain.exception.UserNotFound;
+import org.web.codefm.domain.service.RestTemplateService;
 import org.web.codefm.domain.session.TokenResponse;
 import org.web.codefm.domain.usecase.AutenticationUseCase;
 
@@ -20,6 +21,7 @@ import java.util.Base64;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
@@ -42,6 +44,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
     private static final String REFRESH_PATH = "public/auth/refresh";
 
+    private final RestTemplateService restTemplateService;
 
 
     @Override
@@ -111,21 +114,17 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
         String logoutEndpoint = keycloakIssuerUri + logoutPath;
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.postForEntity(logoutEndpoint, null, Void.class);
 
+        restTemplateService.exchange(logoutEndpoint, HttpMethod.POST, null, null, Void.class, null);
 
     }
 
-    private static void getToken(HttpServletResponse response, MultiValueMap<String, String> map, String tokenEndpoint) {
+    private void getToken(HttpServletResponse response, MultiValueMap<String, String> map, String tokenEndpoint) {
 
-        RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
-
-        ResponseEntity<TokenResponse> tokenResponse = restTemplate.postForEntity(tokenEndpoint, request, TokenResponse.class);
+        ResponseEntity<TokenResponse> tokenResponse = restTemplateService.exchange(tokenEndpoint, HttpMethod.POST, map, headers, TokenResponse.class, null);
 
         TokenResponse tokens = tokenResponse.getBody();
 
