@@ -6,7 +6,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,9 +37,6 @@ import java.util.*;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class Oauth2SecurityConfig {
-
-    @Autowired
-    private SessionUserService sessionUserService;
 
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
     private String issuerUri;
@@ -74,9 +70,9 @@ public class Oauth2SecurityConfig {
         return url.replaceAll("/$", "").replace("https://", "http://");
     }
 
-
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder, JwtAuthenticationConverter jwtAuthConverter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder, JwtAuthenticationConverter jwtAuthConverter, SessionUserService sessionUserService) throws Exception {
+
         http.sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(csrf -> csrf.disable())
@@ -107,13 +103,11 @@ public class Oauth2SecurityConfig {
         return http.build();
     }
 
-
     @Component
     public static class CookieAuthenticationFilter extends OncePerRequestFilter {
         private final JwtDecoder jwtDecoder;
         private final JwtAuthenticationConverter jwtAuthConverter;
 
-        @Autowired
         public CookieAuthenticationFilter(JwtDecoder jwtDecoder, JwtAuthenticationConverter jwtAuthConverter) {
             this.jwtDecoder = jwtDecoder;
             this.jwtAuthConverter = jwtAuthConverter;
@@ -146,7 +140,6 @@ public class Oauth2SecurityConfig {
         }
     }
 
-
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
 
@@ -156,15 +149,17 @@ public class Oauth2SecurityConfig {
             Set<GrantedAuthority> authorities = new HashSet<>();
 
             Optional.ofNullable(jwt.getClaim("realm_access"))
-                    .map(realmAccess -> (Map<String, Object>) realmAccess)
-                    .map(realm -> (List<String>) realm.get("roles"))
-                    .ifPresent(roles -> roles.forEach(role -> authorities.add(new SimpleGrantedAuthority(role))));
+                    .map(realmAccess -> ((Map<?, ?>) realmAccess).get("roles"))
+                    .filter(Objects::nonNull)
+                    .map(roles -> (List<?>) roles)
+                    .ifPresent(roles -> roles.forEach(role -> authorities.add(new SimpleGrantedAuthority(role.toString()))));
 
-            Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
-            Optional.ofNullable(resourceAccess)
-                    .map(ra -> ra.get("codefm")
-                    .map(codefm -> (Map<String, Object>) codefm)
-                    .map(codefm -> (List<String>) codefm.get("roles"))
+            Optional.ofNullable(jwt.getClaim("resource_access"))
+                    .map(resourceAccess -> ((Map<?, ?>) resourceAccess).get("codefm"))
+                    .filter(Objects::nonNull)
+                    .map(codefm -> ((Map<?, ?>) codefm).get("roles"))
+                    .filter(Objects::nonNull)
+                    .map(roles -> (List<?>) roles)
                     .ifPresent(roles -> roles.forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role))));
 
             return authorities;
@@ -173,4 +168,3 @@ public class Oauth2SecurityConfig {
     }
 
 }
-
