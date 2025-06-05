@@ -45,14 +45,6 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      - name: Comentar enlace a SonarQube en la PR
-        if: always()
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            🔎 <a href="http://codefm.synology.me:9000/dashboard?id=org.web:codeFm" target="_blank"> Ver análisis en SonarQube</a>
-
       - name: Obtener detalles del fallo del Quality Gate
         if: always()
         env:
@@ -61,7 +53,8 @@ jobs:
         run: |
           STATUS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
           COVERAGE=$(echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.metricKey=="new_coverage") | .actualValue')
-          echo "### 📊 Cobertura de tests reportada por SonarQube: $COVERAGE%" > qualitygate-details.txt
+          echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm\" target=\"_blank\">Ver análisis en SonarQube</a>" > qualitygate-details.txt
+          echo "### 📊 Cobertura reportada por SonarQube: $COVERAGE%" > qualitygate-details.txt
           echo "### ❌ Detalles del fallo del Quality Gate:" >> qualitygate-details.txt
           echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.status=="ERROR") | "- \(.metricKey): \(.actualValue) (umbral: \(.errorThreshold))"' >> qualitygate-details.txt
         shell: bash
