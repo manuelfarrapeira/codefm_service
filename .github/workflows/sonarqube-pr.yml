@@ -54,14 +54,13 @@ jobs:
           # Get metrics
           METRICS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/measures/component?component=org.web:codeFm&metricKeys=new_bugs,new_vulnerabilities,new_security_hotspots,new_code_smells,new_coverage,new_duplicated_lines_density")
 
-          # Create summary
           echo "## 🔍 Quality Gate Results" > qualitygate-details.txt
           echo "" >> qualitygate-details.txt
           echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>" >> qualitygate-details.txt
           echo "" >> qualitygate-details.txt
 
           echo "### 📊 New Code Metrics:" >> qualitygate-details.txt
-          echo "$METRICS_JSON" | jq -r '.component.measures[] | "- [\(
+          echo "$METRICS_JSON" | jq -r '.component.measures[] | "- \(if .period.value=="0" then "✅" else "❌" end) [\(
           if .metric == "new_bugs" then "Bugs"
           elif .metric == "new_vulnerabilities" then "Vulnerabilities"
           elif .metric == "new_security_hotspots" then "Security Hotspots"
@@ -69,7 +68,15 @@ jobs:
           elif .metric == "new_coverage" then "Coverage"
           elif .metric == "new_duplicated_lines_density" then "Duplicated Lines"
           else .metric
-          end)]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=\(.metric)&view=list): \(.period.value)"' >> qualitygate-details.txt
+          end)]('$SONAR_HOST_URL'/\(
+          if .metric == "new_bugs" then "project/issues?id=org.web:codeFm&types=BUG"
+          elif .metric == "new_vulnerabilities" then "project/issues?id=org.web:codeFm&types=VULNERABILITY"
+          elif .metric == "new_security_hotspots" then "security_hotspots?id=org.web:codeFm"
+          elif .metric == "new_code_smells" then "project/issues?id=org.web:codeFm&types=CODE_SMELL"
+          elif .metric == "new_coverage" then "component_measures?id=org.web:codeFm&metric=new_coverage&view=list"
+          elif .metric == "new_duplicated_lines_density" then "component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density&view=list"
+          else ""
+          end)&sinceLeakPeriod=true): \(.period.value)"' >> qualitygate-details.txt
         shell: bash
 
       - name: Comment Quality Gate details on PR
