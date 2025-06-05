@@ -58,7 +58,7 @@ jobs:
           echo "🔍 JSON recibido de SonarQube:"
           echo "$METRICS_JSON" | jq '.'
           echo "--------------------------------"
-          
+
           echo "## 🔍 Quality Gate Results" > qualitygate-details.txt
           echo "" >> qualitygate-details.txt
           echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>" >> qualitygate-details.txt
