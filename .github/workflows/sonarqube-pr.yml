@@ -96,5 +96,4 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: qualitygate-details.txt
-          edit-mode: replace
           comment-tag: 🎯 SonarQube Analysis Results
