@@ -57,11 +57,13 @@ jobs:
           echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm\" target=\"_blank\">View analysis in SonarQube</a>" > qualitygate-details.txt
           echo "### 📊 Coverage reported by SonarQube: $COVERAGE%" >> qualitygate-details.txt
           if [ "$QG_STATUS" = "OK" ]; then
-            echo "### ✅ Quality Gate passed successfully" >> qualitygate-details.txt
+          echo "### ✅ Quality Gate passed successfully" >> qualitygate-details.txt
           else
-            echo "### ❌ Quality Gate failure details:" >> qualitygate-details.txt
-            echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.status=="ERROR") | "- \(.metricKey): \(.actualValue) (threshold: \(.errorThreshold))"' >> qualitygate-details.txt
+          echo "### ❌ Quality Gate failure details:" >> qualitygate-details.txt
           fi
+          # Mostrar todas las métricas
+          echo "### Quality Gate Metrics:" >> qualitygate-details.txt
+          echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | "- \(if .status=="OK" then "✅" else "❌" end) \(.metricKey): \(.actualValue) (threshold: \(.errorThreshold))"' >> qualitygate-details.txt
         shell: bash
 
       - name: Comment Quality Gate details on PR
