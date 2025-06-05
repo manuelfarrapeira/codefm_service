@@ -51,9 +51,12 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
+          # Obtener estado del Quality Gate
           STATUS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
-          COVERAGE=$(echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.metricKey=="new_coverage") | .actualValue')
           QG_STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
+          
+          # Obtener métricas adicionales
+          METRICS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/measures/component?component=org.web:codeFm&metricKeys=new_bugs,new_vulnerabilities,new_security_hotspots,new_code_smells,new_coverage,new_duplicated_lines_density")
           
           echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>" > qualitygate-details.txt
           
@@ -72,6 +75,18 @@ jobs:
           elif .metricKey == "new_duplicated_lines_density" then "[Duplicated Lines]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density&view=list)"
           elif .metricKey == "new_security_hotspots_reviewed" then "[Security Hotspots Reviewed]('$SONAR_HOST_URL'/security_hotspots?id=org.web:codeFm&sinceLeakPeriod=true)"
           else .metricKey
+          end): \(.actualValue) (threshold: \(.errorThreshold))"' >> qualitygate-details.txt
+          
+          echo "### New Code Metrics:" >> qualitygate-details.txt
+          echo "$METRICS_JSON" | jq -r '.component.measures[] | "- [\(
+          if .metric == "new_bugs" then "Bugs"
+          elif .metric == "new_vulnerabilities" then "Vulnerabilities"
+          elif .metric == "new_security_hotspots" then "Security Hotspots"
+          elif .metric == "new_code_smells" then "Code Smells"
+          elif .metric == "new_coverage" then "Coverage"
+          elif .metric == "new_duplicated_lines_density" then "Duplications"
+          else .metric
+          end)]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=\(.metric)&view=list): \(.period.value)"' >> qualitygate-details.txt
           end): \(.actualValue) (threshold: \(.errorThreshold))"' >> qualitygate-details.txt
         shell: bash
 
