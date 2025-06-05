@@ -78,26 +78,26 @@ jobs:
             echo "### 📊 New Code Metrics:"
 
             # Procesar métricas combinando ambas respuestas
-            echo "$METRICS_JSON" | jq -r --arg status "$STATUS_JSON" '.component.measures[] | . as $metric | 
+            echo "$METRICS_JSON" | jq -r --arg status "$STATUS_JSON" '.component.measures[] | . as $metric |
             ($status | fromjson).projectStatus.conditions[] as $condition |
             if $metric.metric == "new_coverage" and $condition.metricKey == "new_coverage" then
               "- \(if $condition.status=="OK" then "✅" else "❌" end) [Coverage]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_coverage&view=list): \($metric.period.value)% (threshold: \($condition.errorThreshold)%)"
             elif $metric.metric == "new_duplicated_lines_density" and $condition.metricKey == "new_duplicated_lines_density" then
-              "- \(if $condition.status=="OK" then "✅" else "❌" end) [Duplicated Lines]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density): \($metric.period.value)% (threshold: \($condition.errorThreshold)%)"
+              "- \(if $condition.status=="OK" then "✅" else "❌" end) [Duplicated Lines]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density&view=list): \($metric.period.value)% (threshold: \($condition.errorThreshold)%)"
             else
               empty
             end'
 
             # Añadir otras métricas que no tienen condiciones
-            echo "$METRICS_JSON" | jq -r '.component.measures[] | select(.metric | startswith("new_") and (. != "new_coverage" and . != "new_duplicated_lines_density")) | 
+            echo "$METRICS_JSON" | jq -r '.component.measures[] | select(.metric | startswith("new_") and (. != "new_coverage" and . != "new_duplicated_lines_density")) |
             "- \(if .period.value=="0" then "✅" else "❌" end) [\(
             if .metric == "new_bugs" then "Bugs"
             elif .metric == "new_vulnerabilities" then "Vulnerabilities"
             elif .metric == "new_security_hotspots" then "Security Hotspots"
             elif .metric == "new_code_smells" then "Code Smells"
             else .metric
-            end)]: \(.period.value)"'
-            } > qualitygate-details.txt
+            end)]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=\(.metric)&view=list): \(.period.value)"'
+          } > qualitygate-details.txt
         shell: bash
 
       - name: Comment Quality Gate details on PR
