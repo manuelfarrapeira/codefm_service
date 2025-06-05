@@ -53,7 +53,7 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
           # Get metrics
-          METRICS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/measures/component?component=org.web:codeFm&metricKeys=new_bugs,new_vulnerabilities,new_security_hotspots,new_code_smells,new_coverage,new_duplicated_lines_density")
+          METRICS_JSON=$(curl -s -u "${SONAR_USER}:${SONAR_PASSWORD}" "${SONAR_HOST_URL}/api/measures/component?component=org.web:codeFm&metricKeys=new_bugs,new_vulnerabilities,new_security_hotspots,new_code_smells,new_coverage,new_duplicated_lines_density")
 
           # Mostrar el JSON formateado
           echo "🔍 JSON recibido de SonarQube:"
