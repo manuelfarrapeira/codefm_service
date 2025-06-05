@@ -54,6 +54,11 @@ jobs:
           # Get metrics
           METRICS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/measures/component?component=org.web:codeFm&metricKeys=new_bugs,new_vulnerabilities,new_security_hotspots,new_code_smells,new_coverage,new_duplicated_lines_density")
 
+          # Mostrar el JSON formateado
+          echo "🔍 JSON recibido de SonarQube:"
+          echo "$METRICS_JSON" | jq '.'
+          echo "--------------------------------"
+          
           echo "## 🔍 Quality Gate Results" > qualitygate-details.txt
           echo "" >> qualitygate-details.txt
           echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>" >> qualitygate-details.txt
@@ -78,6 +83,12 @@ jobs:
           else ""
           end)&sinceLeakPeriod=true): \(.period.value)"' >> qualitygate-details.txt
         shell: bash
+        with:
+        uses:
+        id:
+        working-directory:
+        timeout-minutes:
+        continue-on-error: false
 
       - name: Comment Quality Gate details on PR
         if: always()
