@@ -32,6 +32,9 @@ import org.web.codefm.domain.service.SessionUserService;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Configuration class for OAuth2 security settings and JWT token handling.
+ */
 @Slf4j
 @Configuration
 @EnableWebSecurity
@@ -44,6 +47,11 @@ public class Oauth2SecurityConfig {
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
 
+    /**
+     * Configures the JWT decoder with custom issuer validation.
+     *
+     * @return Configured JwtDecoder instance
+     */
     @Bean
     public JwtDecoder jwtDecoder() {
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
@@ -70,6 +78,15 @@ public class Oauth2SecurityConfig {
         return url.replaceAll("/$", "").replace("https://", "http://");
     }
 
+    /**
+     * Configures the security filter chain with OAuth2 resource server settings.
+     *
+     * @param http               Security configuration object
+     * @param jwtDecoder         JWT decoder bean
+     * @param jwtAuthConverter   JWT authentication converter
+     * @param sessionUserService Service for handling user session
+     * @return Configured SecurityFilterChain
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder, JwtAuthenticationConverter jwtAuthConverter, SessionUserService sessionUserService) throws Exception {
 
@@ -103,6 +120,9 @@ public class Oauth2SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Filter component for handling authentication via cookies.
+     */
     @Component
     public static class CookieAuthenticationFilter extends OncePerRequestFilter {
         private final JwtDecoder jwtDecoder;
@@ -140,6 +160,12 @@ public class Oauth2SecurityConfig {
         }
     }
 
+    /**
+     * Configures the JWT authentication converter with custom authority mapping.
+     * Extracts roles from realm_access and resource_access claims.
+     *
+     * @return Configured JwtAuthenticationConverter
+     */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
 

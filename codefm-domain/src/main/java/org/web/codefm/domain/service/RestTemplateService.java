@@ -6,20 +6,23 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
 
+/**
+ * Service class that provides a wrapper for RestTemplate operations
+ */
 public interface RestTemplateService {
 
     /**
-     * Método genérico para realizar llamadas HTTP.
+     * Generic method to perform HTTP calls.
      *
-     * @param url          URL del servicio externo.
-     * @param method       Método HTTP (GET, POST, etc.).
-     * @param requestBody  Cuerpo del request (puede ser null).
-     * @param headers      Headers personalizados (puede ser null).
-     * @param responseType Tipo de la respuesta esperada.
-     * @param uriVariables Variables para path o query params (puede ser null).
-     * @param <T>          Tipo de la respuesta.
-     * @param <R>          Tipo del request.
-     * @return ResponseEntity con el tipo de respuesta especificado.
+     * @param url          External service URL.
+     * @param method       HTTP method (GET, POST, etc.).
+     * @param requestBody  Request body (can be null).
+     * @param headers      Custom headers (can be null).
+     * @param responseType Expected response type.
+     * @param uriVariables Variables for path or query params (can be null).
+     * @param <T>          Response type.
+     * @param <R>          Request type.
+     * @return ResponseEntity with the specified response type.
      */
     <T, R> ResponseEntity<T> exchange(String url, HttpMethod method, R requestBody, HttpHeaders headers, Class<T> responseType, Map<String, ?> uriVariables);
 
