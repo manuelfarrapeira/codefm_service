@@ -71,4 +71,4 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body-path: qualitygate-details.txt
           edit-mode: replace
-          comment-tag: '<img src="https://cdn.worldvectorlogo.com/logos/sonarqube.svg" width="20" height="20" /> SonarQube Analysis Results'
+          comment-tag: 🎯 SonarQube Analysis Results
