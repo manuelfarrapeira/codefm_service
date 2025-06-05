@@ -31,8 +31,7 @@
         <java.version>17</java.version>
         <lombok.version>1.18.30</lombok.version>
         <spring-doc.version>2.1.0</spring-doc.version>
-        <sonar.coverage.exclusions>**/codefm/api/controller/**,**/infrastructure/security/config/**
-        </sonar.coverage.exclusions>
+        <sonar.coverage.exclusions>**/codefm/api/controller/**,**/config/**</sonar.coverage.exclusions>
         <sonar.jacoco.excludes>**/codefm/api/controller/**,**/config/**</sonar.jacoco.excludes>
     </properties>
 
