@@ -60,6 +60,7 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
           STATUS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
+          echo "$STATUS_JSON"
           COVERAGE=$(echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.metricKey=="coverage") | .actualValue')
           if [ -n "$COVERAGE" ] && [ "$COVERAGE" != "null" ]; then
             echo "### 📊 Cobertura de tests reportada por SonarQube: $COVERAGE%" > qualitygate-details.txt
