@@ -63,8 +63,6 @@ jobs:
 
           # Crear el reporte
           {
-            echo "## 🔍 Quality Gate Results"
-            echo
             # Mostrar estado general
             STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
             if [ "$STATUS" = "OK" ]; then
@@ -81,9 +79,9 @@ jobs:
             echo "$METRICS_JSON" | jq -r --arg status "$STATUS_JSON" '.component.measures[] | . as $metric |
             ($status | fromjson).projectStatus.conditions[] as $condition |
             if $metric.metric == "new_coverage" and $condition.metricKey == "new_coverage" then
-              "- \(if $condition.status=="OK" then "✅" else "❌" end) [Coverage]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_coverage&view=list): \($metric.period.value)% (threshold: \($condition.errorThreshold)%)"
+              "- \(if $condition.status=="OK" then "✅" else "❌" end) [Coverage]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_coverage&view=list) → \($metric.period.value)% (threshold: \($condition.errorThreshold)%)"
             elif $metric.metric == "new_duplicated_lines_density" and $condition.metricKey == "new_duplicated_lines_density" then
-              "- \(if $condition.status=="OK" then "✅" else "❌" end) [Duplicated Lines]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density&view=list): \($metric.period.value)% (threshold: \($condition.errorThreshold)%)"
+              "- \(if $condition.status=="OK" then "✅" else "❌" end) [Duplicated Lines]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density&view=list) → \($metric.period.value)% (threshold: \($condition.errorThreshold)%)"
             else
               empty
             end'
@@ -96,7 +94,7 @@ jobs:
             elif .metric == "new_security_hotspots" then "Security Hotspots"
             elif .metric == "new_code_smells" then "Code Smells"
             else .metric
-            end)]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=\(.metric)&view=list): \(.period.value)"'
+            end)]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=\(.metric)&view=list) → \(.period.value)"'
           } > qualitygate-details.txt
         shell: bash
 
