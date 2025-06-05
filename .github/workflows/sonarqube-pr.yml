@@ -66,41 +66,47 @@ jobs:
             echo "## 🔍 Quality Gate Report"
             echo
 
-            # Sección 1: Status
-            echo "### 🎯 Status"
-            STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
-            if [ "$STATUS" = "OK" ]; then
-              echo "#### ✅ Quality Gate: PASSED"
-            else
-              echo "#### ❌ Quality Gate: FAILED"
-            fi
-            echo
-            echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>"
-            echo
-
-            # Sección 2: Métricas
+            # Sección 1: Métricas
             echo "### 📊 Metrics"
 
-            # Procesar métricas con umbrales
-            echo "$METRICS_JSON" | jq -r --arg status "$STATUS_JSON" '.component.measures[] | . as $metric |
-            ($status | fromjson).projectStatus.conditions[] as $condition |
-            if $metric.metric == "new_coverage" and $condition.metricKey == "new_coverage" then
-              "- \(if $condition.status=="OK" then "✅" else "❌" end) [Coverage]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_coverage&view=list) → \($metric.period.value)% (threshold: \($condition.errorThreshold)%)"
-            elif $metric.metric == "new_duplicated_lines_density" and $condition.metricKey == "new_duplicated_lines_density" then
-              "- \(if $condition.status=="OK" then "✅" else "❌" end) [Duplicated Lines]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density&view=list) → \($metric.period.value)% (threshold: \($condition.errorThreshold)%)"
-            else
-              empty
-            end'
-
-            # Añadir métricas sin umbrales
-            echo "$METRICS_JSON" | jq -r '.component.measures[] | select(.metric | startswith("new_") and (. != "new_coverage" and . != "new_duplicated_lines_density")) |
-            "- \(if .period.value=="0" then "✅" else "❌" end) [\(
+            # Añadir todas las métricas
+            echo "$METRICS_JSON" | jq -r '.component.measures[] | 
+            "- [\(
             if .metric == "new_bugs" then "Bugs"
             elif .metric == "new_vulnerabilities" then "Vulnerabilities"
             elif .metric == "new_security_hotspots" then "Security Hotspots"
             elif .metric == "new_code_smells" then "Code Smells"
+            elif .metric == "new_coverage" then "Coverage"
+            elif .metric == "new_duplicated_lines_density" then "Duplicated Lines"
             else .metric
-            end)]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=\(.metric)&view=list) → \(.period.value)"'
+            end)]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=\(.metric)&view=list) → \(.period.value)\(if .metric == "new_coverage" or .metric == "new_duplicated_lines_density" then "%" else "")"'
+            echo
+
+            # Sección 2: Estados del Quality Gate
+            echo "### 🎯 Quality Gate Status"
+
+            # Estado general
+            STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
+            if [ "$STATUS" = "OK" ]; then
+              echo "#### ✅ Overall Status: PASSED"
+            else
+              echo "#### ❌ Overall Status: FAILED"
+            fi
+            echo
+
+            # Estados individuales
+            echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | 
+            "- \(if .status=="OK" then "✅" else "❌" end) [\(
+            if .metricKey == "new_coverage" then "Coverage"
+            elif .metricKey == "new_duplicated_lines_density" then "Duplicated Lines"
+            elif .metricKey == "new_reliability_rating" then "Reliability"
+            elif .metricKey == "new_security_rating" then "Security"
+            elif .metricKey == "new_maintainability_rating" then "Maintainability"
+            else .metricKey
+            end)] → \(if .actualValue | contains(".") then .actualValue else .actualValue | tonumber end)\(if .metricKey | endswith("_rating") then "" else "%") (threshold: \(.errorThreshold)\(if .metricKey | endswith("_rating") then "" else "%"))"'
+            echo
+
+            echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>"
           } > qualitygate-details.txt
         shell: bash
 
