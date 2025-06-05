@@ -52,36 +52,52 @@ jobs:
           SONAR_PASSWORD: ${{ secrets.SONAR_PASSWORD }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          # Get metrics
+          # Get metrics y status
           METRICS_JSON=$(curl -s -u "${SONAR_USER}:${SONAR_PASSWORD}" "${SONAR_HOST_URL}/api/measures/component?component=org.web:codeFm&metricKeys=new_bugs,new_vulnerabilities,new_security_hotspots,new_code_smells,new_coverage,new_duplicated_lines_density")
+          STATUS_JSON=$(curl -s -u "${SONAR_USER}:${SONAR_PASSWORD}" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
 
-          # Mostrar el JSON formateado
-          echo "🔍 JSON recibido de SonarQube:"
-          echo "$METRICS_JSON" | jq '.'
-          echo "--------------------------------"
-          echo "## 🔍 Quality Gate Results" > qualitygate-details.txt
-          echo "" >> qualitygate-details.txt
-          echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>" >> qualitygate-details.txt
-          echo "" >> qualitygate-details.txt
+          # Debug
+          echo "Respuestas de SonarQube:"
+          echo "Métricas: $METRICS_JSON"
+          echo "Estado: $STATUS_JSON"
 
-          echo "### 📊 New Code Metrics:" >> qualitygate-details.txt
-          echo "$METRICS_JSON" | jq -r '.component.measures[] | "- \(if .period.value=="0" then "✅" else "❌" end) [\(
-          if .metric == "new_bugs" then "Bugs"
-          elif .metric == "new_vulnerabilities" then "Vulnerabilities"
-          elif .metric == "new_security_hotspots" then "Security Hotspots"
-          elif .metric == "new_code_smells" then "Code Smells"
-          elif .metric == "new_coverage" then "Coverage"
-          elif .metric == "new_duplicated_lines_density" then "Duplicated Lines"
-          else .metric
-          end)]('$SONAR_HOST_URL'/\(
-          if .metric == "new_bugs" then "project/issues?id=org.web:codeFm&types=BUG&inNewCodePeriod=true"
-          elif .metric == "new_vulnerabilities" then "project/issues?id=org.web:codeFm&types=VULNERABILITY&inNewCodePeriod=true"
-          elif .metric == "new_security_hotspots" then "security_hotspots?id=org.web:codeFm&inNewCodePeriod=true"
-          elif .metric == "new_code_smells" then "project/issues?resolved=false&types=CODE_SMELL&inNewCodePeriod=true&id=org.web:code"
-          elif .metric == "new_coverage" then "component_measures?id=org.web:codeFm&metric=new_coverage&view=list&inNewCodePeriod=true"
-          elif .metric == "new_duplicated_lines_density" then "component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density&view=list&inNewCodePeriod=true"
-          else ""
-          end)&sinceLeakPeriod=true): \(.period.value)"' >> qualitygate-details.txt
+          # Crear el reporte
+          {
+            echo "## 🔍 Quality Gate Results"
+            echo
+            # Mostrar estado general
+            STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
+            if [ "$STATUS" = "OK" ]; then
+              echo "### ✅ Quality Gate: PASSED"
+            else
+              echo "### ❌ Quality Gate: FAILED"
+            fi
+            echo
+            echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>"
+            echo
+            echo "### 📊 New Code Metrics:"
+
+            # Procesar métricas combinando ambas respuestas
+            echo "$METRICS_JSON" | jq -r --arg status "$STATUS_JSON" '.component.measures[] | . as $metric | 
+            ($status | fromjson).projectStatus.conditions[] as $condition |
+            if $metric.metric == "new_coverage" and $condition.metricKey == "new_coverage" then
+              "- \(if $condition.status=="OK" then "✅" else "❌" end) [Coverage]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_coverage&view=list): \($metric.period.value)% (threshold: \($condition.errorThreshold)%)"
+            elif $metric.metric == "new_duplicated_lines_density" and $condition.metricKey == "new_duplicated_lines_density" then
+              "- \(if $condition.status=="OK" then "✅" else "❌" end) [Duplicated Lines]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density): \($metric.period.value)% (threshold: \($condition.errorThreshold)%)"
+            else
+              empty
+            end'
+
+            # Añadir otras métricas que no tienen condiciones
+            echo "$METRICS_JSON" | jq -r '.component.measures[] | select(.metric | startswith("new_") and (. != "new_coverage" and . != "new_duplicated_lines_density")) | 
+            "- \(if .period.value=="0" then "✅" else "❌" end) [\(
+            if .metric == "new_bugs" then "Bugs"
+            elif .metric == "new_vulnerabilities" then "Vulnerabilities"
+            elif .metric == "new_security_hotspots" then "Security Hotspots"
+            elif .metric == "new_code_smells" then "Code Smells"
+            else .metric
+            end)]: \(.period.value)"'
+            } > qualitygate-details.txt
         shell: bash
 
       - name: Comment Quality Gate details on PR
