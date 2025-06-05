@@ -55,8 +55,7 @@ jobs:
           COVERAGE=$(echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.metricKey=="new_coverage") | .actualValue')
           QG_STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
           
-          echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm\" target=\"_blank\">View analysis in SonarQube</a>" > qualitygate-details.txt
-          echo "### 📊 Coverage reported by SonarQube: [${COVERAGE}%](${SONAR_HOST_URL}/component_measures?id=org.web:codeFm&metric=coverage&view=list)" >> qualitygate-details.txt
+          echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>" > qualitygate-details.txt
           
           if [ "$QG_STATUS" = "OK" ]; then
           echo "### ✅ Quality Gate passed successfully" >> qualitygate-details.txt
@@ -66,12 +65,12 @@ jobs:
           
           echo "### Quality Gate Metrics:" >> qualitygate-details.txt
           echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | "- \(if .status=="OK" then "✅" else "❌" end) \(
-          if .metricKey == "new_reliability_rating" then "[Reliability Rating]('$SONAR_HOST_URL'/project/issues?id=org.web:codeFm&types=BUG)"
-          elif .metricKey == "new_security_rating" then "[Security Rating]('$SONAR_HOST_URL'/project/issues?id=org.web:codeFm&types=VULNERABILITY)"
-          elif .metricKey == "new_maintainability_rating" then "[Maintainability Rating]('$SONAR_HOST_URL'/project/issues?id=org.web:codeFm&types=CODE_SMELL)"
-          elif .metricKey == "new_coverage" then "[Coverage]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=coverage&view=list)"
-          elif .metricKey == "new_duplicated_lines_density" then "[Duplicated Lines]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=duplicated_lines_density&view=list)"
-          elif .metricKey == "new_security_hotspots_reviewed" then "[Security Hotspots Reviewed]('$SONAR_HOST_URL'/security_hotspots?id=org.web:codeFm)"
+          if .metricKey == "new_reliability_rating" then "[Reliability Rating]('$SONAR_HOST_URL'/project/issues?id=org.web:codeFm&types=BUG&sinceLeakPeriod=true)"
+          elif .metricKey == "new_security_rating" then "[Security Rating]('$SONAR_HOST_URL'/project/issues?id=org.web:codeFm&types=VULNERABILITY&sinceLeakPeriod=true)"
+          elif .metricKey == "new_maintainability_rating" then "[Maintainability Rating]('$SONAR_HOST_URL'/project/issues?id=org.web:codeFm&types=CODE_SMELL&sinceLeakPeriod=true)"
+          elif .metricKey == "new_coverage" then "[Coverage]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_coverage&view=list)"
+          elif .metricKey == "new_duplicated_lines_density" then "[Duplicated Lines]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density&view=list)"
+          elif .metricKey == "new_security_hotspots_reviewed" then "[Security Hotspots Reviewed]('$SONAR_HOST_URL'/security_hotspots?id=org.web:codeFm&sinceLeakPeriod=true)"
           else .metricKey
           end): \(.actualValue) (threshold: \(.errorThreshold))"' >> qualitygate-details.txt
         shell: bash
