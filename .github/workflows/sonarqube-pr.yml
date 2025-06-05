@@ -10,9 +10,6 @@ permissions:
   checks: write
   actions: write
 
-permissions:
-  pull-requests: write
-
 on:
   pull_request:
     types: [ opened, synchronize, reopened ]
