@@ -61,9 +61,17 @@ jobs:
           else
           echo "### ❌ Quality Gate failure details:" >> qualitygate-details.txt
           fi
-          # Mostrar todas las métricas
+          # Mostrar todas las métricas con nombres legibles
           echo "### Quality Gate Metrics:" >> qualitygate-details.txt
-          echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | "- \(if .status=="OK" then "✅" else "❌" end) \(.metricKey): \(.actualValue) (threshold: \(.errorThreshold))"' >> qualitygate-details.txt
+          echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | "- \(if .status=="OK" then "✅" else "❌" end) \(
+          if .metricKey == "new_reliability_rating" then "Reliability Rating"
+          elif .metricKey == "new_security_rating" then "Security Rating"
+          elif .metricKey == "new_maintainability_rating" then "Maintainability Rating"
+          elif .metricKey == "new_coverage" then "Coverage"
+          elif .metricKey == "new_duplicated_lines_density" then "Duplicated Lines"
+          elif .metricKey == "new_security_hotspots_reviewed" then "Security Hotspots Reviewed"
+          else .metricKey
+          end): \(.actualValue) (threshold: \(.errorThreshold))"' >> qualitygate-details.txt
         shell: bash
 
       - name: Comment Quality Gate details on PR
