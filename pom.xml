@@ -33,6 +33,7 @@
         <spring-doc.version>2.1.0</spring-doc.version>
         <sonar.coverage.exclusions>**/codefm/api/controller/**,**/infrastructure/security/config/**
         </sonar.coverage.exclusions>
+        <sonar.jacoco.excludes>**/codefm/api/controller/**,**/infrastructure/security/config/**</sonar.jacoco.excludes>
     </properties>
 
     <modules>
