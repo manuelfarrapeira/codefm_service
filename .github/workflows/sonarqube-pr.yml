@@ -56,28 +56,19 @@ jobs:
           METRICS_JSON=$(curl -s -u "${SONAR_USER}:${SONAR_PASSWORD}" "${SONAR_HOST_URL}/api/measures/component?component=org.web:codeFm&metricKeys=new_bugs,new_vulnerabilities,new_security_hotspots,new_code_smells,new_coverage,new_duplicated_lines_density")
           STATUS_JSON=$(curl -s -u "${SONAR_USER}:${SONAR_PASSWORD}" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
 
-          # Función para convertir rating numérico a círculo de color
-          rating_to_circle() {
-            case $1 in
-              1.0) echo "🟢" ;; # Verde - A
-              2.0) echo "🟨" ;; # Amarillo - B
-              3.0) echo "🟧" ;; # Naranja - C
-              4.0) echo "🔴" ;; # Rojo - D
-              5.0) echo "⭕" ;; # Rojo oscuro - E
-              *) echo "$1" ;;
-            esac
-          }
-
+          # Crear el reporte
           {
             echo "## 🔍 Quality Gate Report"
             echo
 
             # Sección 1: Métricas
             echo "### 📊 Metrics"
-            echo "$METRICS_JSON" | jq -r '.component.measures[] |
-            (if .metric == "new_coverage" or .metric == "new_duplicated_lines_density" then
+
+            # Procesar métricas
+            echo "$METRICS_JSON" | jq -r '.component.measures[] | 
+            (if .metric == "new_coverage" or .metric == "new_duplicated_lines_density" then 
               .period.value + "%"
-            else
+            else 
               .period.value
             end) as $value |
             "- [\(
@@ -93,6 +84,8 @@ jobs:
 
             # Sección 2: Quality Gate Status
             echo "### 🎯 Quality Gate Status"
+
+            # Estado general
             STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
             if [ "$STATUS" = "OK" ]; then
               echo "#### ✅ Overall Status: PASSED"
@@ -101,14 +94,12 @@ jobs:
             fi
             echo
 
-            # Estados individuales con círculos de color
+            # Estados individuales
             echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] |
-            (if .metricKey | endswith("_rating") then
-              "Rating " + .actualValue
-            elif .metricKey | test("new_coverage|new_duplicated_lines_density") then
+            (if .metricKey | endswith("_rating") then 
+              .actualValue + " / " + .errorThreshold
+            else 
               .actualValue + "% / " + .errorThreshold + "%"
-            else
-              .actualValue
             end) as $values |
             "- \(if .status=="OK" then "✅" else "❌" end) [\(
             if .metricKey == "new_coverage" then "Coverage"
@@ -117,15 +108,7 @@ jobs:
             elif .metricKey == "new_security_rating" then "Security"
             elif .metricKey == "new_maintainability_rating" then "Maintainability"
             else .metricKey
-            end)] → \($values)"' | while read line; do
-              if [[ $line == *"Rating "* ]]; then
-                rating=$(echo $line | grep -o "Rating [0-9.]*" | cut -d' ' -f2)
-                circle=$(rating_to_circle $rating)
-                echo "${line/Rating $rating/$circle}"
-              else
-                echo "$line"
-              fi
-            done
+            end)] → \($values)"'
             echo
 
             echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>"
