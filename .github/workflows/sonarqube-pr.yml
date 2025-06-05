@@ -29,10 +29,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Ejecutar tests y generar cobertura
+      - name: Run tests and generate coverage
         run: mvn -B clean verify jacoco:report
 
-      - name: SonarQube Scan (multi-módulo)
+      - name: SonarQube Scan (multi-module)
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -45,7 +45,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      - name: Obtener detalles Quality Gate
+      - name: Get Quality Gate Details
         if: always()
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -53,13 +53,18 @@ jobs:
         run: |
           STATUS_JSON=$(curl -s -u "${SONAR_TOKEN}:" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
           COVERAGE=$(echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.metricKey=="new_coverage") | .actualValue')
-          echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm\" target=\"_blank\">Ver análisis en SonarQube</a>" > qualitygate-details.txt
-          echo "### 📊 Cobertura reportada por SonarQube: $COVERAGE%" >> qualitygate-details.txt
-          echo "### ❌ Detalles del fallo del Quality Gate:" >> qualitygate-details.txt
-          echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.status=="ERROR") | "- \(.metricKey): \(.actualValue) (umbral: \(.errorThreshold))"' >> qualitygate-details.txt
+          QG_STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
+          echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm\" target=\"_blank\">View analysis in SonarQube</a>" > qualitygate-details.txt
+          echo "### 📊 Coverage reported by SonarQube: $COVERAGE%" >> qualitygate-details.txt
+          if [ "$QG_STATUS" = "OK" ]; then
+            echo "### ✅ Quality Gate passed successfully" >> qualitygate-details.txt
+          else
+            echo "### ❌ Quality Gate failure details:" >> qualitygate-details.txt
+            echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.status=="ERROR") | "- \(.metricKey): \(.actualValue) (threshold: \(.errorThreshold))"' >> qualitygate-details.txt
+          fi
         shell: bash
 
-      - name: Comentar detalles Quality Gate en la PR
+      - name: Comment Quality Gate details on PR
         if: always()
         uses: peter-evans/create-or-update-comment@v4
         with:
