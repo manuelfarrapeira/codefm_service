@@ -56,11 +56,6 @@ jobs:
           METRICS_JSON=$(curl -s -u "${SONAR_USER}:${SONAR_PASSWORD}" "${SONAR_HOST_URL}/api/measures/component?component=org.web:codeFm&metricKeys=new_bugs,new_vulnerabilities,new_security_hotspots,new_code_smells,new_coverage,new_duplicated_lines_density")
           STATUS_JSON=$(curl -s -u "${SONAR_USER}:${SONAR_PASSWORD}" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
 
-          # Debug
-          echo "Respuestas de SonarQube:"
-          echo "Métricas: $METRICS_JSON"
-          echo "Estado: $STATUS_JSON"
-
           # Crear el reporte
           {
             echo "## 🔍 Quality Gate Report"
@@ -69,8 +64,13 @@ jobs:
             # Sección 1: Métricas
             echo "### 📊 Metrics"
 
-            # Añadir todas las métricas
+            # Procesar métricas
             echo "$METRICS_JSON" | jq -r '.component.measures[] | 
+            (if .metric == "new_coverage" or .metric == "new_duplicated_lines_density" then 
+              .period.value + "%"
+            else 
+              .period.value
+            end) as $value |
             "- [\(
             if .metric == "new_bugs" then "Bugs"
             elif .metric == "new_vulnerabilities" then "Vulnerabilities"
@@ -79,10 +79,10 @@ jobs:
             elif .metric == "new_coverage" then "Coverage"
             elif .metric == "new_duplicated_lines_density" then "Duplicated Lines"
             else .metric
-            end)]('$SONAR_HOST_URL'/component_measures?id=org.web:codeFm&metric=\(.metric)&view=list) → \(.period.value)\(if .metric == "new_coverage" or .metric == "new_duplicated_lines_density" then "%" else "")"'
+            end)](\($ENV.SONAR_HOST_URL)/component_measures?id=org.web:codeFm&metric=\(.metric)&view=list) → \($value)"'
             echo
 
-            # Sección 2: Estados del Quality Gate
+            # Sección 2: Quality Gate Status
             echo "### 🎯 Quality Gate Status"
 
             # Estado general
@@ -95,7 +95,12 @@ jobs:
             echo
 
             # Estados individuales
-            echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | 
+            echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] |
+            (if .metricKey | endswith("_rating") then 
+              .actualValue + " / " + .errorThreshold
+            else 
+              .actualValue + "% / " + .errorThreshold + "%"
+            end) as $values |
             "- \(if .status=="OK" then "✅" else "❌" end) [\(
             if .metricKey == "new_coverage" then "Coverage"
             elif .metricKey == "new_duplicated_lines_density" then "Duplicated Lines"
@@ -103,7 +108,7 @@ jobs:
             elif .metricKey == "new_security_rating" then "Security"
             elif .metricKey == "new_maintainability_rating" then "Maintainability"
             else .metricKey
-            end)] → \(if .actualValue | contains(".") then .actualValue else .actualValue | tonumber end)\(if .metricKey | endswith("_rating") then "" else "%") (threshold: \(.errorThreshold)\(if .metricKey | endswith("_rating") then "" else "%"))"'
+            end)] → \($values)"'
             echo
 
             echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>"
