@@ -69,12 +69,12 @@ jobs:
           elif .metric == "new_duplicated_lines_density" then "Duplicated Lines"
           else .metric
           end)]('$SONAR_HOST_URL'/\(
-          if .metric == "new_bugs" then "project/issues?id=org.web:codeFm&types=BUG"
-          elif .metric == "new_vulnerabilities" then "project/issues?id=org.web:codeFm&types=VULNERABILITY"
-          elif .metric == "new_security_hotspots" then "security_hotspots?id=org.web:codeFm"
-          elif .metric == "new_code_smells" then "project/issues?id=org.web:codeFm&types=CODE_SMELL"
-          elif .metric == "new_coverage" then "component_measures?id=org.web:codeFm&metric=new_coverage&view=list"
-          elif .metric == "new_duplicated_lines_density" then "component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density&view=list"
+          if .metric == "new_bugs" then "project/issues?id=org.web:codeFm&types=BUG&inNewCodePeriod=true"
+          elif .metric == "new_vulnerabilities" then "project/issues?id=org.web:codeFm&types=VULNERABILITY&inNewCodePeriod=true"
+          elif .metric == "new_security_hotspots" then "security_hotspots?id=org.web:codeFm&inNewCodePeriod=true"
+          elif .metric == "new_code_smells" then "project/issues?resolved=false&types=CODE_SMELL&inNewCodePeriod=true&id=org.web:code"
+          elif .metric == "new_coverage" then "component_measures?id=org.web:codeFm&metric=new_coverage&view=list&inNewCodePeriod=true"
+          elif .metric == "new_duplicated_lines_density" then "component_measures?id=org.web:codeFm&metric=new_duplicated_lines_density&view=list&inNewCodePeriod=true"
           else ""
           end)&sinceLeakPeriod=true): \(.period.value)"' >> qualitygate-details.txt
         shell: bash
