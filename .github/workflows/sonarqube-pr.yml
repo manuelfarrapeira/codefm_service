@@ -55,7 +55,7 @@ jobs:
           COVERAGE=$(echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] | select(.metricKey=="new_coverage") | .actualValue')
           QG_STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
           echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm\" target=\"_blank\">View analysis in SonarQube</a>" > qualitygate-details.txt
-          echo "### 📊 Coverage reported by SonarQube: $COVERAGE%" >> qualitygate-details.txt
+          echo "### 📊 Coverage reported by SonarQube: [${COVERAGE}%](${SONAR_HOST_URL}/component_measures?id=org.web:codeFm&metric=coverage&view=list)" >> qualitygate-details.txt
           if [ "$QG_STATUS" = "OK" ]; then
           echo "### ✅ Quality Gate passed successfully" >> qualitygate-details.txt
           else
