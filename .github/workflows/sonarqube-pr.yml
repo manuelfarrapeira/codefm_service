@@ -1,14 +1,7 @@
 name: SonarQube PR Analysis
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
-
 permissions:
   pull-requests: write
-  contents: read
-  checks: write
-  actions: write
 
 on:
   pull_request:
