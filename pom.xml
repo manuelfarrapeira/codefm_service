@@ -44,6 +44,9 @@
             lombok.AllArgsConstructor,
             lombok.RequiredArgsConstructor
         </sonar.coverage.excludeAnnotatedMethods>
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${project.basedir}/jacoco-report-aggregate/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
     <modules>
@@ -153,20 +156,12 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.10</version> <!-- Usa la última versión disponible -->
+                <version>0.8.10</version>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
-                        <phase>initialize</phase>
                         <goals>
                             <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report-aggregate</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>report-aggregate</goal>
                         </goals>
                     </execution>
                 </executions>

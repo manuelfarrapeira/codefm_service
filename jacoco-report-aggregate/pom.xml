@@ -1,9 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>org.web</groupId>
         <artifactId>codeFm</artifactId>
@@ -11,7 +10,29 @@
     </parent>
 
     <artifactId>jacoco-report-aggregate</artifactId>
-    <packaging>pom</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.web.codefm</groupId>
+            <artifactId>codefm-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.web.codefm</groupId>
+            <artifactId>codefm-application</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.web.codefm</groupId>
+            <artifactId>codefm-infrastructure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.web.codefm</groupId>
+            <artifactId>codefm-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.web.codefm</groupId>
+            <artifactId>codefm-boot</artifactId>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -21,16 +42,19 @@
                 <version>0.8.10</version>
                 <executions>
                     <execution>
-                        <id>aggregate-report</id>
+                        <id>report-aggregate</id>
+                        <phase>verify</phase>
                         <goals>
                             <goal>report-aggregate</goal>
                         </goals>
-                        <phase>verify</phase>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/codefm/api/controller/**</exclude>
+                                <exclude>**/config/**</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <outputDirectory>${project.build.directory}/site/jacoco-aggregate</outputDirectory>
-                </configuration>
             </plugin>
         </plugins>
     </build>
