@@ -137,10 +137,7 @@ class ListErrorMessageBaseExceptionTest {
 
         String message = exception.getMessage();
 
-        Assertions.assertTrue(message.contains("ERR005"));
-        Assertions.assertTrue(message.contains("Get Message Test"));
-        Assertions.assertTrue(message.contains("First error"));
-        Assertions.assertTrue(message.contains("Second error"));
+        Assertions.assertEquals("[Code: 1000, CodeDescription: GENERIC_ERROR, Errors: (ErrorMessage(param=field1, message=First error) | ErrorMessage(param=field2, message=Second error))]", message);
     }
 
     // Clase mock para pruebas
