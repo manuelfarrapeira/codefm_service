@@ -1,5 +1,6 @@
 package org.web.codefm.api.controller;
 
+import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.web.codefm.domain.usecase.HelloWorldUseCase;
 
 @RestController
 @Slf4j
+@Generated
 @RequiredArgsConstructor
 public class PrivateHelloWorld implements PrivateHelloWorldApi {
 

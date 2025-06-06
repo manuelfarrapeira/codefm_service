@@ -34,16 +34,16 @@
         <sonar.exclusions>**/codefm/api/controller/**,**/config/**</sonar.exclusions>
         <sonar.coverage.exclusions>**/codefm/api/controller/**,**/config/**</sonar.coverage.exclusions>
         <sonar.jacoco.excludes>**/codefm/api/controller/**,**/config/**</sonar.jacoco.excludes>
-        <sonar.coverage.excludeAnnotatedMethods>
-            javax.annotation.Generated,
+        <sonar.java.excludeAnnotatedMethods>
             lombok.Generated,
             lombok.Data,
             lombok.Builder,
             lombok.Getter,
             lombok.Setter,
             lombok.AllArgsConstructor,
+            lombok.NoArgsConstructor,
             lombok.RequiredArgsConstructor
-        </sonar.coverage.excludeAnnotatedMethods>
+        </sonar.java.excludeAnnotatedMethods>
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.basedir}/jacoco-report-aggregate/target/site/jacoco-aggregate/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>

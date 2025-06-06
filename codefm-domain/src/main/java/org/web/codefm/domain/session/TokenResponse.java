@@ -3,11 +3,13 @@ package org.web.codefm.domain.session;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Generated;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Generated
 public class TokenResponse {
     @JsonProperty("access_token")
     private String accessToken;
