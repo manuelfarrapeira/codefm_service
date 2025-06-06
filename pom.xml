@@ -52,6 +52,7 @@
         <module>codefm-infrastructure</module>
         <module>codefm-api</module>
         <module>codefm-boot</module>
+        <module>jacoco-report-aggregate</module>
     </modules>
 
     <dependencyManagement>
@@ -152,18 +153,20 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.10</version>
+                <version>0.8.10</version> <!-- Usa la última versión disponible -->
                 <executions>
                     <execution>
+                        <id>prepare-agent</id>
+                        <phase>initialize</phase>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
                     <execution>
-                        <id>report</id>
+                        <id>report-aggregate</id>
                         <phase>verify</phase>
                         <goals>
-                            <goal>report</goal>
+                            <goal>report-aggregate</goal>
                         </goals>
                     </execution>
                 </executions>
