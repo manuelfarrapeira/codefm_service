@@ -9,7 +9,7 @@
     </parent>
     <groupId>org.web.codefm</groupId>
     <artifactId>codefm-boot</artifactId>
-    <version>11.3.0-SNAPSHOT</version>
+    <version>1.3.0-SNAPSHOT</version>
     <name>boot</name>
     <description>boot</description>
     <url/>
