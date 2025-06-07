@@ -3,7 +3,6 @@ package org.web.codefm.api.controller;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +16,6 @@ import org.web.codefm.domain.usecase.AutenticationUseCase;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@Generated
 @SecurityRequirement(name = "basicAuth")
 public class AuthController implements AuthApi {
 

@@ -1,6 +1,5 @@
 package org.web.codefm.service;
 
-import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
@@ -17,7 +16,6 @@ import java.util.Map;
 
 @Slf4j
 @Service
-@Generated
 @RequiredArgsConstructor
 public class SessionUserServiceImpl implements SessionUserService {
 

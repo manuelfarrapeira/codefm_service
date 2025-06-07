@@ -1,6 +1,5 @@
 package org.web.codefm.usecase;
 
-import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -11,10 +10,9 @@ import org.web.codefm.domain.service.HelloWorldService;
 import org.web.codefm.domain.usecase.HelloWorldUseCase;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
-@Generated
 public class HelloWorldUseCaseImpl implements HelloWorldUseCase {
 
     private final HelloWorldService helloWorldService;

@@ -1,6 +1,5 @@
 package org.web.codefm.service;
 
-import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -11,7 +10,6 @@ import org.web.codefm.domain.service.RestTemplateService;
 import java.util.Map;
 
 @Service
-@Generated
 @RequiredArgsConstructor
 public class RestTemplateServiceImpl implements RestTemplateService {
 
