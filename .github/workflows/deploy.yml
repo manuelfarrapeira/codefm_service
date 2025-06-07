@@ -14,28 +14,51 @@ jobs:
       - name: Validate trigger
         run: |
           if [[ "${{ github.event_name }}" == "issues" ]]; then
-            [[ "${{ github.event.issue.title }}" == deploy\ * ]] || exit 1
+            [[ "${{ github.event.issue.title }}" == deploy* ]] || exit 1
           else
-            [[ "${{ github.event.comment.body }}" == deploy\ * ]] || exit 1
+            [[ "${{ github.event.comment.body }}" == deploy* ]] || exit 1
           fi
 
-      - name: Extract branch to deploy
-        id: branch
+      - name: Extract ref to deploy (branch or tag)
+        id: ref
         run: |
           if [[ "${{ github.event_name }}" == "issues" ]]; then
-            BRANCH=$(echo "${{ github.event.issue.title }}" | awk '{print $2}')
+            CMD="${{ github.event.issue.title }}"
           else
-            BRANCH=$(echo "${{ github.event.comment.body }}" | awk '{print $2}')
+            CMD="${{ github.event.comment.body }}"
           fi
-          if [[ -z "$BRANCH" || "$BRANCH" == "" ]]; then
-            BRANCH="${{ github.head_ref || github.ref_name }}"
-          fi
-          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
 
-      - name: Checkout indicated branch
+          # Divide el comando en palabras
+          ARGS=($CMD)
+
+          REF=""
+          TYPE="branch"
+
+          if [[ ${#ARGS[@]} -eq 1 ]]; then
+            # Solo "deploy"
+            if [[ -n "${{ github.head_ref }}" ]]; then
+              REF="${{ github.head_ref }}"
+            else
+              echo "No branch specified and not in PR context, exiting."
+              exit 1
+            fi
+          elif [[ ${#ARGS[@]} -eq 3 && "${ARGS[1]}" == "tag" ]]; then
+            TYPE="tag"
+            REF="${ARGS[2]}"
+          elif [[ ${#ARGS[@]} -eq 2 ]]; then
+            REF="${ARGS[1]}"
+          else
+            echo "Invalid deploy command format"
+            exit 1
+          fi
+
+          echo "ref=$REF" >> $GITHUB_OUTPUT
+          echo "type=$TYPE" >> $GITHUB_OUTPUT
+
+      - name: Checkout indicated ref (branch or tag)
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.branch.outputs.branch }}
+          ref: ${{ steps.ref.outputs.ref }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
