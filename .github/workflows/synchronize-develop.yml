@@ -61,6 +61,9 @@ jobs:
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} $BRANCH
           sleep 30
 
+      - name: Fetch all branches
+        run: git fetch --all
+
       - name: Create PR to develop
         uses: peter-evans/create-pull-request@v6
         with:
