@@ -1,0 +1,47 @@
+name: Block Merge if Version is Not Increased
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  check_version:
+    runs-on: ubuntu-latestcheck version
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          path: master
+
+      - name: Checkout develop (PR head)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          path: develop
+
+      - name: Get version from master
+        id: master_version
+        run: |
+          cd master
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get version from develop (PR)
+        id: develop_version
+        run: |
+          cd ../develop
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        run: |
+          MASTER_VERSION="${{ steps.master_version.outputs.version }}"
+          DEVELOP_VERSION="${{ steps.develop_version.outputs.version }}"
+          echo "Master version: $MASTER_VERSION"
+          echo "Develop version: $DEVELOP_VERSION"
+          if [ "$MASTER_VERSION" = "$DEVELOP_VERSION" ]; then
+            echo "ERROR: Version must be increased before merging to master."
+            exit 1
+          fi
