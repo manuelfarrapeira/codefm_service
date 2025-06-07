@@ -58,8 +58,7 @@ jobs:
 
       - name: Push temp branch
         run: |
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} $BRANCH
-          sleep 100
+          git push origin $BRANCH
 
       - name: Create PR to develop
         uses: peter-evans/create-pull-request@v6
