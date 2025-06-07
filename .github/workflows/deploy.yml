@@ -1,3 +1,6 @@
+Aquí tienes el workflow con todos los comentarios traducidos al inglés:
+
+  ```yaml
 name: Deploy to Synology Container Manager
 
 on:
@@ -11,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Validar trigger
+      - name: Validate trigger
         run: |
           if [[ "${{ github.event_name }}" == "issues" ]]; then
             [[ "${{ github.event.issue.title }}" == deploy\ * ]] || exit 1
@@ -19,7 +22,7 @@ jobs:
             [[ "${{ github.event.comment.body }}" == deploy\ * ]] || exit 1
           fi
 
-      - name: Extraer rama a desplegar
+      - name: Extract branch to deploy
         id: branch
         run: |
           if [[ "${{ github.event_name }}" == "issues" ]]; then
@@ -32,7 +35,7 @@ jobs:
           fi
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
 
-      - name: Checkout rama indicada
+      - name: Checkout indicated branch
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.branch.outputs.branch }}
@@ -51,7 +54,7 @@ jobs:
           docker compose build
           docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
 
-      - name: Copiar docker-compose.yml a Synology
+      - name: Copy docker-compose.yml to Synology
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SYNOLOGY_HOST }}
@@ -60,7 +63,7 @@ jobs:
           source: "docker-compose.yml"
           target: "~/codefm"
 
-      - name: Crear carpeta logs en Synology
+      - name: Create logs folder on Synology
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SYNOLOGY_HOST }}
@@ -80,7 +83,7 @@ jobs:
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose up -d --remove-orphans          
 
-      - name: Limpiar imágenes no usadas en Synology
+      - name: Clean up unused images on Synology
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SYNOLOGY_HOST }}
@@ -89,3 +92,18 @@ jobs:
           port: 22
           script: |
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker image prune -f
+
+      - name: Comment result in the issue
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.payload.issue ? context.payload.issue.number : context.payload.issue ? context.payload.issue.number : null;
+            if (issue_number) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+                body: `✅ Deployment executed. Check the Actions tab for more details.`
+              });
+            }
