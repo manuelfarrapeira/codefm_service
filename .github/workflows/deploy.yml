@@ -48,7 +48,7 @@ jobs:
 
       - name: Build and push image to Docker Hub
         run: |
-          docker compose build
+          docker compose build --build-arg INFISICAL_TOKEN=${{ secrets.INFISICAL_TOKEN }}
           docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
 
       - name: Copy docker-compose.yml to Synology
