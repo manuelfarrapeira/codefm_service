@@ -48,7 +48,7 @@ jobs:
 
       - name: Build and push image to Docker Hub
         run: |
-          docker compose build
+          docker compose build --build-arg INFISICAL_TOKEN=${{ secrets.INFISICAL_TOKEN }}
           docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
 
       - name: Copy docker-compose.yml to Synology
@@ -89,3 +89,18 @@ jobs:
           port: 22
           script: |
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker image prune -f
+
+      - name: Comment result in the issue
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.payload.issue ? context.payload.issue.number : context.payload.issue ? context.payload.issue.number : null;
+            if (issue_number) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+                body: `✅ Deployment executed. Check the Actions tab for more details.`
+              });
+            }
