@@ -6,7 +6,7 @@ import org.web.codefm.api.PublicHelloWorldApi;
 import org.web.codefm.api.utils.Logged;
 
 @RestController
-public class publicHelloWorld implements PublicHelloWorldApi {
+public class PublicHelloWorld implements PublicHelloWorldApi {
 
     @Logged
     @Override

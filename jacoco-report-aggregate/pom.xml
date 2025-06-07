@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.web</groupId>
+        <artifactId>codeFm</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>jacoco-report-aggregate</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.web.codefm</groupId>
+            <artifactId>codefm-domain</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.web.codefm</groupId>
+            <artifactId>codefm-application</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.web.codefm</groupId>
+            <artifactId>codefm-infrastructure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.web.codefm</groupId>
+            <artifactId>codefm-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.web.codefm</groupId>
+            <artifactId>codefm-boot</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.10</version>
+                <executions>
+                    <execution>
+                        <id>report-aggregate</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report-aggregate</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/codefm/api/controller/**</exclude>
+                                <exclude>**/config/**</exclude>
+                                <exclude>**/*$*$*</exclude>
+                                <exclude>**/generated/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

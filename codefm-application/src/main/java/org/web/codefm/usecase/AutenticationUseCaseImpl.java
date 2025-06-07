@@ -3,6 +3,7 @@ package org.web.codefm.usecase;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -10,9 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 import org.web.codefm.domain.exception.ErrorCodeEnum;
 import org.web.codefm.domain.exception.UserNotFound;
+import org.web.codefm.domain.service.RestTemplateService;
 import org.web.codefm.domain.session.TokenResponse;
 import org.web.codefm.domain.usecase.AutenticationUseCase;
 
@@ -20,13 +21,30 @@ import java.util.Base64;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
     private String keycloakIssuerUri;
 
+    @Value("${spring.security.oauth2.resourceserver.jwt.token-path}")
+    private String tokenPath;
+
+    @Value("${spring.security.oauth2.resourceserver.jwt.logout-path}")
+    private String logoutPath;
+
     @Value("${keycloak.client-id}")
     private String clientId;
+
+    private static final String REFRESH_TOKEN = "refresh_token";
+
+    private static final String ACCESS_TOKEN = "access_token";
+
+    private static final String SAMESITE = "Strict";
+
+    private static final String REFRESH_PATH = "public/auth/refresh";
+
+    private final RestTemplateService restTemplateService;
 
 
     @Override
@@ -39,7 +57,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
             String username = values[0];
             String password = values[1];
 
-            String tokenEndpoint = keycloakIssuerUri + "/protocol/openid-connect/token";
+            String tokenEndpoint = keycloakIssuerUri + tokenPath;
 
             MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
             map.add("grant_type", "password");
@@ -64,19 +82,19 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                if ("refresh_token".equals(cookie.getName())) {
+                if (REFRESH_TOKEN.equals(cookie.getName())) {
                     refreshToken = cookie.getValue();
                     break;
                 }
             }
         }
 
-        String tokenEndpoint = keycloakIssuerUri + "/protocol/openid-connect/token";
+        String tokenEndpoint = keycloakIssuerUri + tokenPath;
 
         MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
-        map.add("grant_type", "refresh_token");
+        map.add("grant_type", REFRESH_TOKEN);
         map.add("client_id", clientId);
-        map.add("refresh_token", refreshToken);
+        map.add(REFRESH_TOKEN, refreshToken);
 
         getToken(response, map, tokenEndpoint);
 
@@ -84,42 +102,38 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
     @Override
     public void logout(HttpServletResponse response) {
-        ResponseCookie accessTokenCookie = ResponseCookie.from("access_token", "")
+        ResponseCookie accessTokenCookie = ResponseCookie.from(ACCESS_TOKEN, "")
                 .httpOnly(true).secure(true).path("/")
-                .maxAge(0).sameSite("Strict").build();
+                .maxAge(0).sameSite(SAMESITE).build();
 
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh_token", "")
-                .httpOnly(true).secure(true).path("/public/auth/refresh")
-                .maxAge(0).sameSite("Strict").build();
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(REFRESH_TOKEN, "")
+                .httpOnly(true).secure(true).path(REFRESH_PATH)
+                .maxAge(0).sameSite(SAMESITE).build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
-        String logoutEndpoint = keycloakIssuerUri + "/protocol/openid-connect/logout";
-        RestTemplate restTemplate = new RestTemplate();
-        restTemplate.postForEntity(logoutEndpoint, null, Void.class);
+        String logoutEndpoint = keycloakIssuerUri + logoutPath;
 
+        restTemplateService.exchange(logoutEndpoint, HttpMethod.POST, null, null, Void.class, null);
 
     }
 
-    private static void getToken(HttpServletResponse response, MultiValueMap<String, String> map, String tokenEndpoint) {
+    private void getToken(HttpServletResponse response, MultiValueMap<String, String> map, String tokenEndpoint) {
 
-        RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
-
-        ResponseEntity<TokenResponse> tokenResponse = restTemplate.postForEntity(tokenEndpoint, request, TokenResponse.class);
+        ResponseEntity<TokenResponse> tokenResponse = restTemplateService.exchange(tokenEndpoint, HttpMethod.POST, map, headers, TokenResponse.class, null);
 
         TokenResponse tokens = tokenResponse.getBody();
 
-        ResponseCookie accessTokenCookie = ResponseCookie.from("access_token", tokens.getAccessToken())
-                .httpOnly(true).secure(true).path("/").maxAge(tokens.getExpiresIn()).sameSite("Strict").build();
+        ResponseCookie accessTokenCookie = ResponseCookie.from(ACCESS_TOKEN, tokens.getAccessToken())
+                .httpOnly(true).secure(true).path("/").maxAge(tokens.getExpiresIn()).sameSite(SAMESITE).build();
         //secure(true) solo funcionará con https
 
-        ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh_token", tokens.getRefreshToken())
-                .httpOnly(true).secure(true).path("/public/auth/refresh").maxAge(60 * 60 * 24).sameSite("Strict").build();
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(REFRESH_TOKEN, tokens.getRefreshToken())
+                .httpOnly(true).secure(true).path(REFRESH_PATH).maxAge(43200).sameSite(SAMESITE).build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());

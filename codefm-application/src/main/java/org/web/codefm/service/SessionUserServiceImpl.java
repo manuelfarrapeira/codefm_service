@@ -23,10 +23,11 @@ public class SessionUserServiceImpl implements SessionUserService {
 
     @Override
     public void setSessionUser() {
+
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         clearSessionUser();
-        if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
-            Jwt jwt = (Jwt) authentication.getPrincipal();
+
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
 
             sessionUser.setId(jwt.getSubject());
             sessionUser.setUsername(jwt.getClaimAsString("preferred_username"));

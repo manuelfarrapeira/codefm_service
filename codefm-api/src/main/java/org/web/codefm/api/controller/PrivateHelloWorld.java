@@ -9,10 +9,11 @@ import org.web.codefm.api.PrivateHelloWorldApi;
 import org.web.codefm.api.utils.Logged;
 import org.web.codefm.domain.usecase.HelloWorldUseCase;
 
-@RestController
+
 @Slf4j
+@RestController
 @RequiredArgsConstructor
-public class privateHelloWorld implements PrivateHelloWorldApi {
+public class PrivateHelloWorld implements PrivateHelloWorldApi {
 
     private final HelloWorldUseCase helloWorldUseCase;
 

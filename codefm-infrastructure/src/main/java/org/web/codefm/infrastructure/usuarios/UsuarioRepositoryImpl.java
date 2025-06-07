@@ -1,5 +1,6 @@
 package org.web.codefm.infrastructure.usuarios;
 
+import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -11,6 +12,7 @@ import org.web.codefm.infrastructure.mapper.UsuarioMapper;
 @Repository
 @RequiredArgsConstructor
 @Slf4j
+@Generated
 public class UsuarioRepositoryImpl implements UsuarioRepository {
 
     private final UsuarioJPARepository usuarioJPARepository;
