@@ -36,11 +36,11 @@ jobs:
         run: |
           LABELS="${{ toJson(github.event.pull_request.labels) }}"
           if echo "$LABELS" | grep -q 'version/major'; then
-            mvn versions:set -DnextMajor=true -DgenerateBackupPoms=false
+            mvn versions:set -DnextMajor=true -DgenerateBackupPoms=false -DprocessAllModules=true
           elif echo "$LABELS" | grep -q 'version/current'; then
-            mvn versions:set -DnextMinor=true -DgenerateBackupPoms=false
+            mvn versions:set -DnextMinor=true -DgenerateBackupPoms=false -DprocessAllModules=true
           elif echo "$LABELS" | grep -q 'version/minor'; then
-            mvn versions:set -DnextPatch=true -DgenerateBackupPoms=false
+            mvn versions:set -DnextPatch=true -DgenerateBackupPoms=false -DprocessAllModules=true
           else
             echo "No version label found, skipping."
             exit 1
@@ -49,8 +49,8 @@ jobs:
       - name: Set version to SNAPSHOT
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//')
-          mvn versions:set -DnewVersion=${VERSION}-SNAPSHOT -DgenerateBackupPoms=false
-          git add pom.xml
+          mvn versions:set -DnewVersion=${VERSION}-SNAPSHOT -DgenerateBackupPoms=false -DprocessAllModules=true
+          git add .
           git commit -m "chore: bump version and set to SNAPSHOT" || echo "No changes to commit"
 
       - name: Push temp branch
@@ -62,6 +62,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: develop
-          head: ${{ env.BRANCH }}
+          branch: ${{ env.BRANCH }}
           title: "Bump version and set to SNAPSHOT"
           body: "Automatic version bump from master and set to SNAPSHOT for develop"
