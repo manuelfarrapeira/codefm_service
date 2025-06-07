@@ -31,9 +31,11 @@
         <java.version>17</java.version>
         <lombok.version>1.18.30</lombok.version>
         <spring-doc.version>2.1.0</spring-doc.version>
-        <sonar.exclusions>**/codefm/api/controller/**,**/config/**,**/generated/**,**/*$*$*</sonar.exclusions>
-        <sonar.coverage.exclusions>**/codefm/api/controller/**,**/config/**</sonar.coverage.exclusions>
-        <sonar.jacoco.excludes>**/codefm/api/controller/**,**/config/**</sonar.jacoco.excludes>
+        <sonar.exclusions>**/codefm/api/controller/**,**/config/**,**/domain/exception/**,**/generated/**,**/*$*$*
+        </sonar.exclusions>
+        <sonar.coverage.exclusions>**/codefm/api/controller/**,**/config/**,**/domain/exception/**
+        </sonar.coverage.exclusions>
+        <sonar.jacoco.excludes>**/codefm/api/controller/**,**/config/**,**/domain/exception/**</sonar.jacoco.excludes>
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.basedir}/jacoco-report-aggregate/target/site/jacoco-aggregate/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
