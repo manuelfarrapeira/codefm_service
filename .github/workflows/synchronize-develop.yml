@@ -28,14 +28,16 @@ jobs:
 
       - name: Create temp branch
         run: |
-          BRANCH=version-bump-$(date +%s)
+          BRANCH=synchronize_develop-$(date +%s)
           git checkout -b $BRANCH
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
 
       - name: Bump version based on label
         run: |
           LABELS="${{ toJson(github.event.pull_request.labels) }}"
-          if echo "$LABELS" | grep -q 'version/major'; then
+          if echo "$LABELS" | grep -q 'version/hotfix'; then
+            echo "Hotfix detected, no version bump."
+          elif echo "$LABELS" | grep -q 'version/major'; then
             mvn versions:set -DnextMajor=true -DgenerateBackupPoms=false -DprocessAllModules=true
           elif echo "$LABELS" | grep -q 'version/current'; then
             mvn versions:set -DnextMinor=true -DgenerateBackupPoms=false -DprocessAllModules=true
@@ -47,6 +49,7 @@ jobs:
           fi
 
       - name: Set version to SNAPSHOT
+        if: "!contains(toJson(github.event.pull_request.labels), 'version/hotfix')"
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//')
           mvn versions:set -DnewVersion=${VERSION}-SNAPSHOT -DgenerateBackupPoms=false -DprocessAllModules=true
