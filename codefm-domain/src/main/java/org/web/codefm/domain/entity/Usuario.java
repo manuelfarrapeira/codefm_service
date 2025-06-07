@@ -1,12 +1,10 @@
 package org.web.codefm.domain.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @Builder
+@Generated
 @NoArgsConstructor
 @AllArgsConstructor
 public class Usuario {

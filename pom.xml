@@ -31,19 +31,19 @@
         <java.version>17</java.version>
         <lombok.version>1.18.30</lombok.version>
         <spring-doc.version>2.1.0</spring-doc.version>
-        <sonar.exclusions>**/codefm/api/controller/**,**/config/**</sonar.exclusions>
+        <sonar.exclusions>**/codefm/api/controller/**,**/config/**,**/generated/**,**/*$*$*</sonar.exclusions>
         <sonar.coverage.exclusions>**/codefm/api/controller/**,**/config/**</sonar.coverage.exclusions>
         <sonar.jacoco.excludes>**/codefm/api/controller/**,**/config/**</sonar.jacoco.excludes>
-        <sonar.java.excludeAnnotatedMethods>
-            lombok.Generated,
-            lombok.Data,
-            lombok.Builder,
-            lombok.Getter,
-            lombok.Setter,
-            lombok.AllArgsConstructor,
-            lombok.NoArgsConstructor,
-            lombok.RequiredArgsConstructor
-        </sonar.java.excludeAnnotatedMethods>
+        <!--        <sonar.java.excludeAnnotatedMethods>-->
+        <!--            lombok.Generated,-->
+        <!--            lombok.Data,-->
+        <!--            lombok.Builder,-->
+        <!--            lombok.Getter,-->
+        <!--            lombok.Setter,-->
+        <!--            lombok.AllArgsConstructor,-->
+        <!--            lombok.NoArgsConstructor,-->
+        <!--            lombok.RequiredArgsConstructor-->
+        <!--        </sonar.java.excludeAnnotatedMethods>-->
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.basedir}/jacoco-report-aggregate/target/site/jacoco-aggregate/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>

@@ -51,6 +51,8 @@
                             <excludes>
                                 <exclude>**/codefm/api/controller/**</exclude>
                                 <exclude>**/config/**</exclude>
+                                <exclude>**/*$*$*</exclude>
+                                <exclude>**/generated/**</exclude>
                             </excludes>
                         </configuration>
                     </execution>
