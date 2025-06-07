@@ -64,7 +64,21 @@ jobs:
       - name: Fetch all branches
         run: git fetch --all
 
+      - name: Show diff with develop
+        run: git diff origin/develop
+
+      - name: Check if there are changes with develop
+        id: diff
+        run: |
+          git fetch origin develop
+          if git diff --quiet origin/develop; then
+            echo "no_diff=true" >> $GITHUB_OUTPUT
+          else
+            echo "no_diff=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create PR to develop
+        if: steps.diff.outputs.no_diff == 'false'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
