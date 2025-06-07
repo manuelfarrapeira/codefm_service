@@ -14,7 +14,6 @@ jobs:
   bump-and-pr:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout master
         uses: actions/checkout@v4
@@ -26,6 +25,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create temp branch
+        run: |
+          BRANCH=synchronize_develop-$(date +%s)
+          git checkout -b $BRANCH
+          echo "BRANCH=$BRANCH" >> $GITHUB_ENV
 
       - name: Bump version based on label
         run: |
@@ -51,12 +56,16 @@ jobs:
           git add .
           git commit -m "chore: bump version and set to SNAPSHOT" || echo "No changes to commit"
 
+      - name: Push temp branch
+        run: |
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} $BRANCH
+          sleep 60
+
       - name: Create PR to develop
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: bump version and set to SNAPSHOT"
+          base: develop
+          branch: ${{ env.BRANCH }}
           title: "Bump version and set to SNAPSHOT"
           body: "Automatic version bump from master and set to SNAPSHOT for develop"
-          base: develop
-          branch: synchronize_develop-${{ github.run_id }}
