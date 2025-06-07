@@ -1,4 +1,4 @@
-package org.web.codefm.infrastructure.security.config;
+package org.web.codefm.infrastructure.config;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -6,7 +6,6 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,14 +32,14 @@ import org.web.codefm.domain.service.SessionUserService;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * Configuration class for OAuth2 security settings and JWT token handling.
+ */
 @Slf4j
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class Oauth2SecurityConfig {
-
-    @Autowired
-    private SessionUserService sessionUserService;
 
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
     private String issuerUri;
@@ -48,6 +47,11 @@ public class Oauth2SecurityConfig {
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
 
+    /**
+     * Configures the JWT decoder with custom issuer validation.
+     *
+     * @return Configured JwtDecoder instance
+     */
     @Bean
     public JwtDecoder jwtDecoder() {
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
@@ -74,9 +78,18 @@ public class Oauth2SecurityConfig {
         return url.replaceAll("/$", "").replace("https://", "http://");
     }
 
-
+    /**
+     * Configures the security filter chain with OAuth2 resource server settings.
+     *
+     * @param http               Security configuration object
+     * @param jwtDecoder         JWT decoder bean
+     * @param jwtAuthConverter   JWT authentication converter
+     * @param sessionUserService Service for handling user session
+     * @return Configured SecurityFilterChain
+     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder, JwtAuthenticationConverter jwtAuthConverter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder, JwtAuthenticationConverter jwtAuthConverter, SessionUserService sessionUserService) throws Exception {
+
         http.sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .csrf(csrf -> csrf.disable())
@@ -107,13 +120,14 @@ public class Oauth2SecurityConfig {
         return http.build();
     }
 
-
+    /**
+     * Filter component for handling authentication via cookies.
+     */
     @Component
     public static class CookieAuthenticationFilter extends OncePerRequestFilter {
         private final JwtDecoder jwtDecoder;
         private final JwtAuthenticationConverter jwtAuthConverter;
 
-        @Autowired
         public CookieAuthenticationFilter(JwtDecoder jwtDecoder, JwtAuthenticationConverter jwtAuthConverter) {
             this.jwtDecoder = jwtDecoder;
             this.jwtAuthConverter = jwtAuthConverter;
@@ -146,7 +160,12 @@ public class Oauth2SecurityConfig {
         }
     }
 
-
+    /**
+     * Configures the JWT authentication converter with custom authority mapping.
+     * Extracts roles from realm_access and resource_access claims.
+     *
+     * @return Configured JwtAuthenticationConverter
+     */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
 
@@ -156,15 +175,17 @@ public class Oauth2SecurityConfig {
             Set<GrantedAuthority> authorities = new HashSet<>();
 
             Optional.ofNullable(jwt.getClaim("realm_access"))
-                    .map(realmAccess -> (Map<String, Object>) realmAccess)
-                    .map(realm -> (List<String>) realm.get("roles"))
-                    .ifPresent(roles -> roles.forEach(role -> authorities.add(new SimpleGrantedAuthority(role))));
+                    .map(realmAccess -> ((Map<?, ?>) realmAccess).get("roles"))
+                    .filter(Objects::nonNull)
+                    .map(roles -> (List<?>) roles)
+                    .ifPresent(roles -> roles.forEach(role -> authorities.add(new SimpleGrantedAuthority(role.toString()))));
 
-            Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
-            Optional.ofNullable(resourceAccess)
-                    .map(ra -> ((Map<String, Object>) ra).get("codefm"))
-                    .map(codefm -> (Map<String, Object>) codefm)
-                    .map(codefm -> (List<String>) codefm.get("roles"))
+            Optional.ofNullable(jwt.getClaim("resource_access"))
+                    .map(resourceAccess -> ((Map<?, ?>) resourceAccess).get("codefm"))
+                    .filter(Objects::nonNull)
+                    .map(codefm -> ((Map<?, ?>) codefm).get("roles"))
+                    .filter(Objects::nonNull)
+                    .map(roles -> (List<?>) roles)
                     .ifPresent(roles -> roles.forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role))));
 
             return authorities;
@@ -173,4 +194,3 @@ public class Oauth2SecurityConfig {
     }
 
 }
-

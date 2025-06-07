@@ -1,0 +1,134 @@
+name: SonarQube PR Analysis
+
+permissions:
+  pull-requests: write
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  sonarqube:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Run tests and generate coverage
+        id: tests
+        run: mvn -B clean verify jacoco:report
+
+      - name: Set Quality Gate details if tests failed
+        if: failure() && steps.tests.outcome == 'failure'
+        run: |
+          echo "## ❌ Test execution failed" > qualitygate-details.txt
+          echo "" >> qualitygate-details.txt
+          echo "The test execution failed. Please check the logs for more details." >> qualitygate-details.txt
+
+      - name: SonarQube Scan (multi-module)
+        if: success() && steps.tests.outcome == 'success'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: mvn verify sonar:sonar -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.projectKey=org.web:codeFm
+
+      - name: SonarQube Quality Gate Check
+        if: success() && steps.tests.outcome == 'success'
+        uses: sonarsource/sonarqube-quality-gate-action@v1
+        with:
+          scanMetadataReportFile: ./target/sonar/report-task.txt
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Get Quality Gate Details
+        if: success() && steps.tests.outcome == 'success'
+        env:
+          SONAR_USER: ${{ secrets.SONAR_USER }}
+          SONAR_PASSWORD: ${{ secrets.SONAR_PASSWORD }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          # Get metrics and status
+          METRICS_JSON=$(curl -s -u "${SONAR_USER}:${SONAR_PASSWORD}" "${SONAR_HOST_URL}/api/measures/component?component=org.web:codeFm&metricKeys=new_bugs,new_vulnerabilities,new_security_hotspots,new_code_smells,new_coverage,new_duplicated_lines_density")
+          STATUS_JSON=$(curl -s -u "${SONAR_USER}:${SONAR_PASSWORD}" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
+
+          # Create the report
+          {
+            echo "## 🔍 Quality Gate Report"
+            echo
+
+            # Section 1: Metrics
+            echo "### 📊 Metrics"
+
+            # Process metrics
+            echo "$METRICS_JSON" | jq -r '.component.measures[] |
+            (if .metric == "new_coverage" or .metric == "new_duplicated_lines_density" then
+              .period.value + "%"
+            else
+              .period.value
+            end) as $value |
+            "- [\(
+            if .metric == "new_bugs" then "Bugs"
+            elif .metric == "new_vulnerabilities" then "Vulnerabilities"
+            elif .metric == "new_security_hotspots" then "Security Hotspots"
+            elif .metric == "new_code_smells" then "Code Smells"
+            elif .metric == "new_coverage" then "Coverage"
+            elif .metric == "new_duplicated_lines_density" then "Duplicated Lines"
+            else .metric
+            end)](\($ENV.SONAR_HOST_URL)/component_measures?id=org.web:codeFm&metric=\(.metric)&view=list) → \($value)"'
+            echo
+
+            # Section 2: Quality Gate Status
+            echo "### 🎯 Quality Gate Status"
+
+            # Overall status
+            STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
+            if [ "$STATUS" = "OK" ]; then
+              echo "#### ✅ Overall Status: PASSED"
+            else
+              echo "#### ❌ Overall Status: FAILED"
+            fi
+            echo
+
+            # Individual statuses
+            echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] |
+            (if .metricKey | endswith("_rating") then
+              .actualValue + " / " + .errorThreshold
+            else
+              .actualValue + "% / " + .errorThreshold + "%"
+            end) as $values |
+            "- \(if .status=="OK" then "✅" else "❌" end) [\(
+            if .metricKey == "new_coverage" then "Coverage"
+            elif .metricKey == "new_duplicated_lines_density" then "Duplicated Lines"
+            elif .metricKey == "new_reliability_rating" then "Reliability"
+            elif .metricKey == "new_security_rating" then "Security"
+            elif .metricKey == "new_maintainability_rating" then "Maintainability"
+            else .metricKey
+            end)] → \($values)"'
+            echo
+
+            echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>"
+          } > qualitygate-details.txt
+        shell: bash
+
+      - name: Comment Quality Gate details on PR
+        if: always()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: qualitygate-details.txt
+          edit-mode: replace

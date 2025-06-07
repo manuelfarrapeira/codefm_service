@@ -10,9 +10,9 @@ import org.web.codefm.domain.service.HelloWorldService;
 import org.web.codefm.domain.usecase.HelloWorldUseCase;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class HelloWorldUseCaseImpl implements HelloWorldUseCase {
 
     private final HelloWorldService helloWorldService;

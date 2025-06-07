@@ -1,4 +1,4 @@
-package org.web.codefm.infrastructure.security.config;
+package org.web.codefm.infrastructure.config;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -8,9 +8,17 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuration class for OpenAPI (Swagger) documentation settings.
+ */
 @Configuration
 public class OpenApiConfig {
 
+    /**
+     * Creates a custom OpenAPI configuration with basic authentication.
+     *
+     * @return Configured OpenAPI instance with security schemes and API information
+     */
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()

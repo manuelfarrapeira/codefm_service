@@ -74,6 +74,7 @@ jobs:
           host: ${{ secrets.SYNOLOGY_HOST }}
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
+          port: 22
           script: |
             cd ~/codefm
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
@@ -85,5 +86,6 @@ jobs:
           host: ${{ secrets.SYNOLOGY_HOST }}
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
+          port: 22
           script: |
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker image prune -f

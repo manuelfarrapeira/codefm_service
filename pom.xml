@@ -31,6 +31,14 @@
         <java.version>17</java.version>
         <lombok.version>1.18.30</lombok.version>
         <spring-doc.version>2.1.0</spring-doc.version>
+        <sonar.exclusions>**/codefm/api/controller/**,**/config/**,**/domain/exception/**,**/generated/**,**/*$*$*
+        </sonar.exclusions>
+        <sonar.coverage.exclusions>**/codefm/api/controller/**,**/config/**,**/domain/exception/**
+        </sonar.coverage.exclusions>
+        <sonar.jacoco.excludes>**/codefm/api/controller/**,**/config/**,**/domain/exception/**</sonar.jacoco.excludes>
+        <sonar.coverage.jacoco.xmlReportPaths>
+            ${project.basedir}/jacoco-report-aggregate/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
     <modules>
@@ -39,6 +47,7 @@
         <module>codefm-infrastructure</module>
         <module>codefm-api</module>
         <module>codefm-boot</module>
+        <module>jacoco-report-aggregate</module>
     </modules>
 
     <dependencyManagement>
@@ -135,6 +144,19 @@
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.10</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
