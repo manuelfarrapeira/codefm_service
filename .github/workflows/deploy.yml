@@ -1,6 +1,3 @@
-Aquí tienes el workflow con todos los comentarios traducidos al inglés:
-
-  ```yaml
 name: Deploy to Synology Container Manager
 
 on:
