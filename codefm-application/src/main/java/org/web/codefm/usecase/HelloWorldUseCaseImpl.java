@@ -24,7 +24,7 @@ public class HelloWorldUseCaseImpl implements HelloWorldUseCase {
     @Override
     public String helloWorld(String usuario) {
 
-        log.info("ejemplo consul: " + ejemploConsul.getparametro());
+        log.info("Ejemplo consul -> " + ejemploConsul.getparametro());
 
         Usuario user = usuarioRepository.findByName(usuario);
 
