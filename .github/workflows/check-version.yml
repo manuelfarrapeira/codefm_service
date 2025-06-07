@@ -7,7 +7,7 @@ on:
 
 jobs:
   check_version:
-    runs-on: ubuntu-latestcheck version
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout master
         uses: actions/checkout@v4
@@ -36,12 +36,21 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Compare versions
+        id: compare_versions
         run: |
           MASTER_VERSION="${{ steps.master_version.outputs.version }}"
           DEVELOP_VERSION="${{ steps.develop_version.outputs.version }}"
           echo "Master version: $MASTER_VERSION"
           echo "Develop version: $DEVELOP_VERSION"
-          if [ "$MASTER_VERSION" = "$DEVELOP_VERSION" ]; then
-            echo "ERROR: Version must be increased before merging to master."
+          if [ "$(printf '%s\n%s' "$MASTER_VERSION" "$DEVELOP_VERSION" | sort -V | head -n1)" = "$DEVELOP_VERSION" ]; then
+            echo "ERROR: The version in develop (**$DEVELOP_VERSION**) must be greater than the version in master (**$MASTER_VERSION**). Please increase the version before merging."
             exit 1
           fi
+
+      - name: Comment on PR if version is not greater
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            :warning: The version in `develop` (**${{ steps.develop_version.outputs.version }}**) must be greater than the version in `master` (**${{ steps.master_version.outputs.version }}**). Please increase the version before merging.
