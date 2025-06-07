@@ -1,0 +1,167 @@
+name: Version Management on Master Merge (via PR)
+
+on:
+  pull_request:
+    types: [ closed ]
+    branches:
+      - master # Triggered when a PR is closed and merged into master
+
+jobs:
+  create_sync_pr:
+    if: github.event.pull_request.merged == true # Only if the PR was merged
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required for checkout, branch creation and commit
+      pull-requests: write # Required to create the Pull Request
+
+    steps:
+      - name: Checkout develop branch
+        uses: actions/checkout@v4
+        with:
+          ref: develop # Checkout the develop branch to work on it
+          fetch-depth: 0 # Required for full history for the merge
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin' # Or the Java distribution you use
+          java-version: '17' # Or the Java version you use
+
+      - name: Determine version increment type from PR labels
+        id: version_type
+        run: |
+          PR_LABELS="${{ toJson(github.event.pull_request.labels.*.name) }}"
+          echo "PR Labels: $PR_LABELS"
+
+          INCREMENT_TYPE="" # Default: no increment type
+
+          if echo "$PR_LABELS" | grep -q "version/minor"; then
+            INCREMENT_TYPE="minor"
+          elif echo "$PR_LABELS" | grep -q "version/major"; then
+            INCREMENT_TYPE="major"
+          elif echo "$PR_LABELS" | grep -q "version/patch" || echo "$PR_LABELS" | grep -q "version/hotfix"; then
+            INCREMENT_TYPE="patch"
+          fi
+
+          if [ -z "$INCREMENT_TYPE" ]; then
+            echo "No 'version/*' label found on PR. Skipping version update."
+          else
+            echo "Determined increment type: $INCREMENT_TYPE"
+          fi
+
+          echo "increment_type=$INCREMENT_TYPE" >> $GITHUB_OUTPUT
+
+      - name: Create temporary branch for sync
+        # Only create the branch if an increment type was found
+        if: steps.version_type.outputs.increment_type != ''
+        run: |
+          BRANCH_NAME="feature/sync-master-develop-$(date +%Y%m%d%H%M%S)"
+          echo "Creating branch: $BRANCH_NAME"
+          git checkout -b $BRANCH_NAME
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+        id: branch_creation
+
+      - name: Merge master into temporary sync branch
+        # Only merge if the temporary branch was created
+        if: steps.branch_creation.outputs.branch_name != ''
+        run: |
+          echo "Merging master into temporary sync branch..."
+          git pull origin develop
+          git fetch origin master
+          git merge origin/master -m "Merge master into develop after release"
+
+      - name: Check for conflicts after merge (if applicable)
+        # This step is crucial to identify conflicts that must be resolved in the PR
+        if: steps.branch_creation.outputs.branch_name != ''
+        run: |
+          if git diff --check --exit-code; then
+            echo "No merge conflicts detected after preliminary merge."
+            echo "merge_conflicts=false" >> $GITHUB_OUTPUT
+          else
+            echo "Potential merge conflicts detected. This PR will allow for manual resolution."
+            echo "merge_conflicts=true" >> $GITHUB_OUTPUT
+          fi
+        id: merge_check
+
+      - name: Update develop branch version to next SNAPSHOT
+        # Only update the version if the temporary branch was created
+        if: steps.branch_creation.outputs.branch_name != ''
+        env:
+          INCREMENT_TYPE: ${{ steps.version_type.outputs.increment_type }}
+        run: |
+          echo "Attempting to update version using increment type: $INCREMENT_TYPE"
+
+          CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "Current version in develop (after merge): $CURRENT_VERSION"
+
+          VERSION_BASE=$(echo $CURRENT_VERSION | sed 's/-SNAPSHOT//')
+
+          MAJOR=$(echo $VERSION_BASE | awk -F'.' '{print $1}')
+          MINOR=$(echo $VERSION_BASE | awk -F'.' '{print $2}')
+          PATCH=$(echo $VERSION_BASE | awk -F'.' '{print $3}')
+
+          NEXT_MAJOR=$MAJOR
+          NEXT_MINOR=$MINOR
+          NEXT_PATCH=$PATCH
+
+          case $INCREMENT_TYPE in
+            major)
+              NEXT_MAJOR=$((MAJOR + 1))
+              NEXT_MINOR=0
+              NEXT_PATCH=0
+              ;;
+            minor)
+              NEXT_MINOR=$((MINOR + 1))
+              NEXT_PATCH=0
+              ;;
+            patch)
+              NEXT_PATCH=$((PATCH + 1))
+              ;;
+            *)
+              echo "Error: Unexpected increment type: $INCREMENT_TYPE. Skipping update."
+              exit 1
+              ;;
+          esac
+
+          NEXT_SNAPSHOT_VERSION="${NEXT_MAJOR}.${NEXT_MINOR}.${NEXT_PATCH}-SNAPSHOT"
+          echo "Setting next SNAPSHOT version to: $NEXT_SNAPSHOT_VERSION"
+
+          mvn versions:set -DnewVersion=$NEXT_SNAPSHOT_VERSION -DgenerateBackupPoms=false
+
+          git add .
+          git commit -m "feat(version): Update develop to next SNAPSHOT version $NEXT_SNAPSHOT_VERSION based on PR labels" || echo "No changes to commit."
+
+      - name: Push temporary branch and create Pull Request
+        # Only push and create PR if the temporary branch was created and there are changes
+        if: steps.branch_creation.outputs.branch_name != '' && success()
+        env:
+          BRANCH_NAME: ${{ steps.branch_creation.outputs.branch_name }}
+          MERGE_CONFLICTS: ${{ steps.merge_check.outputs.merge_conflicts }}
+        run: |
+          if git diff --quiet --exit-code; then
+            echo "No changes to push (already up-to-date or no version update needed)."
+            exit 0
+          fi
+
+          echo "Pushing branch $BRANCH_NAME to origin..."
+          git push origin $BRANCH_NAME
+
+          PR_TITLE="Sync master with develop and update SNAPSHOT version (${{ env.BRANCH_NAME }})"
+          PR_BODY="This Pull Request synchronizes the \`master\` branch into \`develop\` after a release.\n\n"
+          PR_BODY+="It also updates the SNAPSHOT version in \`develop\` based on the release PR's label (**${{ steps.version_type.outputs.increment_type }}** increment).\n\n"
+
+          if [ "${{ env.MERGE_CONFLICTS }}" = "true" ]; then
+            PR_BODY+="- **ATTENTION: Potential merge conflicts detected!** Please resolve them before merging this PR.\n"
+          else
+            PR_BODY+="- No merge conflicts detected during initial sync.\n"
+          fi
+
+          PR_BODY+="Please review the changes and merge this PR to keep \`develop\` up-to-date."
+
+          echo "Creating Pull Request from $BRANCH_NAME to develop..."
+          gh pr create --base develop --head $BRANCH_NAME --title "$PR_TITLE" --body "$PR_BODY"
