@@ -1,0 +1,54 @@
+name: Create Release Tag on Master Push
+
+on:
+  push:
+    branches:
+      - master # Triggered when a push is made to the master branch
+
+jobs:
+  create_tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create and push tags
+
+    steps:
+      - name: Checkout master branch
+        uses: actions/checkout@v4
+        with:
+          ref: master # Ensure we are on the master branch
+          fetch-depth: 0 # Fetch full history for tags
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Get current version from pom.xml (on master)
+        id: get_version
+        run: |
+          # Get the version from the main pom.xml (assumes it's at the repo root)
+          CURRENT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "Current version on master: $CURRENT_VERSION"
+          echo "tag_name=v$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if tag already exists
+        id: check_tag
+        run: |
+          TAG_NAME="${{ steps.get_version.outputs.tag_name }}"
+          if git tag -l | grep -q "^$TAG_NAME$"; then
+            echo "Tag $TAG_NAME already exists. Skipping tag creation."
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG_NAME does not exist. Proceeding with tag creation."
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.tag_exists == 'false' # Only if the tag does not exist
+        run: |
+          TAG_NAME="${{ steps.get_version.outputs.tag_name }}"
+          git tag $TAG_NAME
+          echo "Created tag: $TAG_NAME"
+          git push origin $TAG_NAME
+          echo "Pushed tag $TAG_NAME to origin."
