@@ -37,24 +37,32 @@ jobs:
           LABELS="${{ toJson(github.event.pull_request.labels) }}"
           if echo "$LABELS" | grep -q 'version/hotfix'; then
             echo "Hotfix detected, no version bump."
+            echo "SKIP_BUMP=true" >> $GITHUB_ENV
           elif echo "$LABELS" | grep -q 'version/major'; then
-            mvn versions:set -DnextMajor=true -DgenerateBackupPoms=false -DprocessAllModules=true
+            mvn build-helper:parse-version versions:set \
+              -DnewVersion=\${parsedVersion.majorVersion+1}.0.0 \
+              -DgenerateBackupPoms=false -DprocessAllModules=true
           elif echo "$LABELS" | grep -q 'version/current'; then
-            mvn versions:set -DnextMinor=true -DgenerateBackupPoms=false -DprocessAllModules=true
+            mvn build-helper:parse-version versions:set \
+              -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion+1}.0 \
+              -DgenerateBackupPoms=false -DprocessAllModules=true
           elif echo "$LABELS" | grep -q 'version/minor'; then
-            mvn versions:set -DnextPatch=true -DgenerateBackupPoms=false -DprocessAllModules=true
+            mvn build-helper:parse-version versions:set \
+              -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.incrementalVersion+1} \
+              -DgenerateBackupPoms=false -DprocessAllModules=true
           else
             echo "No version label found, skipping."
             exit 1
           fi
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "BASE_VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Set version to SNAPSHOT
-        if: "!contains(toJson(github.event.pull_request.labels), 'version/hotfix')"
+        if: env.SKIP_BUMP != 'true'
         run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout | sed 's/-SNAPSHOT//')
-          mvn versions:set -DnewVersion=${VERSION}-SNAPSHOT -DgenerateBackupPoms=false -DprocessAllModules=true
+          mvn versions:set -DnewVersion=${BASE_VERSION}-SNAPSHOT -DgenerateBackupPoms=false -DprocessAllModules=true
           git add .
-          git commit -m "chore: bump version and set to SNAPSHOT" || echo "No changes to commit"
+          git commit -m "chore: bump version and set to ${BASE_VERSION}-SNAPSHOT" || echo "No changes to commit"
 
       - name: Push temp branch
         run: |
