@@ -19,6 +19,16 @@ jobs:
             [[ "${{ github.event.comment.body }}" == deploy* ]] || exit 1
           fi
 
+      - name: Get PR branch if triggered by issue_comment
+        id: pr_branch
+        if: github.event_name == 'issue_comment'
+        run: |
+          PR_URL="${{ github.event.issue.pull_request.url }}"
+          if [[ -n "$PR_URL" ]]; then
+            BRANCH=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" $PR_URL | jq -r .head.ref)
+            echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          fi
+
       - name: Extract ref to deploy (branch or tag)
         id: ref
         run: |
@@ -28,15 +38,15 @@ jobs:
             CMD="${{ github.event.comment.body }}"
           fi
 
-          # Divide el comando en palabras
           ARGS=($CMD)
-
           REF=""
           TYPE="branch"
 
           if [[ ${#ARGS[@]} -eq 1 ]]; then
             # Solo "deploy"
-            if [[ -n "${{ github.head_ref }}" ]]; then
+            if [[ -n "${{ steps.pr_branch.outputs.branch }}" ]]; then
+              REF="${{ steps.pr_branch.outputs.branch }}"
+            elif [[ -n "${{ github.head_ref }}" ]]; then
               REF="${{ github.head_ref }}"
             else
               echo "No branch specified and not in PR context, exiting."
@@ -73,6 +83,8 @@ jobs:
         run: |
           docker compose build
           docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+        env:
+          INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
 
       - name: Copy docker-compose.yml to Synology
         uses: appleboy/scp-action@v0.1.7
