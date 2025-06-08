@@ -2,6 +2,7 @@ name: Deploy to Synology Container Manager
 
 permissions:
   pull-requests: write
+  issues: write
 
 on:
   issues:
