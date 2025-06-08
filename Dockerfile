@@ -16,8 +16,5 @@ RUN mkdir -p /app/logs
 COPY --from=build /app/codefm-boot/target/codefm-boot-*.jar app.jar
 EXPOSE 8080
 
-ENV INFISICAL_TOKEN=st.378ff8e3-fc74-44a2-9867-3c27af45736c.d276c6a534321848e88fff5743c4036e.dafd369933b4f999dc6cd48105e3c87e
-ENV INFISICAL_API_URL=http://infisical-server:8080
-
 ENTRYPOINT ["infisical", "run", "--projectId", "491fe430-7bf6-40b0-aa05-58d7f5268b28", "--env", "prod", "--"]
 CMD ["java", "-jar", "app.jar"]
