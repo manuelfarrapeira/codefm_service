@@ -152,7 +152,7 @@ jobs:
               echo "Variables de entorno:"
               cat .env
               echo "Logs de arranque del contenedor:"
-              sudo docker logs $(sudo docker ps -q --filter "ancestor=mfarrapeira/codefm-pre:latest") --tail 50 || true
+              sudo docker logs $(sudo docker ps -q --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm-pre:latest") --tail 50 || true
             else
               echo "Desplegando con perfil DEFAULT"
               echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
@@ -160,10 +160,10 @@ jobs:
               echo "Variables de entorno:"
               cat .env
               echo "Logs de arranque del contenedor:"
-              sudo docker logs $(sudo docker ps -q --filter "ancestor=mfarrapeira/codefm:latest") --tail 50 || true
+              sudo docker logs $(sudo docker ps -q --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm:latest") --tail 50 || true
             fi
 
-      - name: Clean up unused images on Synology
+      - name: Clean up unused images and containers on Synology
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SYNOLOGY_HOST }}
@@ -171,4 +171,12 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           port: 22
           script: |
-            docker image prune -af
+            if [ "${{ steps.ref.outputs.profile }}" = "pre" ]; then
+              # Elimina contenedores e imágenes antiguas de codefm-pre
+              docker ps -a --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm-pre:latest" -q | xargs -r docker rm -f
+              docker images "${{ secrets.DOCKERHUB_USER }}/codefm-pre" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r docker rmi -f
+            else
+              # Elimina contenedores e imágenes antiguas de codefm (default)
+              docker ps -a --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm:latest" -q | xargs -r docker rm -f
+              docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r docker rmi -f
+            fi
