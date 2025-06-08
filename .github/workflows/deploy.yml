@@ -1,5 +1,8 @@
 name: Deploy to Synology Container Manager
 
+permissions:
+  pull-requests: write
+
 on:
   issues:
     types: [opened]
@@ -34,34 +37,51 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "issues" ]]; then
             CMD="${{ github.event.issue.title }}"
-          else
-            CMD="${{ github.event.comment.body }}"
-          fi
-
-          ARGS=($CMD)
-          REF=""
-          TYPE="branch"
-
-          if [[ ${#ARGS[@]} -eq 1 ]]; then
-            if [[ -n "${{ steps.pr_branch.outputs.branch }}" ]]; then
-              REF="${{ steps.pr_branch.outputs.branch }}"
-            elif [[ -n "${{ github.head_ref }}" ]]; then
-              REF="${{ github.head_ref }}"
-            else
-              echo "No branch specified and not in PR context, exiting."
+            ARGS=($CMD)
+            if [[ ${#ARGS[@]} -ne 2 ]]; then
+              echo "En una issue debes usar: deploy nombre-rama"
               exit 1
             fi
-          elif [[ ${#ARGS[@]} -eq 3 && "${ARGS[1]}" == "tag" ]]; then
-            TYPE="tag"
-            REF="${ARGS[2]}"
-          elif [[ ${#ARGS[@]} -eq 2 ]]; then
+            if [[ "${ARGS[0]}" != "deploy" ]]; then
+              echo "Comando no soportado"
+              exit 1
+            fi
             REF="${ARGS[1]}"
+            PROFILE="default"
+            TYPE="branch"
+          elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            PR_URL="${{ github.event.issue.pull_request.url }}"
+            CMD="${{ github.event.comment.body }}"
+            ARGS=($CMD)
+            if [[ ${#ARGS[@]} -ne 1 || "${ARGS[0]}" != "deploy" ]]; then
+              echo "En un PR solo puedes usar: deploy"
+              exit 1
+            fi
+            if [[ -n "$PR_URL" ]]; then
+              # Es un comentario en un PR
+              if [[ -n "${{ steps.pr_branch.outputs.branch }}" ]]; then
+                REF="${{ steps.pr_branch.outputs.branch }}"
+              elif [[ -n "${{ github.head_ref }}" ]]; then
+                REF="${{ github.head_ref }}"
+              else
+                echo "No se pudo determinar la rama del PR"
+                exit 1
+              fi
+              PROFILE="pre"
+              TYPE="branch"
+            else
+              # Es un comentario en una issue
+              REF="${{ github.event.issue.title }}"
+              PROFILE="default"
+              TYPE="branch"
+            fi
           else
-            echo "Invalid deploy command format"
+            echo "Trigger no soportado"
             exit 1
           fi
 
           echo "ref=$REF" >> $GITHUB_OUTPUT
+          echo "profile=$PROFILE" >> $GITHUB_OUTPUT
           echo "type=$TYPE" >> $GITHUB_OUTPUT
 
       - name: Checkout indicated ref (branch or tag)
@@ -80,8 +100,13 @@ jobs:
 
       - name: Build and push image to Docker Hub
         run: |
-          docker compose build
-          docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+          if [[ "${{ steps.ref.outputs.profile }}" == "pre" ]]; then
+            docker compose -f docker-compose-pre.yml build
+            docker push ${{ secrets.DOCKERHUB_USER }}/codefm-pre:latest
+          else
+            docker compose build
+            docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+          fi
         env:
           INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
 
@@ -94,7 +119,7 @@ jobs:
           host: ${{ secrets.SYNOLOGY_HOST }}
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
-          source: "docker-compose.yml"
+          source: ${{ steps.ref.outputs.profile == 'pre' && 'docker-compose-pre.yml' || 'docker-compose.yml' }}
           target: "~/codefm"
 
       - name: Copy .env
@@ -114,7 +139,7 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: mkdir -p ~/codefm/logs
 
-      - name: Deploy on Synology via SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SYNOLOGY_HOST }}
@@ -123,10 +148,25 @@ jobs:
           port: 22
           script: |
             cd ~/codefm
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose up -d --remove-orphans          
+            if [ -f docker-compose-pre.yml ]; then
+              echo "Desplegando con perfil PRE"
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml pull
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml up -d
+              echo "Variables de entorno:"
+              cat .env
+              echo "Logs de arranque del contenedor:"
+              sudo docker logs $(sudo docker ps -q --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm-pre:latest") --tail 50 || true
+            else
+              echo "Desplegando con perfil DEFAULT"
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose up -d --remove-orphans
+              echo "Variables de entorno:"
+              cat .env
+              echo "Logs de arranque del contenedor:"
+              sudo docker logs $(sudo docker ps -q --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm:latest") --tail 50 || true
+            fi
 
-      - name: Clean up unused images on Synology
+      - name: Clean up unused images and containers on Synology
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SYNOLOGY_HOST }}
@@ -134,4 +174,34 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           port: 22
           script: |
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker image prune -f
+            if [ "${{ steps.ref.outputs.profile }}" = "pre" ]; then
+              # Solo elimina el contenedor codefm-pre
+              docker ps -a --filter "name=^/codefm-pre$" -q | xargs -r docker rm -f
+              docker images "${{ secrets.DOCKERHUB_USER }}/codefm-pre" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r docker rmi -f
+            else
+              # Solo elimina el contenedor codefm
+              docker ps -a --filter "name=^/codefm$" -q | xargs -r docker rm -f
+              docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r docker rmi -f
+            fi
+
+      - name: Comment on PR or issue if deployment was successful
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const eventName = process.env.GITHUB_EVENT_NAME;
+            let number;
+            if (eventName === "issues") {
+              number = context.payload.issue.number;
+            } else if (eventName === "issue_comment") {
+              number = context.payload.issue.number;
+            } else {
+              return;
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: number,
+              body: "✅ Deployment completed successfully."
+            });
