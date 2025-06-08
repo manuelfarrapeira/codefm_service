@@ -34,34 +34,42 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "issues" ]]; then
             CMD="${{ github.event.issue.title }}"
-          else
+            ARGS=($CMD)
+            if [[ ${#ARGS[@]} -ne 2 ]]; then
+              echo "En una issue debes usar: deploy nombre-rama"
+              exit 1
+            fi
+            if [[ "${ARGS[0]}" != "deploy" ]]; then
+              echo "Comando no soportado"
+              exit 1
+            fi
+            REF="${ARGS[1]}"
+            PROFILE="default"
+            TYPE="branch"
+          elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
             CMD="${{ github.event.comment.body }}"
-          fi
-
-          ARGS=($CMD)
-          REF=""
-          TYPE="branch"
-
-          if [[ ${#ARGS[@]} -eq 1 ]]; then
+            ARGS=($CMD)
+            if [[ ${#ARGS[@]} -ne 1 || "${ARGS[0]}" != "deploy" ]]; then
+              echo "En un PR solo puedes usar: deploy"
+              exit 1
+            fi
             if [[ -n "${{ steps.pr_branch.outputs.branch }}" ]]; then
               REF="${{ steps.pr_branch.outputs.branch }}"
             elif [[ -n "${{ github.head_ref }}" ]]; then
               REF="${{ github.head_ref }}"
             else
-              echo "No branch specified and not in PR context, exiting."
+              echo "No se pudo determinar la rama del PR"
               exit 1
             fi
-          elif [[ ${#ARGS[@]} -eq 3 && "${ARGS[1]}" == "tag" ]]; then
-            TYPE="tag"
-            REF="${ARGS[2]}"
-          elif [[ ${#ARGS[@]} -eq 2 ]]; then
-            REF="${ARGS[1]}"
+            PROFILE="pre"
+            TYPE="branch"
           else
-            echo "Invalid deploy command format"
+            echo "Trigger no soportado"
             exit 1
           fi
 
           echo "ref=$REF" >> $GITHUB_OUTPUT
+          echo "profile=$PROFILE" >> $GITHUB_OUTPUT
           echo "type=$TYPE" >> $GITHUB_OUTPUT
 
       - name: Checkout indicated ref (branch or tag)
@@ -80,8 +88,13 @@ jobs:
 
       - name: Build and push image to Docker Hub
         run: |
-          docker compose build
-          docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+          if [[ "${{ steps.ref.outputs.profile }}" == "pre" ]]; then
+            docker compose -f docker-compose-pre.yml build
+            docker push ${{ secrets.DOCKERHUB_USER }}/codefm-pre:latest
+          else
+            docker compose build
+            docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+          fi
         env:
           INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
 
@@ -94,7 +107,7 @@ jobs:
           host: ${{ secrets.SYNOLOGY_HOST }}
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
-          source: "docker-compose.yml"
+          source: ${{ steps.ref.outputs.profile == 'pre' && 'docker-compose-pre.yml' || 'docker-compose.yml' }}
           target: "~/codefm"
 
       - name: Copy .env
@@ -123,8 +136,13 @@ jobs:
           port: 22
           script: |
             cd ~/codefm
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose up -d --remove-orphans          
+            if [ -f docker-compose-pre.yml ]; then
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml pull
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml up -d --remove-orphans
+            else
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose up -d --remove-orphans
+            fi
 
       - name: Clean up unused images on Synology
         uses: appleboy/ssh-action@v1
@@ -134,4 +152,3 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           port: 22
           script: |
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker image prune -f

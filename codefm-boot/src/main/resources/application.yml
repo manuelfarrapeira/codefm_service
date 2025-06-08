@@ -38,7 +38,7 @@ spring:
         format: YAML
         prefixes: config
         defaultContext: application
-        profileSeparator: ':'
+        profileSeparator: ','
   data:
     rest:
       detection-strategy: ANNOTATED #esto es para evitar la generación de endpoints relacionados con los JPA
