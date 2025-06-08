@@ -1,0 +1,140 @@
+name: Deploy DEFAULT to Synology
+
+permissions:
+  issues: write
+
+on:
+  issues:
+    types: [ opened ]
+  issue_comment:
+    types: [ created ]
+
+jobs:
+  deploy-default:
+    if: |
+      (github.event_name == 'issues' && startsWith(github.event.issue.title, 'deploy')) ||
+      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, 'deploy'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract ref to deploy (branch or tag)
+        id: ref
+        run: |
+          if [[ "${{ github.event_name }}" == "issues" ]]; then
+            CMD="${{ github.event.issue.title }}"
+            ARGS=($CMD)
+          elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            CMD="${{ github.event.comment.body }}"
+            ARGS=($CMD)
+          else
+            echo "Trigger no soportado"
+            exit 1
+          fi
+
+          if [[ "${ARGS[0]}" == "deploy" ]]; then
+            if [[ ${#ARGS[@]} -eq 2 ]]; then
+              REF="${ARGS[1]}"
+              TYPE="branch"
+            elif [[ ${#ARGS[@]} -eq 3 && "${ARGS[1]}" == "tag" ]]; then
+              REF="${ARGS[2]}"
+              TYPE="tag"
+            else
+              echo "Uso: deploy <rama> o deploy tag <nombre-tag>"
+              exit 1
+            fi
+          else
+            echo "Comando no soportado"
+            exit 1
+          fi
+
+          echo "ref=$REF" >> $GITHUB_OUTPUT
+          echo "type=$TYPE" >> $GITHUB_OUTPUT
+
+      - name: Checkout indicated ref (branch or tag)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push DEFAULT image
+        run: |
+          docker compose build
+          docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+        env:
+          INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
+
+      - name: Create .env file
+        run: echo "INFISICAL_TOKEN=${{ secrets.INFISICAL_TOKEN }}" > .env
+
+      - name: Copy docker-compose.yml
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SYNOLOGY_HOST }}
+          username: ${{ secrets.SYNOLOGY_USER }}
+          password: ${{ secrets.SYNOLOGY_PASS }}
+          source: "docker-compose.yml"
+          target: "~/codefm"
+
+      - name: Copy .env
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SYNOLOGY_HOST }}
+          username: ${{ secrets.SYNOLOGY_USER }}
+          password: ${{ secrets.SYNOLOGY_PASS }}
+          source: ".env"
+          target: "~/codefm"
+
+      - name: Create logs folder on Synology
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SYNOLOGY_HOST }}
+          username: ${{ secrets.SYNOLOGY_USER }}
+          password: ${{ secrets.SYNOLOGY_PASS }}
+          script: mkdir -p ~/codefm/logs
+
+      - name: Deploy DEFAULT via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SYNOLOGY_HOST }}
+          username: ${{ secrets.SYNOLOGY_USER }}
+          password: ${{ secrets.SYNOLOGY_PASS }}
+          port: 22
+          script: |
+            export PATH=$PATH:/usr/local/bin
+            cd ~/codefm
+            echo "Desplegando con perfil DEFAULT"
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose.yml pull
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose.yml up -d --remove-orphans
+            echo "Variables de entorno:"
+            cat .env
+
+      - name: Clean up DEFAULT images and containers
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SYNOLOGY_HOST }}
+          username: ${{ secrets.SYNOLOGY_USER }}
+          password: ${{ secrets.SYNOLOGY_PASS }}
+          port: 22
+          script: |
+            docker ps -a --filter "name=^/codefm$" -q | xargs -r docker rm -f
+            docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r docker rmi -f
+
+      - name: Comment on issue if deployment was successful
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: "✅ Deployment DEFAULT completed successfully."
+            });
