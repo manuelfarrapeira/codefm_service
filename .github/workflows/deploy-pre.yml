@@ -81,7 +81,7 @@ jobs:
             cd ~/codefm
             echo "Desplegando con perfil PRE"
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml pull
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml up -d --remove-orphans
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml up -d
             echo "Variables de entorno:"
             cat .env
 
