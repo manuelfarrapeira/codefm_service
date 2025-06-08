@@ -171,7 +171,7 @@ jobs:
             else
               echo "Desplegando con perfil DEFAULT"
               echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose.yml pull
-              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose.yml up -d --remove-orphans
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose.yml up -d
               echo "Variables de entorno:"
               cat .env
             fi
