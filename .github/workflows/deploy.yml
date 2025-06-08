@@ -33,67 +33,67 @@ jobs:
           fi
 
       - name: Extract ref to deploy (branch or tag)
-          id: ref
-          run: |
-            if [[ "${{ github.event_name }}" == "issues" ]]; then
-              CMD="${{ github.event.issue.title }}"
-              ARGS=($CMD)
-            elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
-              CMD="${{ github.event.comment.body }}"
-              ARGS=($CMD)
+        id: ref
+        run: |
+          if [[ "${{ github.event_name }}" == "issues" ]]; then
+            CMD="${{ github.event.issue.title }}"
+            ARGS=($CMD)
+          elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            CMD="${{ github.event.comment.body }}"
+            ARGS=($CMD)
+          else
+            echo "Trigger no soportado"
+            exit 1
+          fi
+          
+          if [[ "${ARGS[0]}" == "deploy" ]]; then
+            if [[ ${#ARGS[@]} -eq 2 ]]; then
+              REF="${ARGS[1]}"
+              PROFILE="default"
+              TYPE="branch"
+            elif [[ ${#ARGS[@]} -eq 3 && "${ARGS[1]}" == "tag" ]]; then
+              REF="${ARGS[2]}"
+              PROFILE="default"
+              TYPE="tag"
             else
-              echo "Trigger no soportado"
+              echo "Uso: deploy <rama> o deploy tag <nombre-tag>"
               exit 1
             fi
-            
-            if [[ "${ARGS[0]}" == "deploy" ]]; then
-              if [[ ${#ARGS[@]} -eq 2 ]]; then
-                REF="${ARGS[1]}"
-                PROFILE="default"
-                TYPE="branch"
-              elif [[ ${#ARGS[@]} -eq 3 && "${ARGS[1]}" == "tag" ]]; then
-                REF="${ARGS[2]}"
-                PROFILE="default"
-                TYPE="tag"
-              else
-                echo "Uso: deploy <rama> o deploy tag <nombre-tag>"
-                exit 1
-              fi
-            elif [[ "${ARGS[0]}" == "deploy-pre" ]]; then
-              if [[ ${#ARGS[@]} -eq 1 ]]; then
-                if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
-                  PR_URL="${{ github.event.issue.pull_request.url }}"
-                  if [[ -n "$PR_URL" ]]; then
-                    if [[ -n "${{ steps.pr_branch.outputs.branch }}" ]]; then
-                      REF="${{ steps.pr_branch.outputs.branch }}"
-                    elif [[ -n "${{ github.head_ref }}" ]]; then
-                      REF="${{ github.head_ref }}"
-                    else
-                      echo "No se pudo determinar la rama del PR"
-                      exit 1
-                    fi
-                    PROFILE="pre"
-                    TYPE="branch"
+          elif [[ "${ARGS[0]}" == "deploy-pre" ]]; then
+            if [[ ${#ARGS[@]} -eq 1 ]]; then
+              if [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+                PR_URL="${{ github.event.issue.pull_request.url }}"
+                if [[ -n "$PR_URL" ]]; then
+                  if [[ -n "${{ steps.pr_branch.outputs.branch }}" ]]; then
+                    REF="${{ steps.pr_branch.outputs.branch }}"
+                  elif [[ -n "${{ github.head_ref }}" ]]; then
+                    REF="${{ github.head_ref }}"
                   else
-                    echo "deploy-pre solo se puede usar en comentarios de PR"
+                    echo "No se pudo determinar la rama del PR"
                     exit 1
                   fi
+                  PROFILE="pre"
+                  TYPE="branch"
                 else
                   echo "deploy-pre solo se puede usar en comentarios de PR"
                   exit 1
                 fi
               else
-                echo "deploy-pre no admite parámetros"
+                echo "deploy-pre solo se puede usar en comentarios de PR"
                 exit 1
               fi
             else
-              echo "Comando no soportado"
+              echo "deploy-pre no admite parámetros"
               exit 1
             fi
-            
-            echo "ref=$REF" >> $GITHUB_OUTPUT
-            echo "profile=$PROFILE" >> $GITHUB_OUTPUT
-            echo "type=$TYPE" >> $GITHUB_OUTPUT
+          else
+            echo "Comando no soportado"
+            exit 1
+          fi
+          
+          echo "ref=$REF" >> $GITHUB_OUTPUT
+          echo "profile=$PROFILE" >> $GITHUB_OUTPUT
+          echo "type=$TYPE" >> $GITHUB_OUTPUT
 
       - name: Checkout indicated ref (branch or tag)
         uses: actions/checkout@v4
