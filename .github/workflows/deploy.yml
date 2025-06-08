@@ -73,6 +73,8 @@ jobs:
         run: |
           docker compose build
           docker push ${{ secrets.DOCKERHUB_USER }}/codefm:latest
+        env:
+          INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
 
       - name: Copy docker-compose.yml to Synology
         uses: appleboy/scp-action@v0.1.7
