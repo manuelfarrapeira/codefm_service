@@ -5,11 +5,11 @@
     <parent>
         <groupId>org.web</groupId>
         <artifactId>codeFm</artifactId>
-        <version>1.4.0</version>
+        <version>1.4.1</version>
     </parent>
     <groupId>org.web.codefm</groupId>
     <artifactId>codefm-domain</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.1</version>
     <name>domain</name>
     <description>domain</description>
     <url/>

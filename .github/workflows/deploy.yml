@@ -51,14 +51,14 @@ jobs:
             TYPE="branch"
           elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
             PR_URL="${{ github.event.issue.pull_request.url }}"
-            CMD="${{ github.event.comment.body }}"
-            ARGS=($CMD)
-            if [[ ${#ARGS[@]} -ne 1 || "${ARGS[0]}" != "deploy" ]]; then
-              echo "En un PR solo puedes usar: deploy"
-              exit 1
-            fi
             if [[ -n "$PR_URL" ]]; then
-              # Es un comentario en un PR
+              # Comentario en PR
+              CMD="${{ github.event.comment.body }}"
+              ARGS=($CMD)
+              if [[ ${#ARGS[@]} -ne 1 || "${ARGS[0]}" != "deploy" ]]; then
+                echo "En un PR solo puedes usar: deploy"
+                exit 1
+              fi
               if [[ -n "${{ steps.pr_branch.outputs.branch }}" ]]; then
                 REF="${{ steps.pr_branch.outputs.branch }}"
               elif [[ -n "${{ github.head_ref }}" ]]; then
@@ -70,8 +70,18 @@ jobs:
               PROFILE="pre"
               TYPE="branch"
             else
-              # Es un comentario en una issue
-              REF="${{ github.event.issue.title }}"
+              # Comentario en issue
+              CMD="${{ github.event.comment.body }}"
+              ARGS=($CMD)
+              if [[ ${#ARGS[@]} -ne 2 ]]; then
+                echo "En una issue debes usar: deploy nombre-rama"
+                exit 1
+              fi
+              if [[ "${ARGS[0]}" != "deploy" ]]; then
+                echo "Comando no soportado"
+                exit 1
+              fi
+              REF="${ARGS[1]}"
               PROFILE="default"
               TYPE="branch"
             fi
