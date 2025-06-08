@@ -137,11 +137,21 @@ jobs:
           script: |
             cd ~/codefm
             if [ -f docker-compose-pre.yml ]; then
+              echo "Desplegando con perfil PRE"
               echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml pull
               echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml up -d --remove-orphans
+              echo "Variables de entorno:"
+              cat .env
+              echo "Logs de arranque del contenedor:"
+              sudo docker logs $(sudo docker ps -q --filter "ancestor=mfarrapeira/codefm-pre:latest") --tail 50 || true
             else
+              echo "Desplegando con perfil DEFAULT"
               echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
               echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose up -d --remove-orphans
+              echo "Variables de entorno:"
+              cat .env
+              echo "Logs de arranque del contenedor:"
+              sudo docker logs $(sudo docker ps -q --filter "ancestor=mfarrapeira/codefm:latest") --tail 50 || true
             fi
 
       - name: Clean up unused images on Synology
