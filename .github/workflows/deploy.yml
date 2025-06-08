@@ -162,7 +162,7 @@ jobs:
           script: |
             export PATH=$PATH:/usr/local/bin
             cd ~/codefm
-            if [ -f docker-compose-pre.yml ]; then
+            if [ "${{ steps.ref.outputs.profile }}" = "pre" ]; then
               echo "Desplegando con perfil PRE"
               echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml pull
               echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml up -d
