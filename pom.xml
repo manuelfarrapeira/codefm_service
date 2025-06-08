@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.web</groupId>
     <artifactId>codeFm</artifactId>
-    <version>1.4.3</version>
+    <version>1.4.4</version>
     <name>codefm</name>
     <description>codefm</description>
     <packaging>pom</packaging>
