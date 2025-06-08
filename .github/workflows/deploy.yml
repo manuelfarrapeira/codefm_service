@@ -43,7 +43,6 @@ jobs:
           TYPE="branch"
 
           if [[ ${#ARGS[@]} -eq 1 ]]; then
-            # Solo "deploy"
             if [[ -n "${{ steps.pr_branch.outputs.branch }}" ]]; then
               REF="${{ steps.pr_branch.outputs.branch }}"
             elif [[ -n "${{ github.head_ref }}" ]]; then
@@ -86,13 +85,25 @@ jobs:
         env:
           INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
 
-      - name: Copy docker-compose.yml to Synology
+      - name: Create .env file
+        run: echo "INFISICAL_TOKEN=${{ secrets.INFISICAL_TOKEN }}" > .env
+
+      - name: Copy docker-compose.yml
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SYNOLOGY_HOST }}
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
           source: "docker-compose.yml"
+          target: "~/codefm"
+
+      - name: Copy .env
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SYNOLOGY_HOST }}
+          username: ${{ secrets.SYNOLOGY_USER }}
+          password: ${{ secrets.SYNOLOGY_PASS }}
+          source: ".env"
           target: "~/codefm"
 
       - name: Create logs folder on Synology
