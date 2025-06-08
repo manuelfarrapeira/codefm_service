@@ -136,7 +136,7 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: mkdir -p ~/codefm/logs
 
-      - name: Deploy on Synology via SSH
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SYNOLOGY_HOST }}
