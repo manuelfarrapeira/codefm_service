@@ -47,22 +47,31 @@ jobs:
             PROFILE="default"
             TYPE="branch"
           elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            PR_URL="${{ github.event.issue.pull_request.url }}"
             CMD="${{ github.event.comment.body }}"
             ARGS=($CMD)
             if [[ ${#ARGS[@]} -ne 1 || "${ARGS[0]}" != "deploy" ]]; then
               echo "En un PR solo puedes usar: deploy"
               exit 1
             fi
-            if [[ -n "${{ steps.pr_branch.outputs.branch }}" ]]; then
-              REF="${{ steps.pr_branch.outputs.branch }}"
-            elif [[ -n "${{ github.head_ref }}" ]]; then
-              REF="${{ github.head_ref }}"
+            if [[ -n "$PR_URL" ]]; then
+              # Es un comentario en un PR
+              if [[ -n "${{ steps.pr_branch.outputs.branch }}" ]]; then
+                REF="${{ steps.pr_branch.outputs.branch }}"
+              elif [[ -n "${{ github.head_ref }}" ]]; then
+                REF="${{ github.head_ref }}"
+              else
+                echo "No se pudo determinar la rama del PR"
+                exit 1
+              fi
+              PROFILE="pre"
+              TYPE="branch"
             else
-              echo "No se pudo determinar la rama del PR"
-              exit 1
+              # Es un comentario en una issue
+              REF="${{ github.event.issue.title }}"
+              PROFILE="default"
+              TYPE="branch"
             fi
-            PROFILE="pre"
-            TYPE="branch"
           else
             echo "Trigger no soportado"
             exit 1
@@ -162,3 +171,4 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           port: 22
           script: |
+            docker image prune -af
