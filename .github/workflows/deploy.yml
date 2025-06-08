@@ -94,6 +94,7 @@ jobs:
           echo "ref=$REF" >> $GITHUB_OUTPUT
           echo "profile=$PROFILE" >> $GITHUB_OUTPUT
           echo "type=$TYPE" >> $GITHUB_OUTPUT
+          echo "Perfil seleccionado: $PROFILE"
 
       - name: Checkout indicated ref (branch or tag)
         uses: actions/checkout@v4
@@ -158,6 +159,7 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           port: 22
           script: |
+            export PATH=$PATH:/usr/local/bin
             cd ~/codefm
             if [ -f docker-compose-pre.yml ]; then
               echo "Desplegando con perfil PRE"
@@ -166,7 +168,7 @@ jobs:
               echo "Variables de entorno:"
               cat .env
               echo "Logs de arranque del contenedor:"
-              sudo docker logs $(sudo docker ps -q --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm-pre:latest") --tail 50 || true
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker logs $(echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker ps -q --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm-pre:latest") --tail 50 || true
             else
               echo "Desplegando con perfil DEFAULT"
               echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
@@ -174,7 +176,7 @@ jobs:
               echo "Variables de entorno:"
               cat .env
               echo "Logs de arranque del contenedor:"
-              sudo docker logs $(sudo docker ps -q --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm:latest") --tail 50 || true
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker logs $(echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker ps -q --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm:latest") --tail 50 || true
             fi
 
       - name: Clean up unused images and containers on Synology
