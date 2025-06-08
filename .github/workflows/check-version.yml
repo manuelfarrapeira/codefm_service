@@ -49,15 +49,19 @@ jobs:
           SOURCE_VERSION="${{ steps.source_version.outputs.version }}"
           echo "Master version: $MASTER_VERSION"
           echo "Source version: $SOURCE_VERSION"
+          if [[ "$SOURCE_VERSION" == *-SNAPSHOT ]]; then
+            echo "ERROR: The version in the source branch (**$SOURCE_VERSION**) must NOT be a SNAPSHOT. Please set a release version before merging."
+            exit 1
+          fi
           if [ "$(printf '%s\n%s' "$MASTER_VERSION" "$SOURCE_VERSION" | sort -V | head -n1)" = "$SOURCE_VERSION" ]; then
             echo "ERROR: The version in the source branch (**$SOURCE_VERSION**) must be greater than the version in master (**$MASTER_VERSION**). Please increase the version before merging."
             exit 1
           fi
 
-      - name: Comment on PR if version is not greater
+      - name: Comment on PR if version is not valid
         if: failure()
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            :warning: The version in the source branch (**${{ steps.source_version.outputs.version }}**) must be greater than the version in `master` (**${{ steps.master_version.outputs.version }}**). Please increase the version before merging.
+            :warning: The version in the source branch (**${{ steps.source_version.outputs.version }}**) must be **greater** than the version in `master` (**${{ steps.master_version.outputs.version }}**) **and must NOT be a SNAPSHOT**. Please set a release version before merging.
