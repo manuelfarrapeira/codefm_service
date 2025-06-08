@@ -9,7 +9,7 @@ services:
       - "8081:8080"
     environment:
       - profile=prod
-      - INFISICAL_TOKEN=${INFISICAL_TOKEN}
+      - INFISICAL_TOKEN=st.378ff8e3-fc74-44a2-9867-3c27af45736c.d276c6a534321848e88fff5743c4036e.dafd369933b4f999dc6cd48105e3c87e
       - INFISICAL_API_URL=http://infisical-server:8080
     logging:
       driver: "json-file"
