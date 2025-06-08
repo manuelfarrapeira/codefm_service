@@ -1,5 +1,8 @@
 name: Deploy to Synology Container Manager
 
+permissions:
+  pull-requests: write
+
 on:
   issues:
     types: [opened]
@@ -172,12 +175,12 @@ jobs:
           port: 22
           script: |
             if [ "${{ steps.ref.outputs.profile }}" = "pre" ]; then
-              # Elimina contenedores e imágenes antiguas de codefm-pre
-              docker ps -a --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm-pre:latest" -q | xargs -r docker rm -f
+              # Solo elimina el contenedor codefm-pre
+              docker ps -a --filter "name=^/codefm-pre$" -q | xargs -r docker rm -f
               docker images "${{ secrets.DOCKERHUB_USER }}/codefm-pre" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r docker rmi -f
             else
-              # Elimina contenedores e imágenes antiguas de codefm (default)
-              docker ps -a --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm:latest" -q | xargs -r docker rm -f
+              # Solo elimina el contenedor codefm
+              docker ps -a --filter "name=^/codefm$" -q | xargs -r docker rm -f
               docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r docker rmi -f
             fi
 
