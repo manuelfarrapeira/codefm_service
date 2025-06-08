@@ -167,16 +167,12 @@ jobs:
               echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml up -d
               echo "Variables de entorno:"
               cat .env
-              echo "Logs de arranque del contenedor:"
-              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker logs $(echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker ps -q --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm-pre:latest") --tail 50 || true
             else
               echo "Desplegando con perfil DEFAULT"
-              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose pull
-              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose up -d --remove-orphans
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose.yml pull
+              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose.yml up -d --remove-orphans
               echo "Variables de entorno:"
               cat .env
-              echo "Logs de arranque del contenedor:"
-              echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker logs $(echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker ps -q --filter "ancestor=${{ secrets.DOCKERHUB_USER }}/codefm:latest") --tail 50 || true
             fi
 
       - name: Clean up unused images and containers on Synology
