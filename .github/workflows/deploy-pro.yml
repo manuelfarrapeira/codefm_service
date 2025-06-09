@@ -12,8 +12,8 @@ on:
 jobs:
   deploy-default:
     if: |
-      (github.event_name == 'issues' && startsWith(github.event.issue.title, 'deploy')) ||
-      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, 'deploy'))
+      (github.event_name == 'issues' && startsWith(github.event.issue.title, 'deploy-pro')) ||
+      (github.event_name == 'issue_comment' && startsWith(github.event.comment.body, 'deploy-pro'))
     runs-on: ubuntu-latest
     steps:
       - name: Extract ref to deploy (branch or tag)
@@ -30,7 +30,7 @@ jobs:
             exit 1
           fi
 
-          if [[ "${ARGS[0]}" == "deploy" ]]; then
+          if [[ "${ARGS[0]}" == "deploy-pro" ]]; then
             if [[ ${#ARGS[@]} -eq 2 ]]; then
               REF="${ARGS[1]}"
               TYPE="branch"
@@ -38,7 +38,7 @@ jobs:
               REF="${ARGS[2]}"
               TYPE="tag"
             else
-              echo "Uso: deploy <rama> o deploy tag <nombre-tag>"
+              echo "Uso: deploy-pro <rama> o deploy-pro tag <nombre-tag>"
               exit 1
             fi
           else
