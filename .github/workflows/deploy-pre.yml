@@ -85,7 +85,7 @@ jobs:
             echo "Variables de entorno:"
             cat .env
 
-      - name: Clean up PRE images and containers
+      - name: Clean up images and containers
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SYNOLOGY_HOST }}
@@ -94,8 +94,8 @@ jobs:
           port: 22
           script: |
             export PATH=$PATH:/usr/local/bin
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S docker ps -a --filter "name=^/codefm-pre$" -q | xargs -r sudo docker rm -f
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S docker images "${{ secrets.DOCKERHUB_USER }}/codefm-pre" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r sudo docker rmi -f
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S docker ps -a --filter "name=^/codefm-pre" -q | xargs -r sudo docker rm -f
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r sudo docker rmi -f
 
       - name: Comment on PR if deployment was successful
         if: success()
