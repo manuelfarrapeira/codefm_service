@@ -50,7 +50,7 @@ jobs:
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
           source: "docker-compose-pre.yml"
-          target: "~/codefm"
+          target: "~/codefm-pre"
 
       - name: Copy .env
         uses: appleboy/scp-action@v0.1.7
@@ -59,7 +59,7 @@ jobs:
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
           source: ".env"
-          target: "~/codefm"
+          target: "~/codefm-pre"
 
       - name: Create logs folder on Synology
         uses: appleboy/ssh-action@v1
@@ -67,7 +67,7 @@ jobs:
           host: ${{ secrets.SYNOLOGY_HOST }}
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
-          script: mkdir -p ~/codefm/logs
+          script: mkdir -p ~/codefm-pre/logs
 
       - name: Deploy PRE via SSH
         uses: appleboy/ssh-action@v1
@@ -78,7 +78,7 @@ jobs:
           port: 22
           script: |
             export PATH=$PATH:/usr/local/bin
-            cd ~/codefm
+            cd ~/codefm-pre
             echo "Desplegando con perfil PRE"
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml pull
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose-pre.yml up -d
