@@ -43,7 +43,7 @@ jobs:
             fi
           else
             echo "Comando no soportado"
-            exit 1
+            exit 0
           fi
 
           echo "ref=$REF" >> $GITHUB_OUTPUT

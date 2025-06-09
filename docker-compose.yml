@@ -1,6 +1,7 @@
+version: "3.8"
 services:
   codefm:
-    container_name: codefm
+    container_name: codefm-pre
     build:
       context: .
       dockerfile: Dockerfile
