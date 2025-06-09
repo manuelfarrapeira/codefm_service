@@ -99,6 +99,18 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: mkdir -p ~/codefm/logs
 
+
+      - name: Clean up DEFAULT images and containers
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SYNOLOGY_HOST }}
+          username: ${{ secrets.SYNOLOGY_USER }}
+          password: ${{ secrets.SYNOLOGY_PASS }}
+          port: 22
+          script: |
+            docker ps -a --filter "name=^/codefm$" -q | xargs -r docker rm -f
+            docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r docker rmi -f
+
       - name: Deploy DEFAULT via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -115,16 +127,6 @@ jobs:
             echo "Variables de entorno:"
             cat .env
 
-      - name: Clean up DEFAULT images and containers
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SYNOLOGY_HOST }}
-          username: ${{ secrets.SYNOLOGY_USER }}
-          password: ${{ secrets.SYNOLOGY_PASS }}
-          port: 22
-          script: |
-            docker ps -a --filter "name=^/codefm$" -q | xargs -r docker rm -f
-            docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r docker rmi -f
 
       - name: Comment on issue if deployment was successful
         if: success()
