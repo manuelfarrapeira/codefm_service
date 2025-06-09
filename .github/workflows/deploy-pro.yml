@@ -139,3 +139,16 @@ jobs:
               issue_number: context.payload.issue.number,
               body: "✅ Deployment completed successfully."
             });
+
+      - name: Comment on issue if deployment failed
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: "❌ Error en el despliegue PRE."
+            });
