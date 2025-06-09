@@ -136,5 +136,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: "✅ Deployment DEFAULT completed successfully."
+              body: "✅ Deployment completed successfully."
             });
