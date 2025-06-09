@@ -99,18 +99,6 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           script: mkdir -p ~/codefm/logs
 
-      - name: Clean up images and containers
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SYNOLOGY_HOST }}
-          username: ${{ secrets.SYNOLOGY_USER }}
-          password: ${{ secrets.SYNOLOGY_PASS }}
-          port: 22
-          script: |
-            export PATH=$PATH:/usr/local/bin
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S docker ps -a --filter "name=^/codefm" -q | xargs -r sudo docker rm -f
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r sudo docker rmi -f
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -126,6 +114,18 @@ jobs:
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose.yml up -d --remove-orphans
             echo "Variables de entorno:"
             cat .env
+
+      - name: Clean up images and containers
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SYNOLOGY_HOST }}
+          username: ${{ secrets.SYNOLOGY_USER }}
+          password: ${{ secrets.SYNOLOGY_PASS }}
+          port: 22
+          script: |
+            export PATH=$PATH:/usr/local/bin
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S docker ps -a --filter "name=^/codefm" -q | xargs -r sudo docker rm -f
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r sudo docker rmi -f
 
 
       - name: Comment on issue if deployment was successful
@@ -151,5 +151,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: "❌ Error en el despliegue PRE."
+              body: "❌ Error en el despliegue."
             });
