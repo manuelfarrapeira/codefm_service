@@ -110,22 +110,11 @@ jobs:
             export PATH=$PATH:/usr/local/bin
             cd ~/codefm
             echo "Desplegando con perfil DEFAULT"
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose.yml down --rmi all
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose.yml pull
             echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker-compose -f docker-compose.yml up -d --remove-orphans
             echo "Variables de entorno:"
             cat .env
-
-      - name: Clean up images and containers
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SYNOLOGY_HOST }}
-          username: ${{ secrets.SYNOLOGY_USER }}
-          password: ${{ secrets.SYNOLOGY_PASS }}
-          port: 22
-          script: |
-            export PATH=$PATH:/usr/local/bin
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker ps -a --filter "name=^/codefm" -q | xargs -r sudo docker rm -f
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r sudo docker rmi -f
 
       - name: Comment on issue if deployment was successful
         if: success()
