@@ -124,9 +124,8 @@ jobs:
           port: 22
           script: |
             export PATH=$PATH:/usr/local/bin
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S docker ps -a --filter "name=^/codefm" -q | xargs -r sudo docker rm -f
-            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r sudo docker rmi -f
-
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker ps -a --filter "name=^/codefm" -q | xargs -r sudo docker rm -f
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S /usr/local/bin/docker images "${{ secrets.DOCKERHUB_USER }}/codefm" --format "{{.Repository}}:{{.Tag}}" | grep -v ":latest" | xargs -r sudo docker rmi -f
 
       - name: Comment on issue if deployment was successful
         if: success()
