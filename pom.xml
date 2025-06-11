@@ -48,6 +48,7 @@
         <module>codefm-api</module>
         <module>codefm-boot</module>
         <module>jacoco-report-aggregate</module>
+        <module>karate-test</module>
     </modules>
 
     <dependencyManagement>
