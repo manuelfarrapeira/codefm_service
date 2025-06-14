@@ -1,0 +1,83 @@
+name: Karate Tests
+
+permissions:
+  pull-requests: write
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run tests against'
+        required: true
+        default: 'main'
+        type: string
+      pr_number:
+        description: 'PR number to comment results on (optional)'
+        required: false
+        type: string
+  pull_request:
+    branches:
+      - master
+      - develop
+
+jobs:
+  karate-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch || github.ref }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Create .env.secret file
+        run: |
+          echo "INFISICAL_TOKEN=${{ secrets.INFISICAL_TOKEN }}" > karate-test/src/test/resources/.env.secret
+
+      - name: Run Karate Tests
+        id: run-tests
+        run: |
+          cd karate-test
+          mvn clean test "-Dkarate.options=--tags @Regresion" | tee test-output.log
+          echo "TEST_SUMMARY=$(grep -o "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" test-output.log | tail -1)" >> $GITHUB_OUTPUT 
+
+      - name: Comment PR with test results
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const testSummary = '${{ steps.run-tests.outputs.TEST_SUMMARY }}';
+            let prNumber = null;
+            
+            // Obtener número de PR según el tipo de ejecución
+            if (context.payload.pull_request) {
+              prNumber = context.payload.pull_request.number;
+            } else if ('${{ github.event.inputs.pr_number }}') {
+              prNumber = '${{ github.event.inputs.pr_number }}';
+            }
+            
+            // Preparar el mensaje con formato e iconos
+            const failureMatch = testSummary.match(/Failures: (\d+)/);
+            const failures = failureMatch ? parseInt(failureMatch[1]) : 0;
+            const statusIcon = failures > 0 ? '❌ ' : '✅ ';
+            const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}`;
+            
+            // Comentar en la PR si tenemos un número
+            if (prNumber) {
+              github.rest.issues.createComment({
+                issue_number: parseInt(prNumber),
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: formattedMessage
+              });
+              console.log(`Commented on PR #${prNumber}: ${testSummary}`);
+            } else {
+              console.log('Test Summary: ' + formattedMessage);
+            }
