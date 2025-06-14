@@ -17,7 +17,9 @@ on:
         required: false
         type: string
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
+      - develop
 
 jobs:
   karate-tests:
@@ -64,7 +66,7 @@ jobs:
             // Preparar el mensaje con formato e iconos
             const failureMatch = testSummary.match(/Failures: (\d+)/);
             const failures = failureMatch ? parseInt(failureMatch[1]) : 0;
-            const statusIcon = failures > 0 ? '❌ FAIL' : '✅ OK';
+            const statusIcon = failures > 0 ? '❌ ' : '✅ ';
             const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}`;
             
             // Comentar en la PR si tenemos un número
