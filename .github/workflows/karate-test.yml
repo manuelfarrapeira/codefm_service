@@ -32,7 +32,7 @@ jobs:
       - name: Run Karate Tests
         run: |
           cd karate-test
-          mvn clean test -Dtest=KarateTestRunner
+          mvn clean test "-Dkarate.options=--tags @Regresion"
 
       - name: Upload Test Results
         if: always()
