@@ -32,7 +32,7 @@ jobs:
       - name: Run Karate Tests
         run: |
           cd karate-test
-          ../mvnw clean test -Dtest=KarateTestRunner
+          mvn clean test -Dtest=KarateTestRunner
 
       - name: Upload Test Results
         if: always()
