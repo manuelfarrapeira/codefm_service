@@ -40,5 +40,22 @@ jobs:
         run: |
           cd karate-test
           mvn clean test "-Dkarate.options=--tags @Regresion" | tee test-output.log
-          echo "TEST_SUMMARY=$(grep -A1 "Tests run:" test-output.log | tr '\n' ' ')" >> $GITHUB_OUTPUT 
-      
+          echo "TEST_SUMMARY=$(grep -o "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" test-output.log | tail -1)" >> $GITHUB_OUTPUT 
+
+      - name: Comment PR with test results
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request ? context.payload.pull_request.number : 
+                      (context.payload.inputs ? context.payload.inputs.branch : null);
+            
+            if (pr) {
+              github.rest.issues.createComment({
+                issue_number: typeof pr === 'number' ? pr : parseInt(pr),
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `${process.env.TEST_SUMMARY}`
+              });
+            }
