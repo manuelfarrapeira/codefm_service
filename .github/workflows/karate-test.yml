@@ -52,19 +52,20 @@ jobs:
       - name: Publish Test Results
         if: always()
         run: |
-          mkdir -p test-results
-          cp -r karate-test/target/karate-reports/* test-results/
+          mkdir -p docs
+          cp -r karate-test/target/karate-reports/* docs/
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add test-results
+          git add docs
           git commit -m "Add test results" || echo "No changes to commit"
           git push
-          
+
           # Crear archivo con URL para GitHub Pages
-          echo "<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"0; url=karate-summary.html\"></head></html>" > test-results/index.html
-          git add test-results/index.html
+          echo "<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"0; url=karate-summary.html\"></head></html>" > docs/index.html
+          git add docs/index.html
           git commit -m "Add index redirect" || echo "No changes to commit"
           git push
+      
 
       - name: Get Repository Name
         id: repo-name
@@ -77,11 +78,12 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## 🧪 Karate Test Results
-            
+
             ${{ steps.run-tests.outputs.TEST_SUMMARY }}
-            
+
             ### 📊 Detailed Reports
-            
-            View the [Test Report](https://github.com/${{ github.repository_owner }}/${{ steps.repo-name.outputs.REPO_NAME }}/blob/${{ github.event.pull_request.head.ref }}/test-results/index.html)
-            
+
+            View the [Test Report](https://${{ github.repository_owner }}.github.io/${{ steps.repo-name.outputs.REPO_NAME }})
+
             You can also download the full report from the workflow artifacts.
+      
