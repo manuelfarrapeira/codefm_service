@@ -6,9 +6,9 @@
     <parent>
         <groupId>org.web</groupId>
         <artifactId>codeFm</artifactId>
-        <version>1.5.0-SNAPSHOT</version>
+        <version>1.6.0-SNASPHOT</version>
     </parent>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.6.0-SNASPHOT</version>
     <artifactId>karate-test</artifactId>
 
     <properties>
