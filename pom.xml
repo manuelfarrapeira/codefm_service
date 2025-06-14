@@ -32,11 +32,13 @@
         <lombok.version>1.18.30</lombok.version>
         <spring-doc.version>2.1.0</spring-doc.version>
         <sonar.exclusions>
-            **/codefm/api/controller/**,**/config/**,**/domain/exception/**,**/generated/**,**/*$*$*,**/karate-test/**/*
+            **/codefm/api/controller/**,**/config/**,**/domain/exception/**,**/generated/**,**/*$*$*,**/KarateTestRunner.java,**/IndividualKarateTestRunner.java
         </sonar.exclusions>
-        <sonar.coverage.exclusions>**/codefm/api/controller/**,**/config/**,**/domain/exception/**,**/karate-test/**/*
+        <sonar.coverage.exclusions>
+            **/codefm/api/controller/**,**/config/**,**/domain/exception/**,**/KarateTestRunner.java,**/IndividualKarateTestRunner.java
         </sonar.coverage.exclusions>
-        <sonar.jacoco.excludes>**/codefm/api/controller/**,**/config/**,**/domain/exception/**,**/karate-test/**/*
+        <sonar.jacoco.excludes>
+            **/codefm/api/controller/**,**/config/**,**/domain/exception/**,**/KarateTestRunner.java,**/IndividualKarateTestRunner.java
         </sonar.jacoco.excludes>
         <sonar.coverage.jacoco.xmlReportPaths>
             ${project.basedir}/jacoco-report-aggregate/target/site/jacoco-aggregate/jacoco.xml
