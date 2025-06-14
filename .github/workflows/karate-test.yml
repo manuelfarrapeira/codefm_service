@@ -62,8 +62,9 @@ jobs:
             }
             
             // Preparar el mensaje con formato e iconos
-            const hasFailures = testSummary.includes('Failures: 0') && testSummary.includes('Errors: 0');
-            const statusIcon = hasFailures ? '❌ FAIL' : '✅ OK';
+            const failureMatch = testSummary.match(/Failures: (\d+)/);
+            const failures = failureMatch ? parseInt(failureMatch[1]) : 0;
+            const statusIcon = failures > 0 ? '❌ FAIL' : '✅ OK';
             const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}`;
             
             // Comentar en la PR si tenemos un número
