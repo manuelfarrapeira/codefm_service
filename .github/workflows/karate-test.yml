@@ -44,17 +44,7 @@ jobs:
         run: |
           cd karate-test
           mvn clean test "-Dkarate.options=--tags @Regresion" | tee test-output.log
-          echo "TEST_SUMMARY=$(grep -o "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" test-output.log | tail -1)" >> $GITHUB_OUTPUT
-          
-          # Extraer y formatear los resultados detallados
-          echo "DETAILED_RESULTS=$(awk '
-            /feature: classpath:/ {
-              if (feature) print "----------"; 
-              feature=$0; 
-              getline; getline; getline; getline; 
-              print feature " | scenarios: " $2 " | passed: " $4 " | failed: " $6 " | time: " $8
-            }
-          ' test-output.log | tr '\n' '|')" >> $GITHUB_OUTPUT
+          echo "TEST_SUMMARY=$(grep -o "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" test-output.log | tail -1)" >> $GITHUB_OUTPUT 
 
       - name: Comment PR with test results
         uses: actions/github-script@v6
@@ -62,7 +52,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const testSummary = '${{ steps.run-tests.outputs.TEST_SUMMARY }}';
-            const detailedResults = '${{ steps.run-tests.outputs.DETAILED_RESULTS }}'.split('|').join('\n');
             let prNumber = null;
             
             // Obtener número de PR según el tipo de ejecución
@@ -78,10 +67,9 @@ jobs:
                 issue_number: parseInt(prNumber),
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `${detailedResults}\n\n${testSummary}` || 'Test results not available'
+                body: testSummary || 'Test results not available'
               });
-              console.log(`Commented on PR #${prNumber}`);
+              console.log(`Commented on PR #${prNumber}: ${testSummary}`);
             } else {
               console.log('Test Summary: ' + testSummary);
-              console.log('Detailed Results:\n' + detailedResults);
             }
