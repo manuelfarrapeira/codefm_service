@@ -52,24 +52,17 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const testSummary = '${{ steps.run-tests.outputs.TEST_SUMMARY }}';
-            let prNumber = null;
             
-            // Obtener número de PR según el tipo de ejecución
+            // Para ejecuciones de PR
             if (context.payload.pull_request) {
-              prNumber = context.payload.pull_request.number;
-            } else if ('${{ github.event.inputs.pr_number }}') {
-              prNumber = '${{ github.event.inputs.pr_number }}';
-            }
-            
-            // Comentar en la PR si tenemos un número
-            if (prNumber) {
               github.rest.issues.createComment({
-                issue_number: parseInt(prNumber),
+                issue_number: context.payload.pull_request.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: testSummary || 'Test results not available'
               });
-              console.log(`Commented on PR #${prNumber}: ${testSummary}`);
-            } else {
+            } 
+            // Para ejecuciones manuales, mostrar resultado en la consola
+            else {
               console.log('Test Summary: ' + testSummary);
             }
