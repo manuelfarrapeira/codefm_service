@@ -2,23 +2,17 @@
 Feature: Saludo autenticado
 
   Background:
-    * def username = 'karateuseradmin'
-    * def password = karate.get('karateuseradmin')
-    * def loginResult = call read('classpath:features/authenticate/auth.feature') { username: '#(username)', password: '#(password)' }
-    * def authCookie = loginResult.authCookie
-    * configure headers = { Cookie: '#(authCookie)' }
+    * configure headers = { Cookie: '#(authTokens.karateuseradmin)' }
     Given url baseHttpsUrl
 
-  Scenario: Usuario encontrado
+  Scenario Outline: Validar saludo de usuarios
     Given path '/saludo/hola'
-    And param usuario = 'mfarrapeira'
+    And param usuario = '<usuario>'
     When method GET
-    Then status 200
-    And match response == 'Hola Manuel Farrapeira Pérez'
+    Then status <status>
+    And match response == '<respuestaEsperada>'
 
-  Scenario: Usuario no encontrado
-    Given path '/saludo/hola'
-    And param usuario = 'usuario'
-    When method GET
-    Then status 200
-    And match response == 'Usuario no encontrado'
+    Examples:
+      | usuario     | respuestaEsperada            | status
+      | mfarrapeira | Hola Manuel Farrapeira Pérez | 200
+      | usuario     | Usuario no encontrado        | 200

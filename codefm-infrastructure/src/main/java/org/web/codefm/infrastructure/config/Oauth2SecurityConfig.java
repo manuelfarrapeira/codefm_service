@@ -60,9 +60,6 @@ public class Oauth2SecurityConfig {
             String tokenIssuer = token.getIssuer().toString();
             String expectedIssuer = issuerUri;
 
-            tokenIssuer = normalizeUrl(tokenIssuer);
-            expectedIssuer = normalizeUrl(expectedIssuer);
-
             if (!tokenIssuer.equals(expectedIssuer)) {
                 log.error("Issuer mismatch. Expected: {}, Found: {}", expectedIssuer, tokenIssuer);
                 return OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_issuer", "The issuer is invalid", null));
@@ -72,10 +69,6 @@ public class Oauth2SecurityConfig {
 
         jwtDecoder.setJwtValidator(withIssuer);
         return jwtDecoder;
-    }
-
-    private String normalizeUrl(String url) {
-        return url.replaceAll("/$", "").replace("https://", "http://");
     }
 
     /**

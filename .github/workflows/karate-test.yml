@@ -1,0 +1,53 @@
+name: Karate Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run tests against'
+        required: true
+        default: 'main'
+        type: string
+
+jobs:
+  karate-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.branch || github.ref }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Create .env.secret file
+        run: |
+          echo "INFISICAL_TOKEN=${{ secrets.INFISICAL_TOKEN }}" > karate-test/src/test/resources/.env.secret
+
+      - name: Run Karate Tests
+        run: |
+          cd karate-test
+          ../mvnw clean test -Dtest=KarateTestRunner
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: karate-test-results
+          path: karate-test/target/karate-reports/
+
+      - name: Publish Test Results
+        if: always()
+        run: |
+          mkdir -p test-results
+          cp -r karate-test/target/karate-reports/* test-results/
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add test-results
+          git commit -m "Add test results" || echo "No changes to commit"
+          git push
