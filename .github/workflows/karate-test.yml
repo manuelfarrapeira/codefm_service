@@ -61,15 +61,20 @@ jobs:
               prNumber = '${{ github.event.inputs.pr_number }}';
             }
             
+            // Preparar el mensaje con formato e iconos
+            const hasFailures = testSummary.includes('Failures: 0') && testSummary.includes('Errors: 0');
+            const statusIcon = hasFailures ? '❌ FAIL' : '✅ OK';
+            const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}`;
+            
             // Comentar en la PR si tenemos un número
             if (prNumber) {
               github.rest.issues.createComment({
                 issue_number: parseInt(prNumber),
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: testSummary || 'Test results not available'
+                body: formattedMessage
               });
               console.log(`Commented on PR #${prNumber}: ${testSummary}`);
             } else {
-              console.log('Test Summary: ' + testSummary);
+              console.log('Test Summary: ' + formattedMessage);
             }
