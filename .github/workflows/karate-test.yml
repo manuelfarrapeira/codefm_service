@@ -12,6 +12,10 @@ on:
         required: true
         default: 'main'
         type: string
+      pr_number:
+        description: 'PR number to comment results on (optional)'
+        required: false
+        type: string
   pull_request:
     branches: [ master ]
 
@@ -43,19 +47,29 @@ jobs:
           echo "TEST_SUMMARY=$(grep -o "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" test-output.log | tail -1)" >> $GITHUB_OUTPUT 
 
       - name: Comment PR with test results
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pr = context.payload.pull_request ? context.payload.pull_request.number : 
-                      (context.payload.inputs ? context.payload.inputs.branch : null);
+            const testSummary = '${{ steps.run-tests.outputs.TEST_SUMMARY }}';
+            let prNumber = null;
             
-            if (pr) {
+            // Obtener número de PR según el tipo de ejecución
+            if (context.payload.pull_request) {
+              prNumber = context.payload.pull_request.number;
+            } else if ('${{ github.event.inputs.pr_number }}') {
+              prNumber = '${{ github.event.inputs.pr_number }}';
+            }
+            
+            // Comentar en la PR si tenemos un número
+            if (prNumber) {
               github.rest.issues.createComment({
-                issue_number: typeof pr === 'number' ? pr : parseInt(pr),
+                issue_number: parseInt(prNumber),
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: `${process.env.TEST_SUMMARY}`
+                body: testSummary || 'Test results not available'
               });
+              console.log(`Commented on PR #${prNumber}: ${testSummary}`);
+            } else {
+              console.log('Test Summary: ' + testSummary);
             }
