@@ -12,6 +12,8 @@ on:
         required: true
         default: 'main'
         type: string
+  pull_request:
+    branches: [ master ]
 
 jobs:
   karate-tests:
@@ -34,9 +36,11 @@ jobs:
           echo "INFISICAL_TOKEN=${{ secrets.INFISICAL_TOKEN }}" > karate-test/src/test/resources/.env.secret
 
       - name: Run Karate Tests
+        id: run-tests
         run: |
           cd karate-test
-          mvn clean test "-Dkarate.options=--tags @Regresion"
+          mvn clean test "-Dkarate.options=--tags @Regresion" | tee test-output.log
+          echo "TEST_SUMMARY=$(grep -A1 "Tests run:" test-output.log | tr '\n' ' ')" >> $GITHUB_OUTPUT
 
       - name: Upload Test Results
         if: always()
@@ -55,3 +59,29 @@ jobs:
           git add test-results
           git commit -m "Add test results" || echo "No changes to commit"
           git push
+          
+          # Crear archivo con URL para GitHub Pages
+          echo "<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"0; url=karate-summary.html\"></head></html>" > test-results/index.html
+          git add test-results/index.html
+          git commit -m "Add index redirect" || echo "No changes to commit"
+          git push
+
+      - name: Get Repository Name
+        id: repo-name
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_OUTPUT
+
+      - name: Comment PR with Test Results
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## 🧪 Karate Test Results
+            
+            ${{ steps.run-tests.outputs.TEST_SUMMARY }}
+            
+            ### 📊 Detailed Reports
+            
+            View the [Test Report](https://github.com/${{ github.repository_owner }}/${{ steps.repo-name.outputs.REPO_NAME }}/blob/${{ github.event.pull_request.head.ref }}/test-results/index.html)
+            
+            You can also download the full report from the workflow artifacts.
