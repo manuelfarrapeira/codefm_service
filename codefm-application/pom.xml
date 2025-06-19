@@ -5,11 +5,11 @@
     <parent>
         <groupId>org.web</groupId>
         <artifactId>codeFm</artifactId>
-        <version>1.6.0-SNASPHOT</version>
+        <version>1.6.0</version>
     </parent>
     <groupId>org.web.codefm</groupId>
     <artifactId>codefm-application</artifactId>
-    <version>1.6.0-SNASPHOT</version>
+    <version>1.6.0</version>
     <name>application</name>
     <description>application</description>
     <url/>
