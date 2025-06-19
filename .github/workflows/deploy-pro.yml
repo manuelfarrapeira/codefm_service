@@ -79,6 +79,7 @@ jobs:
           host: ${{ secrets.SYNOLOGY_HOST }}
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
+          port: 33
           source: "docker-compose.yml"
           target: "~/codefm"
 
@@ -88,6 +89,7 @@ jobs:
           host: ${{ secrets.SYNOLOGY_HOST }}
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
+          port: 33
           source: ".env"
           target: "~/codefm"
 
@@ -97,6 +99,7 @@ jobs:
           host: ${{ secrets.SYNOLOGY_HOST }}
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
+          port: 33
           script: mkdir -p ~/codefm/logs
 
       - name: Deploy via SSH
@@ -105,7 +108,7 @@ jobs:
           host: ${{ secrets.SYNOLOGY_HOST }}
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
-          port: 22
+          port: 33
           script: |
             export PATH=$PATH:/usr/local/bin
             cd ~/codefm
