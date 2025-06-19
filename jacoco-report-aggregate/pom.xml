@@ -6,9 +6,9 @@
     <parent>
         <groupId>org.web</groupId>
         <artifactId>codeFm</artifactId>
-        <version>1.6.0-SNASPHOT</version>
+        <version>1.6.1</version>
     </parent>
-    <version>1.6.0-SNASPHOT</version>
+    <version>1.6.1</version>
     <artifactId>jacoco-report-aggregate</artifactId>
 
     <dependencies>
