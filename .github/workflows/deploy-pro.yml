@@ -1,4 +1,4 @@
-name: Deploy DEFAULT to Synology
+name: Deploy PRO
 
 permissions:
   issues: write

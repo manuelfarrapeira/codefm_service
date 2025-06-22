@@ -1,4 +1,4 @@
-name: Deploy PRE to Synology
+name: Deploy PRE
 
 permissions:
   pull-requests: write
