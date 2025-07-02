@@ -1,4 +1,4 @@
-name: Block Merge if Version is Not Increased
+name: Version Check
 
 on:
   pull_request:
