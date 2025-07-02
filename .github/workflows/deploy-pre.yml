@@ -2,6 +2,7 @@ name: Deploy PRE
 
 permissions:
   pull-requests: write
+  issues: write
 
 on:
   issue_comment:
@@ -9,20 +10,31 @@ on:
 
 jobs:
   deploy-pre:
-    if: github.event.issue.pull_request && startsWith(github.event.comment.body, 'deploy-pre')
+    if: startsWith(github.event.comment.body, 'deploy-pre')
     runs-on: ubuntu-latest
     steps:
-      - name: Get PR branch
-        id: pr_branch
+      - name: Parse command and get branch
+        id: parse_command
         run: |
-          PR_URL="${{ github.event.issue.pull_request.url }}"
-          BRANCH=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" $PR_URL | jq -r .head.ref)
-          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          COMMENT="${{ github.event.comment.body }}"
+          if [[ "$COMMENT" =~ ^deploy-pre[[:space:]]+([^[:space:]]+) ]]; then
+            BRANCH="${BASH_REMATCH[1]}"
+            echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+            echo "source=manual" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.issue.pull_request }}" != "" ]]; then
+            PR_URL="${{ github.event.issue.pull_request.url }}"
+            BRANCH=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" $PR_URL | jq -r .head.ref)
+            echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+            echo "source=pr" >> $GITHUB_OUTPUT
+          else
+            echo "branch=master" >> $GITHUB_OUTPUT
+            echo "source=issue" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Checkout PR branch
+      - name: Checkout branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.pr_branch.outputs.branch }}
+          ref: ${{ steps.parse_command.outputs.branch }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -89,28 +101,35 @@ jobs:
             echo "Variables de entorno:"
             cat .env
 
-      - name: Comment on PR if deployment was successful
+      - name: Comment if deployment was successful
         if: success()
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const branch = '${{ steps.parse_command.outputs.branch }}';
+            const source = '${{ steps.parse_command.outputs.source }}';
+            let message = `✅ Deployment PRE completed successfully from branch: **${branch}**`;
+            if (source === 'manual') {
+              message += ' (manually specified)';
+            }
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: "✅ Deployment PRE completed successfully."
+              body: message
             });
 
-      - name: Comment on PR if deployment failed
+      - name: Comment if deployment failed
         if: failure()
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const branch = '${{ steps.parse_command.outputs.branch }}';
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.issue.number,
-              body: "❌ Error en el despliegue PRE."
+              body: `❌ Error en el despliegue PRE desde la rama: **${branch}**`
             });
