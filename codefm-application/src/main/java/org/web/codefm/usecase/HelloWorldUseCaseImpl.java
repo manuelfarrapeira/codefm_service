@@ -5,9 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.web.codefm.domain.consul.EjemploConsul;
 import org.web.codefm.domain.entity.Usuario;
+import org.web.codefm.domain.repository.ReactorExecutorExampleRepository;
 import org.web.codefm.domain.repository.UsuarioRepository;
 import org.web.codefm.domain.service.HelloWorldService;
 import org.web.codefm.domain.usecase.HelloWorldUseCase;
+
+import java.util.List;
 
 
 @Slf4j
@@ -21,6 +24,8 @@ public class HelloWorldUseCaseImpl implements HelloWorldUseCase {
 
     private final EjemploConsul ejemploConsul;
 
+    private final ReactorExecutorExampleRepository reactorExecutorExampleRepository;
+
     @Override
     public String helloWorld(String usuario) {
 
@@ -28,7 +33,19 @@ public class HelloWorldUseCaseImpl implements HelloWorldUseCase {
 
         Usuario user = usuarioRepository.findByName(usuario);
 
+        List<String> result = reactorExecutorExampleRepository.getResult(getIds());
+
+        log.info("Result size: " + result.size());
+
         return helloWorldService.helloWorld(user);
     }
+
+
+    private List<Integer> getIds() {
+        return java.util.stream.IntStream.rangeClosed(1, 10000)
+                .boxed()
+                .toList();
+    }
+
 
 }

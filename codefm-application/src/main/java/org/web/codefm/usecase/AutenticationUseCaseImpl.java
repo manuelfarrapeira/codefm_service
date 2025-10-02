@@ -129,7 +129,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
         TokenResponse tokens = tokenResponse.getBody();
 
         ResponseCookie accessTokenCookie = ResponseCookie.from(ACCESS_TOKEN, tokens.getAccessToken())
-                .httpOnly(true).secure(true).path("/").maxAge(tokens.getExpiresIn()).sameSite(SAMESITE).build();
+                .httpOnly(true).secure(true).path("/").maxAge(43200).sameSite(SAMESITE).build();
         //secure(true) solo funcionará con https
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from(REFRESH_TOKEN, tokens.getRefreshToken())
