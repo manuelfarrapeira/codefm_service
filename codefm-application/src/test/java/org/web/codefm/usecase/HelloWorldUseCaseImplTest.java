@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.consul.EjemploConsul;
 import org.web.codefm.domain.entity.Usuario;
+import org.web.codefm.domain.repository.ReactorExecutorExampleRepository;
 import org.web.codefm.domain.repository.UsuarioRepository;
 import org.web.codefm.domain.service.HelloWorldService;
 
@@ -20,6 +21,9 @@ class HelloWorldUseCaseImplTest {
 
     @Mock
     UsuarioRepository usuarioRepository;
+
+    @Mock
+    ReactorExecutorExampleRepository reactorExecutorExampleRepository;
 
     @Mock
     EjemploConsul ejemploConsul;
