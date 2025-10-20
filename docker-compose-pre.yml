@@ -2,6 +2,7 @@ version: "3.8"
 services:
   codefm-pre:
     container_name: codefm-pre
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile
