@@ -37,12 +37,14 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Create .env.secret file
-        run: |
-          echo "INFISICAL_TOKEN=${{ secrets.INFISICAL_TOKEN }}" > karate-test/src/test/resources/.env.secret
+      #      - name: Create .env.secret file
+      #        run: |
+      #          echo "INFISICAL_TOKEN=${{ secrets.INFISICAL_TOKEN }}" > karate-test/src/test/resources/.env.secret
 
       - name: Run Karate Tests
         id: run-tests
+        env:
+          INFISICAL_TOKEN: ${{ secrets.INFISICAL_TOKEN }}
         run: |
           cd karate-test
           mvn clean test "-Dkarate.options=--tags @Regresion" | tee test-output.log
