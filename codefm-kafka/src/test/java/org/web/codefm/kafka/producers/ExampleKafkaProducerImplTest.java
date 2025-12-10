@@ -18,7 +18,7 @@ import org.web.codefm.kafka.mappers.UserEventMapper;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,7 +54,7 @@ class ExampleKafkaProducerImplTest {
 
         producer.sendMessage(user);
 
-        verify(kafkaTemplate).send(eq("test-topic"), eq("1"), eq(event));
+        verify(kafkaTemplate).send("test-topic", "1", event);
         verify(mapper).toEvent(user);
     }
 
@@ -77,7 +77,7 @@ class ExampleKafkaProducerImplTest {
 
         producer.sendMessage(user);
 
-        verify(kafkaTemplate).send(eq("test-topic"), eq("1"), eq(event));
+        verify(kafkaTemplate).send("test-topic", "1", event);
         verify(mapper).toEvent(user);
     }
 
