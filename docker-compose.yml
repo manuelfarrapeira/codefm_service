@@ -26,6 +26,7 @@ services:
       - logging
       - infisical_external
       - keycloak
+      - kafka-network
 
 
 networks:
