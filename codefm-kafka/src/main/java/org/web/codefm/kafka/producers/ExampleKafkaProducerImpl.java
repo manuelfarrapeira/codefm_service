@@ -23,16 +23,19 @@ public class ExampleKafkaProducerImpl implements ExampleKafkaProducer {
 
     public void sendMessage(User user) {
 
-        UserEvent userEvent = mapper.toEvent(user);
+        if (user != null) {
 
-        log.info("Send message to topic {}: {}", topic, userEvent);
-        kafkaTemplate.send(topic, String.valueOf(userEvent.getId()), userEvent)
-                .whenComplete((result, ex) -> {
-                    if (ex == null) {
-                        log.info("Message sent successfully: offset={}", result.getRecordMetadata().offset());
-                    } else {
-                        log.error("Error sending message", ex);
-                    }
-                });
+            UserEvent userEvent = mapper.toEvent(user);
+
+            log.info("Send message to topic {}: {}", topic, userEvent);
+            kafkaTemplate.send(topic, String.valueOf(userEvent.getId()), userEvent)
+                    .whenComplete((result, ex) -> {
+                        if (ex == null) {
+                            log.info("Message sent successfully: offset={}", result.getRecordMetadata().offset());
+                        } else {
+                            log.error("Error sending message", ex);
+                        }
+                    });
+        }
     }
 }

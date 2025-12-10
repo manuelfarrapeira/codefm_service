@@ -39,7 +39,7 @@ class HelloWorldUseCaseImplTest {
     void returnsGreetingWhenUserExists() {
         User user = new User();
         user.setName("Manuel");
-        when(userRepository.findByName("Manuel")).thenReturn(user);
+        when(userRepository.findByLogin("Manuel")).thenReturn(user);
         when(helloWorldService.helloWorld(user)).thenReturn("Hello Manuel");
         when(consulExample.getparameter()).thenReturn("value");
 
@@ -50,7 +50,7 @@ class HelloWorldUseCaseImplTest {
 
     @Test
     void returnsUserNotFoundWhenUserDoesNotExist() {
-        when(userRepository.findByName("Desconocido")).thenReturn(null);
+        when(userRepository.findByLogin("Desconocido")).thenReturn(null);
         when(helloWorldService.helloWorld(null)).thenReturn("user not found");
         when(consulExample.getparameter()).thenReturn("value");
 
@@ -63,7 +63,7 @@ class HelloWorldUseCaseImplTest {
     void returnsGreetingWhenUserNameIsNull() {
         User user = new User();
         user.setName(null);
-        when(userRepository.findByName(null)).thenReturn(user);
+        when(userRepository.findByLogin(null)).thenReturn(user);
         when(helloWorldService.helloWorld(user)).thenReturn("Hello null");
         when(consulExample.getparameter()).thenReturn("value");
 

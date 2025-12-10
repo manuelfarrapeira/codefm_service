@@ -1,43 +1,43 @@
 openapi: 3.0.3
 info:
-  title: API Privada de CodeFm
-  description: API servicios privados de CodeFm (requieren autenticación)
+  title: CodeFm Private API
+  description: CodeFm private services API (authentication required)
   version: 1.0.0
 
 servers:
   - url: http://localhost:8081
-    description: Servidor de desarrollo
+    description: Development server
 
 tags:
   - name: PrivateHelloWorld
-    description: Operaciones privadas relacionadas con el saludo
+    description: Private operations related to greeting
 
 paths:
-  /saludo/hola:
+  /greeting:
     get:
       tags:
         - PrivateHelloWorld
       operationId: hello
-      summary: Endpoint de saludo básico (autenticado)
-      description: Retorna un saludo simple
+      summary: Basic greeting endpoint (authenticated)
+      description: Returns a simple greeting
       parameters:
-        - name: usuario
+        - name: user
           in: query
           required: true
-          description: Usuario para el saludo
+          description: User for greeting
           schema:
             type: string
             example: "Manuel"
       responses:
         '200':
-          description: Saludo exitoso
+          description: Successful greeting
           content:
             text/plain:
               schema:
                 type: string
-                example: "¡Hola!"
+                example: "¡Hi!"
         '500':
-          description: Error interno del servidor
+          description: Internal Server Error
           content:
             application/json:
               schema:

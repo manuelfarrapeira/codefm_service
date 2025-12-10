@@ -1,4 +1,4 @@
-package org.web.codefm.infrastructure.usuarios;
+package org.web.codefm.infrastructure.users;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -8,7 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.User;
 import org.web.codefm.infrastructure.entity.mariadb.users.UserEntity;
 import org.web.codefm.infrastructure.jpa.UserJPARepository;
-import org.web.codefm.infrastructure.mapper.UsuarioMapper;
+import org.web.codefm.infrastructure.mapper.UserMapper;
 
 import java.util.Optional;
 
@@ -23,39 +23,39 @@ class UserRepositoryImplTest {
     UserJPARepository userJPARepository;
 
     @Mock
-    UsuarioMapper usuarioMapper;
+    UserMapper userMapper;
 
     @InjectMocks
     UserRepositoryImpl userRepositoryImpl;
 
     @Test
-    void returnsUsuarioWhenUsuarioExists() {
+    void returnsUserWhenUserExists() {
         String nombre = "Manuel";
         UserEntity entity = new UserEntity();
         User user = new User();
         when(userJPARepository.findByLogin(nombre)).thenReturn(Optional.of(entity));
-        when(usuarioMapper.toModel(entity)).thenReturn(user);
+        when(userMapper.toModel(entity)).thenReturn(user);
 
-        User result = userRepositoryImpl.findByName(nombre);
+        User result = userRepositoryImpl.findByLogin(nombre);
 
         assertEquals(user, result);
     }
 
     @Test
-    void returnsNullWhenUsuarioDoesNotExist() {
+    void returnsNullWhenUserDoesNotExist() {
         String nombre = "Desconocido";
         when(userJPARepository.findByLogin(nombre)).thenReturn(Optional.empty());
 
-        User result = userRepositoryImpl.findByName(nombre);
+        User result = userRepositoryImpl.findByLogin(nombre);
 
         assertNull(result);
     }
 
     @Test
-    void returnsNullWhenUsuarioNameIsNull() {
+    void returnsNullWhenUserLoginIsNull() {
         when(userJPARepository.findByLogin(null)).thenReturn(Optional.empty());
 
-        User result = userRepositoryImpl.findByName(null);
+        User result = userRepositoryImpl.findByLogin(null);
 
         assertNull(result);
     }

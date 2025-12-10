@@ -5,7 +5,7 @@ import org.web.codefm.domain.entity.User;
 import org.web.codefm.infrastructure.entity.mariadb.users.UserEntity;
 
 @Mapper(componentModel = "spring")
-public interface UsuarioMapper {
+public interface UserMapper {
 
     User toModel(UserEntity entity);
 

@@ -1,4 +1,4 @@
-package org.web.codefm.infrastructure.usuarios;
+package org.web.codefm.infrastructure.users;
 
 import lombok.Generated;
 import lombok.RequiredArgsConstructor;
@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import org.web.codefm.domain.entity.User;
 import org.web.codefm.domain.repository.UserRepository;
 import org.web.codefm.infrastructure.jpa.UserJPARepository;
-import org.web.codefm.infrastructure.mapper.UsuarioMapper;
+import org.web.codefm.infrastructure.mapper.UserMapper;
 
 @Repository
 @RequiredArgsConstructor
@@ -17,14 +17,14 @@ public class UserRepositoryImpl implements UserRepository {
 
     private final UserJPARepository userJPARepository;
 
-    private final UsuarioMapper usuarioMapper;
+    private final UserMapper userMapper;
 
 
     @Override
-    public User findByName(String usuario) {
+    public User findByLogin(String login) {
 
-        return userJPARepository.findByLogin(usuario)
-                .map(usuarioMapper::toModel)
+        return userJPARepository.findByLogin(login)
+                .map(userMapper::toModel)
                 .orElse(null);
 
     }

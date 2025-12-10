@@ -12,8 +12,8 @@ import org.web.codefm.kafka.UserEvent;
 public class ExampleKafkaConsumer {
 
     @KafkaListener(topics = "${kafka.topic.user}")
-    public void handleMessage(@Payload UserEvent usuarioEvent) {
+    public void handleMessage(@Payload UserEvent userEvent) {
 
-        log.info("Usser message received: {}", usuarioEvent);
+        log.info("Usser message received: {}", userEvent);
     }
 }

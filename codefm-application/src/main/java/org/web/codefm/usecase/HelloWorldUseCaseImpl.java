@@ -30,11 +30,11 @@ public class HelloWorldUseCaseImpl implements HelloWorldUseCase {
     private final ExampleKafkaProducer exampleKafkaProducer;
 
     @Override
-    public String helloWorld(String name) {
+    public String helloWorld(String login) {
 
         log.info("Ejemplo consul -> " + consulExample.getparameter());
 
-        User user = userRepository.findByName(name);
+        User user = userRepository.findByLogin(login);
 
         List<String> result = reactorExecutorExampleRepository.getResult(getIds());
 

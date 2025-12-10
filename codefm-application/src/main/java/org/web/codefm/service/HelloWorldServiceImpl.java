@@ -14,7 +14,7 @@ public class HelloWorldServiceImpl implements HelloWorldService {
     @Override
     public String helloWorld(User user) {
 
-        log.info("Usuario: " + user);
+        log.info("User: " + user);
 
         return Objects.nonNull(user) ? "Hi! " + user.getName() : "User not found";
     }
