@@ -92,11 +92,11 @@ reactor:
       retry: 1
       concurrency: 5
       timeout: 6000
-  example:
-    partition-limit: 250
-    retry: 1
-    concurrency: 5
-    timeout: 6000
+    example:
+      partition-limit: 25
+      retry: 1
+      concurrency: 5
+      timeout: 6000
 
 
 kafka:

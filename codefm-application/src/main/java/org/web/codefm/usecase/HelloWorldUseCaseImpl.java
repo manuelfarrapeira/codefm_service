@@ -47,7 +47,7 @@ public class HelloWorldUseCaseImpl implements HelloWorldUseCase {
 
 
     private List<Integer> getIds() {
-        return java.util.stream.IntStream.rangeClosed(1, 10000)
+        return java.util.stream.IntStream.rangeClosed(1, 102)
                 .boxed()
                 .toList();
     }
