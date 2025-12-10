@@ -13,7 +13,14 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://codefm.synology.me:8480/realms/codefm-pre
+  kafka:
+    bootstrap-servers: codefm.synology.me:9092
+    properties:
+      schema.registry.url: http://codefm.synology.me:8082
 
 kafka:
   topic:
     user: codefm.local.user
+  schema:
+    registry:
+      url: http://codefm.synology.me:8082
