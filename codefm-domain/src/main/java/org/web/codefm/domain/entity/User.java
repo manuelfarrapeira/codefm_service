@@ -9,12 +9,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Usuario {
+public class User {
 
     private Integer id;
 
-    private String usuario;
+    private String login;
 
-    private String nombre;
+    private String name;
 
 }

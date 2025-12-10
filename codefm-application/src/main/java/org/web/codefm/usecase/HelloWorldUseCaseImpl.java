@@ -3,11 +3,11 @@ package org.web.codefm.usecase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.web.codefm.domain.consul.EjemploConsul;
-import org.web.codefm.domain.entity.Usuario;
+import org.web.codefm.domain.consul.ConsulExample;
+import org.web.codefm.domain.entity.User;
 import org.web.codefm.domain.kafka.ExampleKafkaProducer;
 import org.web.codefm.domain.repository.ReactorExecutorExampleRepository;
-import org.web.codefm.domain.repository.UsuarioRepository;
+import org.web.codefm.domain.repository.UserRepository;
 import org.web.codefm.domain.service.HelloWorldService;
 import org.web.codefm.domain.usecase.HelloWorldUseCase;
 
@@ -21,20 +21,20 @@ public class HelloWorldUseCaseImpl implements HelloWorldUseCase {
 
     private final HelloWorldService helloWorldService;
 
-    private final UsuarioRepository usuarioRepository;
+    private final UserRepository userRepository;
 
-    private final EjemploConsul ejemploConsul;
+    private final ConsulExample consulExample;
 
     private final ReactorExecutorExampleRepository reactorExecutorExampleRepository;
 
     private final ExampleKafkaProducer exampleKafkaProducer;
 
     @Override
-    public String helloWorld(String usuario) {
+    public String helloWorld(String name) {
 
-        log.info("Ejemplo consul -> " + ejemploConsul.getparametro());
+        log.info("Ejemplo consul -> " + consulExample.getparameter());
 
-        Usuario user = usuarioRepository.findByName(usuario);
+        User user = userRepository.findByName(name);
 
         List<String> result = reactorExecutorExampleRepository.getResult(getIds());
 

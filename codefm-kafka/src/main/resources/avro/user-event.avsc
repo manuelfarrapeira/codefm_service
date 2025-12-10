@@ -8,11 +8,11 @@
       "type": "int"
     },
     {
-      "name": "usuario",
+      "name": "login",
       "type": "string"
     },
     {
-      "name": "nombre",
+      "name": "name",
       "type": "string"
     }
   ]

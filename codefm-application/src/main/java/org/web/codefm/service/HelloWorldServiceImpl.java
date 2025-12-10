@@ -2,7 +2,7 @@ package org.web.codefm.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.web.codefm.domain.entity.Usuario;
+import org.web.codefm.domain.entity.User;
 import org.web.codefm.domain.service.HelloWorldService;
 
 import java.util.Objects;
@@ -12,10 +12,10 @@ import java.util.Objects;
 public class HelloWorldServiceImpl implements HelloWorldService {
 
     @Override
-    public String helloWorld(Usuario user) {
+    public String helloWorld(User user) {
 
         log.info("Usuario: " + user);
 
-        return  Objects.nonNull(user) ? "Hola " + user.getNombre() : "Usuario no encontrado";
+        return Objects.nonNull(user) ? "Hi! " + user.getName() : "User not found";
     }
 }

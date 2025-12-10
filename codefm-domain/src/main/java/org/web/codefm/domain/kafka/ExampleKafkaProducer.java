@@ -1,9 +1,9 @@
 package org.web.codefm.domain.kafka;
 
-import org.web.codefm.domain.entity.Usuario;
+import org.web.codefm.domain.entity.User;
 
 public interface ExampleKafkaProducer {
 
-    void sendMessage(Usuario usuario);
+    void sendMessage(User user);
 
 }
