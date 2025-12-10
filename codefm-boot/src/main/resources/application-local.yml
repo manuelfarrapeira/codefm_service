@@ -14,13 +14,19 @@ spring:
         jwt:
           issuer-uri: http://codefm.synology.me:8480/realms/codefm-pre
   kafka:
-    bootstrap-servers: codefm.synology.me:9092
+    bootstrap-servers: 192.168.18.10:9092
+    consumer:
+      properties:
+        schema.registry.url: http://192.168.18.10:8082
+    producer:
+      properties:
+        schema.registry.url: http://192.168.18.10:8082
     properties:
-      schema.registry.url: http://codefm.synology.me:8082
+      schema.registry.url: http://192.168.18.10:8082
 
 kafka:
   topic:
     user: codefm.local.user
   schema:
     registry:
-      url: http://codefm.synology.me:8082
+      url: http://192.168.18.10:8082
