@@ -2,6 +2,7 @@ version: "3.8"
 services:
   codefm:
     container_name: codefm
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile
@@ -35,4 +36,6 @@ networks:
   keycloak:
     external: true
   sonarqube:
+    external: true
+  kafka-network:
     external: true

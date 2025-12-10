@@ -14,8 +14,8 @@ public class IndividualKarateTestRunner {
     }
 
     @Karate.Test
-    Karate testSaludo() {
-        return Karate.run("features/saludo/saludo").relativeTo(getClass());
+    Karate testGreeting() {
+        return Karate.run("features/greeting/greeting").relativeTo(getClass());
     }
 
 

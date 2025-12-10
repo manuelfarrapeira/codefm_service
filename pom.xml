@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.web</groupId>
     <artifactId>codeFm</artifactId>
-    <version>1.7.0</version>
+    <version>1.8.0</version>
     <name>codefm</name>
     <description>codefm</description>
     <packaging>pom</packaging>
@@ -50,6 +50,7 @@
         <module>codefm-application</module>
         <module>codefm-infrastructure</module>
         <module>codefm-api</module>
+        <module>codefm-kafka</module>
         <module>codefm-boot</module>
         <module>jacoco-report-aggregate</module>
     </modules>
@@ -74,6 +75,11 @@
             <dependency>
                 <groupId>org.web.codefm</groupId>
                 <artifactId>codefm-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.web.codefm</groupId>
+                <artifactId>codefm-kafka</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -119,6 +125,12 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.13.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>32.1.2-jre</version>
         </dependency>
 
 

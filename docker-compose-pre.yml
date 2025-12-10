@@ -1,7 +1,7 @@
-version: "3.8"
 services:
   codefm-pre:
     container_name: codefm-pre
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile
@@ -26,6 +26,7 @@ services:
       - logging
       - infisical_external
       - keycloak
+      - kafka-network
 
 
 networks:
@@ -36,4 +37,6 @@ networks:
   keycloak:
     external: true
   sonarqube:
+    external: true
+  kafka-network:
     external: true
