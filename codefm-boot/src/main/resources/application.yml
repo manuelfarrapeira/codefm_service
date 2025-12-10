@@ -10,6 +10,26 @@ management:
       show-details: always
 
 spring:
+  kafka:
+    bootstrap-servers: codefm.synology.me:9092
+    consumer:
+      group-id: codefm-consumer-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+      properties:
+        schema.registry.url: http://codefm.synology.me:8082
+        specific.avro.reader: true
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      properties:
+        schema.registry.url: http://codefm.synology.me:8082
+    properties:
+      schema.registry.url: http://codefm.synology.me:8082
+      security.protocol: PLAINTEXT
+
+
   security:
     oauth2:
       resourceserver:
@@ -77,3 +97,11 @@ reactor:
     retry: 1
     concurrency: 5
     timeout: 6000
+
+
+kafka:
+  topic:
+    user: codefm.pro.user
+  schema:
+    registry:
+      url: http://codefm.synology.me:8082

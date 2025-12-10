@@ -50,6 +50,7 @@
         <module>codefm-application</module>
         <module>codefm-infrastructure</module>
         <module>codefm-api</module>
+        <module>codefm-kafka</module>
         <module>codefm-boot</module>
         <module>jacoco-report-aggregate</module>
     </modules>
@@ -74,6 +75,11 @@
             <dependency>
                 <groupId>org.web.codefm</groupId>
                 <artifactId>codefm-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.web.codefm</groupId>
+                <artifactId>codefm-kafka</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

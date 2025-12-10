@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.web.codefm.domain.consul.EjemploConsul;
 import org.web.codefm.domain.entity.Usuario;
+import org.web.codefm.domain.kafka.ExampleKafkaProducer;
 import org.web.codefm.domain.repository.ReactorExecutorExampleRepository;
 import org.web.codefm.domain.repository.UsuarioRepository;
 import org.web.codefm.domain.service.HelloWorldService;
@@ -26,6 +27,8 @@ public class HelloWorldUseCaseImpl implements HelloWorldUseCase {
 
     private final ReactorExecutorExampleRepository reactorExecutorExampleRepository;
 
+    private final ExampleKafkaProducer exampleKafkaProducer;
+
     @Override
     public String helloWorld(String usuario) {
 
@@ -36,6 +39,8 @@ public class HelloWorldUseCaseImpl implements HelloWorldUseCase {
         List<String> result = reactorExecutorExampleRepository.getResult(getIds());
 
         log.info("Result size: " + result.size());
+
+        exampleKafkaProducer.sendMessage(user);
 
         return helloWorldService.helloWorld(user);
     }

@@ -63,6 +63,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>codefm-kafka</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+
         <!-- logback -->
         <dependency>
             <groupId>net.logstash.logback</groupId>
