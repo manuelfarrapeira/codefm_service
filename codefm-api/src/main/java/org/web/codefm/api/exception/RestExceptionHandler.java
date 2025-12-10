@@ -31,7 +31,7 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponseDTO> mapperGenericException(final AccessDeniedException ex) {
-        log.error("Error de acceso: " + ex.getMessage(), ex);
+        log.error("Acces error: " + ex.getMessage(), ex);
 
         ErrorResponseDTO errorDTO = new ErrorResponseDTO();
         errorDTO.setDetail(ex.getMessage());
@@ -43,7 +43,7 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDTO> mapperGenericException(final Exception ex) {
-        log.error("Error general no controlado: " + ex.getMessage(), ex);
+        log.error("General uncontrolled error: " + ex.getMessage(), ex);
 
         ErrorResponseDTO errorDTO = new ErrorResponseDTO();
         errorDTO.setDetail(ex.getMessage());

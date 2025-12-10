@@ -12,6 +12,7 @@ monitoreo y despliegue automatizado.
 - **Java 17** con Spring Boot 3.2.3
 - **MariaDB** como base de datos principal
 - **Maven** para gestión de dependencias
+- **Apache Kafka** para mensajería asíncrona y event streaming
 
 ### Seguridad
 
@@ -35,6 +36,13 @@ monitoreo y despliegue automatizado.
 
 - **Consul** para manejo de variables en caliente
 - **Spring Cloud Config** para configuración distribuida
+
+### Mensajería y Event Streaming
+
+- **Apache Kafka** para comunicación asíncrona entre servicios
+- **Avro** para serialización de mensajes
+- **Schema Registry** para gestión de esquemas
+- **Spring Kafka** para integración con Spring Boot
 
 ### Documentación
 
@@ -90,6 +98,29 @@ Gestión segura de secretos:
 - Agregación centralizada de logs
 - Búsqueda y filtrado avanzado
 - Correlación de logs con métricas
+
+## 📨 Kafka
+
+### Configuración
+
+La aplicación utiliza Kafka para:
+
+- Publicación de eventos de usuario
+- Consumo de mensajes asíncronos
+- Serialización con Avro
+- Integración con Schema Registry
+
+### Topics
+
+- **user-topic**: Eventos de usuarios (creación, actualización)
+
+### Producers
+
+- **ExampleKafkaProducer**: Publica eventos de usuario al topic configurado
+
+### Consumers
+
+- **ExampleKafkaConsumer**: Consume y procesa eventos de usuario
 
 ## 🧪 Testing
 
@@ -163,8 +194,12 @@ deploy-pro nombre-rama
                     │  (Repositories)  │
                     └─────────────────┘
                                  │
-                    ┌─────────────────┐
-                    │   codefm-boot   │
-                    │ (Spring Boot)   │
-                    └─────────────────┘
+         ┌───────────────────────┼───────────────────────┐
+         │                       │                       │
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│  codefm-kafka   │  │   codefm-boot   │  │ jacoco-report   │
+│ (Kafka Events)  │  │ (Spring Boot)   │  │  (Coverage)     │
+└─────────────────┘  └─────────────────┘  └─────────────────┘
+         │
+    Apache Kafka
 ```

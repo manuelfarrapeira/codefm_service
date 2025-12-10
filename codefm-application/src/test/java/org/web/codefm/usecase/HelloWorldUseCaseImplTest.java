@@ -5,10 +5,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.web.codefm.domain.consul.EjemploConsul;
-import org.web.codefm.domain.entity.Usuario;
+import org.web.codefm.domain.consul.ConsulExample;
+import org.web.codefm.domain.entity.User;
+import org.web.codefm.domain.kafka.ExampleKafkaProducer;
 import org.web.codefm.domain.repository.ReactorExecutorExampleRepository;
-import org.web.codefm.domain.repository.UsuarioRepository;
+import org.web.codefm.domain.repository.UserRepository;
 import org.web.codefm.domain.service.HelloWorldService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,24 +21,27 @@ class HelloWorldUseCaseImplTest {
     HelloWorldService helloWorldService;
 
     @Mock
-    UsuarioRepository usuarioRepository;
+    UserRepository userRepository;
 
     @Mock
     ReactorExecutorExampleRepository reactorExecutorExampleRepository;
 
     @Mock
-    EjemploConsul ejemploConsul;
+    ConsulExample consulExample;
+
+    @Mock
+    ExampleKafkaProducer exampleKafkaProducer;
 
     @InjectMocks
     HelloWorldUseCaseImpl useCase;
 
     @Test
     void returnsGreetingWhenUserExists() {
-        Usuario usuario = new Usuario();
-        usuario.setNombre("Manuel");
-        when(usuarioRepository.findByName("Manuel")).thenReturn(usuario);
-        when(helloWorldService.helloWorld(usuario)).thenReturn("Hello Manuel");
-        when(ejemploConsul.getparametro()).thenReturn("value");
+        User user = new User();
+        user.setName("Manuel");
+        when(userRepository.findByLogin("Manuel")).thenReturn(user);
+        when(helloWorldService.helloWorld(user)).thenReturn("Hello Manuel");
+        when(consulExample.getparameter()).thenReturn("value");
 
         String result = useCase.helloWorld("Manuel");
 
@@ -46,9 +50,9 @@ class HelloWorldUseCaseImplTest {
 
     @Test
     void returnsUserNotFoundWhenUserDoesNotExist() {
-        when(usuarioRepository.findByName("Desconocido")).thenReturn(null);
+        when(userRepository.findByLogin("Desconocido")).thenReturn(null);
         when(helloWorldService.helloWorld(null)).thenReturn("user not found");
-        when(ejemploConsul.getparametro()).thenReturn("value");
+        when(consulExample.getparameter()).thenReturn("value");
 
         String result = useCase.helloWorld("Desconocido");
 
@@ -57,11 +61,11 @@ class HelloWorldUseCaseImplTest {
 
     @Test
     void returnsGreetingWhenUserNameIsNull() {
-        Usuario usuario = new Usuario();
-        usuario.setNombre(null);
-        when(usuarioRepository.findByName(null)).thenReturn(usuario);
-        when(helloWorldService.helloWorld(usuario)).thenReturn("Hello null");
-        when(ejemploConsul.getparametro()).thenReturn("value");
+        User user = new User();
+        user.setName(null);
+        when(userRepository.findByLogin(null)).thenReturn(user);
+        when(helloWorldService.helloWorld(user)).thenReturn("Hello null");
+        when(consulExample.getparameter()).thenReturn("value");
 
         String result = useCase.helloWorld(null);
 

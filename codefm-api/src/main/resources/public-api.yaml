@@ -1,61 +1,61 @@
 openapi: 3.0.3
 info:
-  title: API Pública de CodeFm
-  description: API servicios públicos de CodeFm (no requieren autenticación)
+  title: CodeFm Public API
+  description: CodeFm public services API (no authentication required)
   version: 1.0.0
 
 servers:
   - url: http://localhost:8081
-    description: Servidor de desarrollo
+    description: Development server
 
 tags:
   - name: PublicHelloWorld
-    description: Operaciones públicas relacionadas con el saludo
+    description: Public operations related to greeting
   - name: Auth
-    description: Operaciones de autenticación
+    description: Authentication operations
 
 
 paths:
-  /public/saludo/hola:
+  /public/greeting:
     get:
       tags:
         - PublicHelloWorld
       x-controller-name: PublicHelloWorld
       operationId: hello
-      summary: Endpoint de saludo básico público
-      description: Retorna un saludo simple
+      summary: Public basic greeting endpoint
+      description: Returns a simple greeting
       responses:
         '200':
-          description: Saludo exitoso
+          description: Successful greeting
           content:
             text/plain:
               schema:
                 type: string
-                example: "¡Hola!"
+                example: "¡Hi!"
   /public/auth/login:
     post:
       tags:
         - Auth
       operationId: login
-      summary: Autenticar usuario
-      description: Autenticar usuario usando credenciales
+      summary: Authenticate user
+      description: Authenticate user using credentials
       parameters:
         - in: header
           name: Authorization
           required: true
           schema:
             type: string
-          description: Token de autorización en formato Basic o Bearer
+          description: Authorization token in Basic or Bearer format
       responses:
         '200':
-          description: Autenticación exitosa
+          description: Successful authentication
           content:
             application/json:
               schema:
                 type: string
                 example: "Autenticated successful"
         '401':
-          description: Credenciales inválidas
+          description: Invalid credentials
           content:
             application/json:
               schema:
@@ -65,18 +65,18 @@ paths:
       tags:
         - Auth
       operationId: refreshToken
-      summary: Refrescar token
-      description: Refrescar token de acceso usando refresh token
+      summary: Refresh token
+      description: Refresh access token using refresh token
       responses:
         '200':
-          description: Token refrescado exitosamente
+          description: Token successfully refreshed
           content:
             application/json:
               schema:
                 type: string
                 example: "Token refreshed successfully"
         '401':
-          description: Token de refresco inválido o expirado
+          description: Invalid or expired refresh token
           content:
             application/json:
               schema:
@@ -86,11 +86,11 @@ paths:
       tags:
         - Auth
       operationId: logout
-      summary: Borrar token
-      description: Eliminar token
+      summary: Delete token
+      description: Delete token
       responses:
         '200':
-          description: Tolen eliminado exitosamente
+          description: Token successfully removed
           content:
             application/json:
               schema:

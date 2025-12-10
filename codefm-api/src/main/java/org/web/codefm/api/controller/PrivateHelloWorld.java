@@ -22,9 +22,9 @@ public class PrivateHelloWorld implements PrivateHelloWorldApi {
     @Override
     @PreAuthorize("hasRole('ADMIN')")
     //@PreAuthorize("hasAuthority('WRITE_PERMISSION')")
-    public ResponseEntity<String> hello(String usuario) {
+    public ResponseEntity<String> hello(String user) {
 
-        return ResponseEntity.ok(helloWorldUseCase.helloWorld(usuario));
+        return ResponseEntity.ok(helloWorldUseCase.helloWorld(user));
     }
 
 }

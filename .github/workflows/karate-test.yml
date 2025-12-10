@@ -50,6 +50,24 @@ jobs:
           mvn clean test "-Dkarate.options=--tags @Regresion" | tee test-output.log
           echo "TEST_SUMMARY=$(grep -o "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" test-output.log | tail -1)" >> $GITHUB_OUTPUT 
 
+      - name: List test reports
+        if: always()
+        run: |
+          echo "=== Checking for reports ==="
+          ls -la karate-test/target/ || echo "No target directory"
+          ls -la karate-test/target/surefire-reports/ || echo "No surefire-reports"
+          ls -la karate-test/target/karate-reports/ || echo "No karate-reports"
+
+      - name: Upload Karate Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: karate-reports
+          path: |
+            karate-test/target/surefire-reports/
+            karate-test/target/karate-reports/
+          retention-days: 1
+
       - name: Comment PR with test results
         uses: actions/github-script@v6
         with:

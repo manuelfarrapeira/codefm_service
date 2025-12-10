@@ -1,0 +1,19 @@
+{
+  "type": "record",
+  "name": "UserEvent",
+  "namespace": "org.web.codefm.kafka",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "login",
+      "type": "string"
+    },
+    {
+      "name": "name",
+      "type": "string"
+    }
+  ]
+}
