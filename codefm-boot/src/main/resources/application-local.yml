@@ -6,8 +6,12 @@ logging:
 
 spring:
   datasource:
-    url: jdbc:p6spy:mariadb://192.168.18.10:3306/codefm_pre
-    username: codefm
+    codefm:
+      url: jdbc:p6spy:mariadb://192.168.18.10:3306/codefm_pre
+      username: codefm
+    teachernotebook:
+      url: jdbc:p6spy:mariadb://192.168.18.10:3306/teacher_notebook_pre
+      username: codefm
   security:
     oauth2:
       resourceserver:

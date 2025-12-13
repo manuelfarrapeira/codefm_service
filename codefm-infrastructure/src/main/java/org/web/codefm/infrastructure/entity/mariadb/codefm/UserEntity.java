@@ -1,4 +1,4 @@
-package org.web.codefm.infrastructure.entity.mariadb.users;
+package org.web.codefm.infrastructure.entity.mariadb.codefm;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -22,4 +22,3 @@ public class UserEntity {
 
     private String name;
 }
-
