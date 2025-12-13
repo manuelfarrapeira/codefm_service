@@ -33,3 +33,6 @@ build/
 .vscode/
 
 karate-test/src/test/resources/.env.secret
+
+### Amazon Q ###
+.amazonq/
