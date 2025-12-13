@@ -48,7 +48,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
 
     @Override
-    public void login(String authHeader, HttpServletResponse response) {
+    public String login(String authHeader, HttpServletResponse response) {
 
         try {
             String base64Credentials = authHeader.substring("Basic".length()).trim();
@@ -65,7 +65,8 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
             map.add("username", username);
             map.add("password", password);
 
-            getToken(response, map, tokenEndpoint);
+            TokenResponse tokens = getToken(response, map, tokenEndpoint);
+            return extractGivenName(tokens.getAccessToken());
 
         } catch (HttpClientErrorException e) {
             log.error("Authentication error: {}", e.getMessage());
@@ -119,7 +120,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
     }
 
-    private void getToken(HttpServletResponse response, MultiValueMap<String, String> map, String tokenEndpoint) {
+    private TokenResponse getToken(HttpServletResponse response, MultiValueMap<String, String> map, String tokenEndpoint) {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -137,5 +138,27 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+        return tokens;
+    }
+
+    private String extractGivenName(String accessToken) {
+        String[] parts = accessToken.split("\\.");
+        String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+
+        String givenName = extractField(payload, "given_name");
+        String familyName = extractField(payload, "family_name");
+
+        return givenName + " " + familyName;
+    }
+
+    private String extractField(String payload, String fieldName) {
+        int fieldIndex = payload.indexOf("\"" + fieldName + "\":");
+        if (fieldIndex == -1) return "";
+
+        int start = payload.indexOf("\"", fieldIndex + fieldName.length() + 3) + 1;
+        int end = payload.indexOf("\"", start);
+
+        return payload.substring(start, end);
     }
 }

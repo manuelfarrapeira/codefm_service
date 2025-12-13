@@ -19,8 +19,7 @@ import org.web.codefm.domain.exception.UserNotFound;
 import org.web.codefm.domain.service.RestTemplateService;
 import org.web.codefm.domain.session.TokenResponse;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -49,8 +48,12 @@ class AutenticationUseCaseImplTest {
 
     @Test
     void loginSuccessfully() {
+        String jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+                "eyJnaXZlbl9uYW1lIjoiSm9obiIsImZhbWlseV9uYW1lIjoiRG9lIn0." +
+                "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+        
         TokenResponse tokenResponse = new TokenResponse();
-        tokenResponse.setAccessToken("access-token");
+        tokenResponse.setAccessToken(jwtToken);
         tokenResponse.setRefreshToken("refresh-token");
         tokenResponse.setExpiresIn(300);
 
@@ -58,7 +61,9 @@ class AutenticationUseCaseImplTest {
         when(restTemplateService.exchange(anyString(), eq(HttpMethod.POST), any(MultiValueMap.class), any(HttpHeaders.class), eq(TokenResponse.class), isNull()))
                 .thenReturn(response);
 
-        assertDoesNotThrow(() -> autenticationUseCase.login("Basic dXNlcjpwYXNz", this.response));
+        String fullName = autenticationUseCase.login("Basic dXNlcjpwYXNz", this.response);
+
+        assertEquals("John Doe", fullName);
     }
 
     @Test

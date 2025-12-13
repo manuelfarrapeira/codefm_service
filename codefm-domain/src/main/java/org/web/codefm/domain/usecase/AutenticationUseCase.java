@@ -14,8 +14,9 @@ public interface AutenticationUseCase {
      *
      * @param authHeader Authorization header containing credentials in Basic Auth format
      * @param response   HttpServletResponse object to set authentication cookies
+     * @return given_name from the JWT token
      */
-    void login(String authHeader, HttpServletResponse response);
+    String login(String authHeader, HttpServletResponse response);
 
     /**
      * Refreshes the access token using the refresh token.
