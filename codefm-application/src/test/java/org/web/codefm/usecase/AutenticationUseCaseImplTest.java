@@ -48,6 +48,7 @@ class AutenticationUseCaseImplTest {
 
     @Test
     void loginSuccessfully() {
+        // gitleaks:allow - Mock JWT token for testing purposes only
         String jwtToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
                 "eyJnaXZlbl9uYW1lIjoiSm9obiIsImZhbWlseV9uYW1lIjoiRG9lIn0." +
                 "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
