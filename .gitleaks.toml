@@ -1,0 +1,6 @@
+[allowlist]
+description = "Allowlist for test files"
+paths = [
+    '''.*Test\.java$''',
+    '''src/test/.*'''
+]
