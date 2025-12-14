@@ -7,6 +7,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.web.codefm.domain.service.SessionUserService;
+import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 
 import java.util.ArrayList;
@@ -45,6 +46,12 @@ public class SessionUserServiceImpl implements SessionUserService {
                     sessionUser.setRoles((List<String>) appAccess.get("roles"));
                 }
             }
+
+            for (SessionParameter param : SessionParameter.values()) {
+                if (jwt.hasClaim(param.getClaimName())) {
+                    sessionUser.getParameters().put(param.getClaimName(), jwt.getClaim(param.getClaimName()).toString());
+                }
+            }
         }
     }
 
@@ -54,5 +61,6 @@ public class SessionUserServiceImpl implements SessionUserService {
         sessionUser.setEmail(null);
         sessionUser.setRoles(new ArrayList<>());
         sessionUser.setPermisos(new ArrayList<>());
+        sessionUser.getParameters().clear();
     }
 }

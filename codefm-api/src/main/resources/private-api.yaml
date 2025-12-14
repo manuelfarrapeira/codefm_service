@@ -11,6 +11,8 @@ servers:
 tags:
   - name: PrivateHelloWorld
     description: Private operations related to greeting
+  - name: TeacherNoteBookSchools
+    description: Operations related to Teacher Notebook Schools
 
 paths:
   /greeting:
@@ -48,6 +50,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/schools:
+    get:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: schools
+      summary: Endpoint to get school information
+      description: Returns school information
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SchoolDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 
 components:
   schemas:
@@ -55,3 +85,14 @@ components:
       $ref: './common-schemas.yaml#/ErrorResponseDTO'
     DetailDTO:
       $ref: './common-schemas.yaml#/DetailDTO'
+    SchoolDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        name:
+          type: 'string'
+        town:
+          type: 'string'
+        tlf:
+          type: 'integer'

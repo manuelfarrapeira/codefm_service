@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 @Data
@@ -21,6 +23,7 @@ public class SessionUser implements Serializable {
     private String email;
     private List<String> roles;
     private List<String> permisos;
+    private Map<String, String> parameters = new HashMap<>();
 
 }
 
