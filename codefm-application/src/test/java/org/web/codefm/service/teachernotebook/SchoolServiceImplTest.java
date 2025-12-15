@@ -156,7 +156,7 @@ class SchoolServiceImplTest {
         String spanishAcceptLanguage = "es";
         String expectedSpanishMessage = "El nombre del colegio es obligatorio.";
 
-        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), eq(new Locale("es"))))
+        when(messageSource.getMessage(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED, null, new Locale("es")))
                 .thenReturn(expectedSpanishMessage);
 
         SchoolValidationException exception = assertThrows(SchoolValidationException.class, () -> {
@@ -365,7 +365,7 @@ class SchoolServiceImplTest {
         String spanishAcceptLanguage = "es";
         String expectedSpanishMessage = "El nombre del colegio es obligatorio.";
 
-        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), eq(new Locale("es"))))
+        when(messageSource.getMessage(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED, null, new Locale("es")))
                 .thenReturn(expectedSpanishMessage);
 
         SchoolValidationException exception = assertThrows(SchoolValidationException.class, () ->
@@ -376,6 +376,6 @@ class SchoolServiceImplTest {
         assertEquals(expectedSpanishMessage, exception.getErrors().get(0).getMessage());
         verify(schoolRepository, never()).findById(any());
         verify(schoolRepository, never()).save(any());
-        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), eq(new Locale("es")));
+        verify(messageSource, times(1)).getMessage(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED, null, new Locale("es"));
     }
 }
