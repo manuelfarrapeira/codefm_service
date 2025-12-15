@@ -19,9 +19,9 @@ public class ClassEntity {
     @Column(name = "school_id")
     private Integer schoolId;
 
-    @Column(length = 100)
+    @Column(length = 100, nullable = false)
     private String name;
 
-    @Column(name = "school_year", length = 100)
+    @Column(name = "school_year", length = 100, nullable = false)
     private String schoolYear;
 }

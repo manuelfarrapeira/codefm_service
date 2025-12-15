@@ -53,9 +53,6 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
     }
 
     private Integer parseSchoolYear(Class clazz) {
-        if (clazz == null || clazz.getSchoolYear() == null || clazz.getSchoolYear().isEmpty()) {
-            return 0;
-        }
         try {
             String year = clazz.getSchoolYear().replace("/", "");
             return Integer.parseInt(year);
