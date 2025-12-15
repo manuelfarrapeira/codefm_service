@@ -2,9 +2,8 @@
 Feature: Delete School API
 
   Background:
-      * configure headers = { 'Cookie': '#(authTokens.karateuseradmin)', 'Accept-Language': 'es' }
-      Given url baseLocalUrl
-    * url baseLocalUrl
+    * configure headers = { 'Cookie': '#(authTokens.karateuseradmin)', 'Accept-Language': 'es' }
+    Given url baseHttpsUrl
 
 
     Scenario Outline: Fail to delete school
