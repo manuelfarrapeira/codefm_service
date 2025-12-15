@@ -23,19 +23,17 @@ public interface SchoolService {
      * Creates a new school.
      *
      * @param school         The school object to create.
-     * @param acceptLanguage The Accept-Language header for error messages.
      * @return The created school object.
      */
-    School createSchool(School school, String acceptLanguage);
+    School createSchool(School school);
 
     /**
      * Soft-deletes a school by setting its deletion date.
      *
      * @param schoolId       The ID of the school to soft-delete.
      * @param teacherId      The ID of the teacher attempting the soft-delete.
-     * @param acceptLanguage The Accept-Language header for error messages.
      */
-    void softDeleteSchool(Integer schoolId, Integer teacherId, String acceptLanguage);
+    void softDeleteSchool(Integer schoolId, Integer teacherId);
 
     /**
      * Retrieves a school by its ID.
@@ -51,8 +49,7 @@ public interface SchoolService {
      * @param schoolId       The ID of the school to update.
      * @param school         The school object containing the updated data.
      * @param teacherId      The ID of the teacher attempting the update.
-     * @param acceptLanguage The Accept-Language header for error messages.
      * @return The updated school object.
      */
-    School updateSchool(Integer schoolId, School school, Integer teacherId, String acceptLanguage);
+    School updateSchool(Integer schoolId, School school, Integer teacherId);
 }

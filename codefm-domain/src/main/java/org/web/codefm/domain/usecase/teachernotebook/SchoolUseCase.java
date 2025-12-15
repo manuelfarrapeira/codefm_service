@@ -21,26 +21,23 @@ public interface SchoolUseCase {
      * Creates a new school based on the provided data and assigns it to the authenticated teacher.
      *
      * @param school         The school object containing the data for the new school.
-     * @param acceptLanguage The language accepted by the client for error messages.
      * @return The created school object.
      */
-    School createSchool(School school, String acceptLanguage);
+    School createSchool(School school);
 
     /**
      * Soft-deletes a school by setting its deletion date.
      *
      * @param schoolId       The ID of the school to soft-delete.
-     * @param acceptLanguage The Accept-Language header for error messages.
      */
-    void softDeleteSchool(Integer schoolId, String acceptLanguage);
+    void softDeleteSchool(Integer schoolId);
 
     /**
      * Updates an existing school based on the provided data.
      *
      * @param schoolId       The ID of the school to update.
      * @param school         The school object containing the updated data.
-     * @param acceptLanguage The language accepted by the client for error messages.
      * @return The updated school object.
      */
-    School updateSchool(Integer schoolId, School school, String acceptLanguage);
+    School updateSchool(Integer schoolId, School school);
 }

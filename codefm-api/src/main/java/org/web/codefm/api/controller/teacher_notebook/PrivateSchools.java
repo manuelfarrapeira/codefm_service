@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.web.codefm.api.TeacherNoteBookSchoolsApi;
 import org.web.codefm.api.mapper.SchoolDTOMapper;
 import org.web.codefm.api.mapper.SchoolRequestMapper;
+import org.web.codefm.api.utils.Locale;
 import org.web.codefm.api.utils.Logged;
 import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.domain.usecase.teachernotebook.SchoolUseCase;
@@ -36,29 +37,32 @@ public class PrivateSchools implements TeacherNoteBookSchoolsApi {
 
     @Logged
     @Override
+    @Locale(1)
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<SchoolDTO> createSchool(SchoolRequestDTO createSchoolRequestDTO, String acceptLanguage) {
         School schoolToCreate = schoolRequestMapper.toDomain(createSchoolRequestDTO);
 
-        School createdSchool = schoolUseCase.createSchool(schoolToCreate, acceptLanguage);
+        School createdSchool = schoolUseCase.createSchool(schoolToCreate);
 
         return new ResponseEntity<>(schoolDTOMapper.toDTO(createdSchool), HttpStatus.CREATED);
     }
 
     @Logged
     @Override
+    @Locale(1)
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<Void> deleteSchool(Integer id, String acceptLanguage) {
-        schoolUseCase.softDeleteSchool(id, acceptLanguage);
+        schoolUseCase.softDeleteSchool(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @Logged
     @Override
+    @Locale(2)
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<SchoolDTO> updateSchool(Integer id, SchoolRequestDTO updateSchoolRequestDTO, String acceptLanguage) {
         School schoolToUpdate = schoolRequestMapper.toDomain(updateSchoolRequestDTO);
-        School updatedSchool = schoolUseCase.updateSchool(id, schoolToUpdate, acceptLanguage);
+        School updatedSchool = schoolUseCase.updateSchool(id, schoolToUpdate);
         return ResponseEntity.ok(schoolDTOMapper.toDTO(updatedSchool));
     }
 

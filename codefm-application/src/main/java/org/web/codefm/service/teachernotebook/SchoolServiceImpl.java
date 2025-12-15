@@ -13,6 +13,7 @@ import org.web.codefm.domain.exception.teachernotebook.SchoolValidationException
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.SchoolRepository;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
+import org.web.codefm.domain.session.SessionUser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +27,7 @@ public class SchoolServiceImpl implements SchoolService {
 
     private final SchoolRepository schoolRepository;
     private final MessageSource messageSource;
+    private final SessionUser sessionUser;
 
     @Override
     public List<School> getSchoolsByTeacherId(Integer teacherId) {
@@ -33,9 +35,9 @@ public class SchoolServiceImpl implements SchoolService {
     }
 
     @Override
-    public School createSchool(School school, String acceptLanguage) {
+    public School createSchool(School school) {
         List<ErrorMessage> errors = new ArrayList<>();
-        Locale locale = getLocale(acceptLanguage);
+        Locale locale = sessionUser.getLocale();
 
         validateSchool(school, errors, locale);
 
@@ -48,8 +50,8 @@ public class SchoolServiceImpl implements SchoolService {
 
     @Override
     @Transactional
-    public void softDeleteSchool(Integer schoolId, Integer teacherId, String acceptLanguage) {
-        Locale locale = getLocale(acceptLanguage);
+    public void softDeleteSchool(Integer schoolId, Integer teacherId) {
+        Locale locale = sessionUser.getLocale();
 
         School school = schoolRepository.findById(schoolId)
                 .orElseThrow(() -> new SchoolNotFoundException(messageSource.getMessage(MessageKeys.SCHOOL_NOT_FOUND, null, locale)));
@@ -63,9 +65,9 @@ public class SchoolServiceImpl implements SchoolService {
 
     @Override
     @Transactional
-    public School updateSchool(Integer schoolId, School school, Integer teacherId, String acceptLanguage) {
+    public School updateSchool(Integer schoolId, School school, Integer teacherId) {
 
-        Locale locale = getLocale(acceptLanguage);
+        Locale locale = sessionUser.getLocale();
         List<ErrorMessage> errors = new ArrayList<>();
         validateSchool(school, errors, locale);
 
@@ -101,14 +103,6 @@ public class SchoolServiceImpl implements SchoolService {
         if (school.getTlf() != null && String.valueOf(school.getTlf()).length() != 9) {
             String translatedMessage = messageSource.getMessage(MessageKeys.SCHOOL_VALIDATION_TLF_INVALID, null, locale);
             errors.add(new ErrorMessage("tlf", translatedMessage));
-        }
-    }
-
-    private Locale getLocale(String acceptLanguage) {
-        if ("es".equalsIgnoreCase(acceptLanguage)) {
-            return new Locale("es");
-        } else {
-            return Locale.ENGLISH;
         }
     }
 }

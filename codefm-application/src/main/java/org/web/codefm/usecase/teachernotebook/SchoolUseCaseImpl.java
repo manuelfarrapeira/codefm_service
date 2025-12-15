@@ -40,22 +40,22 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
     }
 
     @Override
-    public School createSchool(School school, String acceptLanguage) {
+    public School createSchool(School school) {
         Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
         school.setTeacherId(teacherId);
-        return schoolService.createSchool(school, acceptLanguage);
+        return schoolService.createSchool(school);
     }
 
     @Override
-    public void softDeleteSchool(Integer schoolId, String acceptLanguage) {
+    public void softDeleteSchool(Integer schoolId) {
         Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
-        schoolService.softDeleteSchool(schoolId, teacherId, acceptLanguage);
+        schoolService.softDeleteSchool(schoolId, teacherId);
     }
 
     @Override
-    public School updateSchool(Integer schoolId, School school, String acceptLanguage) {
+    public School updateSchool(Integer schoolId, School school) {
         Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
-        return schoolService.updateSchool(schoolId, school, teacherId, acceptLanguage);
+        return schoolService.updateSchool(schoolId, school, teacherId);
     }
 
     private Integer parseSchoolYear(Class clazz) {

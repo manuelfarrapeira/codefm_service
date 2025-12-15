@@ -10,6 +10,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 
@@ -24,6 +25,7 @@ public class SessionUser implements Serializable {
     private List<String> roles;
     private List<String> permisos;
     private Map<String, String> parameters = new HashMap<>();
+    private Locale locale;
 
 }
 

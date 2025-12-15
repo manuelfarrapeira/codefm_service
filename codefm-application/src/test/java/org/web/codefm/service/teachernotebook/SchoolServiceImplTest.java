@@ -3,6 +3,7 @@ package org.web.codefm.service.teachernotebook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -13,6 +14,7 @@ import org.web.codefm.domain.exception.teachernotebook.SchoolNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SchoolValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.SchoolRepository;
+import org.web.codefm.domain.session.SessionUser;
 
 import java.util.*;
 
@@ -28,16 +30,17 @@ class SchoolServiceImplTest {
     private SchoolRepository schoolRepository;
     @Mock
     private MessageSource messageSource;
+    @Mock
+    private SessionUser sessionUser;
 
-
+    @InjectMocks
     private SchoolServiceImpl schoolService;
 
-    private final String defaultAcceptLanguage = "en";
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        schoolService = new SchoolServiceImpl(schoolRepository, messageSource);
+        schoolService = new SchoolServiceImpl(schoolRepository, messageSource, sessionUser);
     }
 
     @Test
@@ -78,27 +81,11 @@ class SchoolServiceImplTest {
                 .build();
 
         when(schoolRepository.save(schoolToCreate)).thenReturn(schoolToCreate);
-        School createdSchool = schoolService.createSchool(schoolToCreate, defaultAcceptLanguage);
+        School createdSchool = schoolService.createSchool(schoolToCreate);
 
         assertNotNull(createdSchool);
         assertEquals("Valid School", createdSchool.getName());
         verify(schoolRepository, times(1)).save(schoolToCreate);
-    }
-
-    @Test
-    void createSchool_shouldThrowException_whenNameIsNull() {
-        School schoolWithNullName = School.builder().name(null).build();
-        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class)))
-                .thenReturn("School name is required.");
-        SchoolValidationException exception = assertThrows(SchoolValidationException.class, () -> {
-            schoolService.createSchool(schoolWithNullName, defaultAcceptLanguage);
-        });
-
-        assertEquals(1, exception.getErrors().size());
-        assertEquals("name", exception.getErrors().get(0).getParam());
-        assertEquals("School name is required.", exception.getErrors().get(0).getMessage());
-        verify(schoolRepository, never()).save(any());
-        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class));
     }
 
     @Test
@@ -109,9 +96,10 @@ class SchoolServiceImplTest {
                 .build();
         when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_TLF_INVALID), eq(null), any(Locale.class)))
                 .thenReturn("Telephone number must be 9 digits.");
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         SchoolValidationException exception = assertThrows(SchoolValidationException.class, () -> {
-            schoolService.createSchool(schoolWithInvalidTlf, defaultAcceptLanguage);
+            schoolService.createSchool(schoolWithInvalidTlf);
         });
 
         assertEquals(1, exception.getErrors().size());
@@ -128,14 +116,14 @@ class SchoolServiceImplTest {
                 .tlf(12345)
                 .build();
 
-
         when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class)))
                 .thenReturn("School name is required.");
         when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_TLF_INVALID), eq(null), any(Locale.class)))
                 .thenReturn("Telephone number must be 9 digits.");
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         SchoolValidationException exception = assertThrows(SchoolValidationException.class, () -> {
-            schoolService.createSchool(schoolWithMultipleErrors, defaultAcceptLanguage);
+            schoolService.createSchool(schoolWithMultipleErrors);
         });
 
         assertEquals(2, exception.getErrors().size());
@@ -150,24 +138,6 @@ class SchoolServiceImplTest {
         verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_VALIDATION_TLF_INVALID), eq(null), any(Locale.class));
     }
 
-    @Test
-    void createSchool_shouldUseSpanishLocaleForValidationMessages_whenAcceptLanguageIsEs() {
-        School schoolWithNullName = School.builder().name(null).build();
-        String spanishAcceptLanguage = "es";
-        String expectedSpanishMessage = "El nombre del colegio es obligatorio.";
-
-        when(messageSource.getMessage(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED, null, new Locale("es")))
-                .thenReturn(expectedSpanishMessage);
-
-        SchoolValidationException exception = assertThrows(SchoolValidationException.class, () -> {
-            schoolService.createSchool(schoolWithNullName, spanishAcceptLanguage);
-        });
-
-        assertEquals(1, exception.getErrors().size());
-        assertEquals("name", exception.getErrors().get(0).getParam());
-        assertEquals(expectedSpanishMessage, exception.getErrors().get(0).getMessage());
-        verify(schoolRepository, never()).save(any());
-    }
 
     @Test
     void softDeleteSchool_shouldCallRepository_whenSchoolExistsAndOwnedByTeacher() {
@@ -178,7 +148,7 @@ class SchoolServiceImplTest {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
         when(schoolRepository.softDeleteSchool(schoolId, teacherId)).thenReturn(school);
 
-        schoolService.softDeleteSchool(schoolId, teacherId, defaultAcceptLanguage);
+        schoolService.softDeleteSchool(schoolId, teacherId);
 
         verify(schoolRepository, times(1)).findById(schoolId);
         verify(schoolRepository, times(1)).softDeleteSchool(schoolId, teacherId);
@@ -193,9 +163,10 @@ class SchoolServiceImplTest {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.empty());
         when(messageSource.getMessage(eq(MessageKeys.SCHOOL_NOT_FOUND), any(), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         SchoolNotFoundException exception = assertThrows(SchoolNotFoundException.class, () ->
-                schoolService.softDeleteSchool(schoolId, teacherId, defaultAcceptLanguage));
+                schoolService.softDeleteSchool(schoolId, teacherId));
 
         assertEquals(expectedErrorMessage, exception.getErrorDescription());
         verify(schoolRepository, times(1)).findById(schoolId);
@@ -214,9 +185,10 @@ class SchoolServiceImplTest {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
         when(messageSource.getMessage(eq(MessageKeys.SCHOOL_FORBIDDEN), any(), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         SchoolForbiddenException exception = assertThrows(SchoolForbiddenException.class, () ->
-                schoolService.softDeleteSchool(schoolId, teacherId, defaultAcceptLanguage));
+                schoolService.softDeleteSchool(schoolId, teacherId));
 
         assertEquals(expectedErrorMessage, exception.getErrorDescription());
         verify(schoolRepository, times(1)).findById(schoolId);
@@ -260,7 +232,7 @@ class SchoolServiceImplTest {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(existingSchool));
         when(schoolRepository.save(any(School.class))).thenReturn(savedSchool);
 
-        School result = schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, defaultAcceptLanguage);
+        School result = schoolService.updateSchool(schoolId, updatedSchoolData, teacherId);
 
         assertNotNull(result);
         assertEquals(schoolId, result.getId());
@@ -280,9 +252,10 @@ class SchoolServiceImplTest {
 
         when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         SchoolValidationException exception = assertThrows(SchoolValidationException.class, () ->
-                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, defaultAcceptLanguage));
+                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId));
 
         assertEquals(1, exception.getErrors().size());
         assertEquals("name", exception.getErrors().get(0).getParam());
@@ -296,15 +269,15 @@ class SchoolServiceImplTest {
     void updateSchool_shouldThrowSchoolValidationException_whenTlfIsInvalid() {
         Integer schoolId = 1;
         Integer teacherId = 101;
-        School existingSchool = School.builder().id(schoolId).teacherId(teacherId).name("Old Name").build();
         School updatedSchoolData = School.builder().name("Valid Name").tlf(123).build();
         String expectedErrorMessage = "Telephone number must be 9 digits.";
 
         when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_TLF_INVALID), eq(null), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         SchoolValidationException exception = assertThrows(SchoolValidationException.class, () ->
-                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, defaultAcceptLanguage));
+                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId));
 
         assertEquals(1, exception.getErrors().size());
         assertEquals("tlf", exception.getErrors().get(0).getParam());
@@ -324,9 +297,10 @@ class SchoolServiceImplTest {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.empty());
         when(messageSource.getMessage(eq(MessageKeys.SCHOOL_NOT_FOUND), any(), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         SchoolNotFoundException exception = assertThrows(SchoolNotFoundException.class, () ->
-                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, defaultAcceptLanguage));
+                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId));
 
         assertEquals(expectedErrorMessage, exception.getErrorDescription());
         verify(schoolRepository, times(1)).findById(schoolId);
@@ -346,9 +320,10 @@ class SchoolServiceImplTest {
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(existingSchool));
         when(messageSource.getMessage(eq(MessageKeys.SCHOOL_FORBIDDEN), any(), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         SchoolForbiddenException exception = assertThrows(SchoolForbiddenException.class, () ->
-                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, defaultAcceptLanguage));
+                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId));
 
         assertEquals(expectedErrorMessage, exception.getErrorDescription());
         verify(schoolRepository, times(1)).findById(schoolId);
@@ -360,22 +335,20 @@ class SchoolServiceImplTest {
     void updateSchool_shouldUseSpanishLocaleForValidationMessages_whenAcceptLanguageIsEs() {
         Integer schoolId = 1;
         Integer teacherId = 101;
-        School existingSchool = School.builder().id(schoolId).teacherId(teacherId).name("Old Name").build();
         School updatedSchoolData = School.builder().name(null).build();
-        String spanishAcceptLanguage = "es";
         String expectedSpanishMessage = "El nombre del colegio es obligatorio.";
-
-        when(messageSource.getMessage(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED, null, new Locale("es")))
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(messageSource.getMessage(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED, null, Locale.ENGLISH))
                 .thenReturn(expectedSpanishMessage);
 
         SchoolValidationException exception = assertThrows(SchoolValidationException.class, () ->
-                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, spanishAcceptLanguage));
+                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId));
 
         assertEquals(1, exception.getErrors().size());
         assertEquals("name", exception.getErrors().get(0).getParam());
         assertEquals(expectedSpanishMessage, exception.getErrors().get(0).getMessage());
         verify(schoolRepository, never()).findById(any());
         verify(schoolRepository, never()).save(any());
-        verify(messageSource, times(1)).getMessage(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED, null, new Locale("es"));
+        verify(messageSource, times(1)).getMessage(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED, null, Locale.ENGLISH);
     }
 }

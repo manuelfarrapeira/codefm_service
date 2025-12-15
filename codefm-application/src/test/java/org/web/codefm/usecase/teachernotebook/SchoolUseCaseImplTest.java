@@ -29,7 +29,6 @@ class SchoolUseCaseImplTest {
     @InjectMocks
     private SchoolUseCaseImpl schoolUseCase;
 
-    private final String defaultAcceptLanguage = "en";
 
     @Test
     void getSchoolsByTeacher_shouldSortSchoolsByMaxSchoolYearAndClassesInternallyDescending() {
@@ -163,12 +162,12 @@ class SchoolUseCaseImplTest {
                 .build();
 
         when(sessionUser.getParameters()).thenReturn(parameters);
-        when(schoolService.createSchool(any(School.class), eq(defaultAcceptLanguage))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(schoolService.createSchool(any(School.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        schoolUseCase.createSchool(schoolToCreate, defaultAcceptLanguage);
+        schoolUseCase.createSchool(schoolToCreate);
 
         ArgumentCaptor<School> schoolCaptor = ArgumentCaptor.forClass(School.class);
-        verify(schoolService, times(1)).createSchool(schoolCaptor.capture(), eq(defaultAcceptLanguage));
+        verify(schoolService, times(1)).createSchool(schoolCaptor.capture());
 
         School capturedSchool = schoolCaptor.getValue();
         assertEquals(teacherId, capturedSchool.getTeacherId());
@@ -183,12 +182,12 @@ class SchoolUseCaseImplTest {
         parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
 
         when(sessionUser.getParameters()).thenReturn(parameters);
-        doNothing().when(schoolService).softDeleteSchool(schoolId, teacherId, defaultAcceptLanguage);
+        doNothing().when(schoolService).softDeleteSchool(schoolId, teacherId);
 
-        schoolUseCase.softDeleteSchool(schoolId, defaultAcceptLanguage);
+        schoolUseCase.softDeleteSchool(schoolId);
 
         verify(sessionUser, times(1)).getParameters();
-        verify(schoolService, times(1)).softDeleteSchool(schoolId, teacherId, defaultAcceptLanguage);
+        verify(schoolService, times(1)).softDeleteSchool(schoolId, teacherId);
     }
 
     @Test
@@ -213,11 +212,11 @@ class SchoolUseCaseImplTest {
                 .build();
 
         when(sessionUser.getParameters()).thenReturn(parameters);
-        when(schoolService.updateSchool(eq(schoolId), any(School.class), eq(teacherId), eq(defaultAcceptLanguage)))
+        when(schoolService.updateSchool(eq(schoolId), any(School.class), eq(teacherId)))
                 .thenReturn(updatedSchool);
 
         // When
-        School result = schoolUseCase.updateSchool(schoolId, schoolToUpdate, defaultAcceptLanguage);
+        School result = schoolUseCase.updateSchool(schoolId, schoolToUpdate);
 
         // Then
         assertNotNull(result);
@@ -226,6 +225,6 @@ class SchoolUseCaseImplTest {
         assertEquals("Updated Town", result.getTown());
         assertEquals(987654321, result.getTlf());
         verify(sessionUser, times(1)).getParameters();
-        verify(schoolService, times(1)).updateSchool(eq(schoolId), any(School.class), eq(teacherId), eq(defaultAcceptLanguage));
+        verify(schoolService, times(1)).updateSchool(eq(schoolId), any(School.class), eq(teacherId));
     }
 }
