@@ -12,7 +12,6 @@ Feature: Delete School API
         Then status <status>
         And match response.code == <code>
 
-
         Examples:
           | schoolId | status      | code
           | 999      | 404         | '1003'
