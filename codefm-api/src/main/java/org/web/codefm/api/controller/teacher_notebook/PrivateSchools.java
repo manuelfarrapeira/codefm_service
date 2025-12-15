@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.web.codefm.api.TeacherNoteBookSchoolsApi;
 import org.web.codefm.api.mapper.SchoolDTOMapper;
 import org.web.codefm.api.utils.Logged;
-import org.web.codefm.domain.entity.School;
+import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.domain.usecase.teachernotebook.SchoolUseCase;
 import org.web.codefm.model.SchoolDTO;
 
@@ -27,7 +27,6 @@ public class PrivateSchools implements TeacherNoteBookSchoolsApi {
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<List<SchoolDTO>> schools() {
         List<School> schools = schoolUseCase.getSchoolsByTeacher();
-        List<SchoolDTO> dtos = schoolDTOMapper.toDTOList(schools);
-        return ResponseEntity.ok(dtos);
+        return ResponseEntity.ok(schoolDTOMapper.toDTOList(schools));
     }
 }

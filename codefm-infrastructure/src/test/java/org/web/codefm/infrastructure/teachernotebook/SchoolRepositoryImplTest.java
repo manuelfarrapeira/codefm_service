@@ -5,7 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.web.codefm.domain.entity.School;
+import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SchoolEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SchoolJPARepository;
 import org.web.codefm.infrastructure.mapper.SchoolMapper;
@@ -31,12 +31,12 @@ class SchoolRepositoryImplTest {
     @Test
     void findByTeacherId_shouldReturnSchools() {
         Integer teacherId = 1;
-        SchoolEntity entity1 = new SchoolEntity(1, teacherId, "School A", "Town A", 123456);
-        SchoolEntity entity2 = new SchoolEntity(2, teacherId, "School B", "Town B", 789012);
+        SchoolEntity entity1 = new SchoolEntity(1, teacherId, "School A", "Town A", 123456, null);
+        SchoolEntity entity2 = new SchoolEntity(2, teacherId, "School B", "Town B", 789012, null);
         List<SchoolEntity> entities = Arrays.asList(entity1, entity2);
 
-        School school1 = new School(1, teacherId, "School A", "Town A", 123456);
-        School school2 = new School(2, teacherId, "School B", "Town B", 789012);
+        School school1 = School.builder().id(1).teacherId(teacherId).name("School A").town("Town A").tlf(123456).build();
+        School school2 = School.builder().id(2).teacherId(teacherId).name("School B").town("Town B").tlf(789012).build();
         List<School> expectedSchools = Arrays.asList(school1, school2);
 
         when(schoolJPARepository.findByTeacherId(teacherId)).thenReturn(entities);

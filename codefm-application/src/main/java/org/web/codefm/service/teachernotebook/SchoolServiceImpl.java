@@ -3,7 +3,7 @@ package org.web.codefm.service.teachernotebook;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.web.codefm.domain.entity.School;
+import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.domain.repository.teachernotebook.SchoolRepository;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 

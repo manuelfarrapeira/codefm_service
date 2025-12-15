@@ -5,7 +5,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.web.codefm.domain.entity.School;
+import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.domain.repository.teachernotebook.SchoolRepository;
 
 import java.util.Arrays;
@@ -26,8 +26,8 @@ class SchoolServiceImplTest {
     @Test
     void getSchoolsByTeacherId_shouldReturnSchools() {
         Integer teacherId = 1;
-        School school1 = new School(1, teacherId, "School A", "Town A", 123456);
-        School school2 = new School(2, teacherId, "School B", "Town B", 789012);
+        School school1 = School.builder().id(1).teacherId(teacherId).name("School A").town("Town A").tlf(123456).build();
+        School school2 = School.builder().id(2).teacherId(teacherId).name("School B").town("Town B").tlf(789012).build();
         List<School> expectedSchools = Arrays.asList(school1, school2);
 
         when(schoolRepository.findByTeacherId(teacherId)).thenReturn(expectedSchools);

@@ -1,6 +1,6 @@
 package org.web.codefm.domain.usecase.teachernotebook;
 
-import org.web.codefm.domain.entity.School;
+import org.web.codefm.domain.entity.teachernotebook.School;
 
 import java.util.List;
 

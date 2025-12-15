@@ -1,12 +1,12 @@
 package org.web.codefm.api.mapper;
 
 import org.mapstruct.Mapper;
-import org.web.codefm.domain.entity.School;
+import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.model.SchoolDTO;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {ClassDTOMapper.class})
 public interface SchoolDTOMapper {
 
     SchoolDTO toDTO(School school);

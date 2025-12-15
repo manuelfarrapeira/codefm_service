@@ -96,3 +96,18 @@ components:
           type: 'string'
         tlf:
           type: 'integer'
+        classes:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ClassDTO'
+    ClassDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        schoolId:
+          type: 'integer'
+        name:
+          type: 'string'
+        schoolYear:
+          type: 'string'

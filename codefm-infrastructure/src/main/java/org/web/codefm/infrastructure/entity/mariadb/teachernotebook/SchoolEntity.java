@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.Generated;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Entity
 @Table(name = "schools")
 @Data
@@ -29,4 +31,8 @@ public class SchoolEntity {
 
     @Column(nullable = false)
     private Integer tlf;
+
+    @OneToMany
+    @JoinColumn(name = "school_id")
+    private List<ClassEntity> classes;
 }
