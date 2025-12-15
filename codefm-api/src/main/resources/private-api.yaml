@@ -116,6 +116,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/schools/{id}:
+    delete:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: deleteSchool
+      summary: Soft-delete a school
+      description: Marks a school as deleted by setting its deletion_date. Only the owning teacher can delete a school.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the school to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: School successfully soft-deleted (No Content)
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 
 components:
   schemas:

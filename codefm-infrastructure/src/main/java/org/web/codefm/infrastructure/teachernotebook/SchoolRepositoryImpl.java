@@ -9,7 +9,9 @@ import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SchoolEntity
 import org.web.codefm.infrastructure.jpa.teachernotebook.SchoolJPARepository;
 import org.web.codefm.infrastructure.mapper.SchoolMapper;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -29,5 +31,21 @@ public class SchoolRepositoryImpl implements SchoolRepository {
         SchoolEntity schoolEntity = schoolMapper.toEntity(school);
         SchoolEntity savedEntity = schoolJPARepository.save(schoolEntity);
         return schoolMapper.toModel(savedEntity);
+    }
+
+    @Override
+    public Optional<School> findById(Integer schoolId) {
+        return schoolJPARepository.findByIdAndDeletionDateIsNull(schoolId)
+                .map(schoolMapper::toModel);
+    }
+
+    @Override
+    public School softDeleteSchool(Integer schoolId, Integer teacherId) {
+        SchoolEntity schoolEntity = schoolJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)
+                .orElseThrow(() -> new IllegalArgumentException("School not found or not owned by teacher or already deleted."));
+
+        schoolEntity.setDeletionDate(LocalDate.now());
+        SchoolEntity updatedEntity = schoolJPARepository.save(schoolEntity);
+        return schoolMapper.toModel(updatedEntity);
     }
 }

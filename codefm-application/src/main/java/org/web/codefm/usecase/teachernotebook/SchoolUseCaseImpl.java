@@ -46,6 +46,12 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
         return schoolService.createSchool(school, acceptLanguage);
     }
 
+    @Override
+    public void softDeleteSchool(Integer schoolId, String acceptLanguage) {
+        Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
+        schoolService.softDeleteSchool(schoolId, teacherId, acceptLanguage);
+    }
+
     private Integer parseSchoolYear(Class clazz) {
         if (clazz == null || clazz.getSchoolYear() == null || clazz.getSchoolYear().isEmpty()) {
             return 0;

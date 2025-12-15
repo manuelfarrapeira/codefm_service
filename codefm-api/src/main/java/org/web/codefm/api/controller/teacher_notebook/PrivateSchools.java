@@ -45,4 +45,11 @@ public class PrivateSchools implements TeacherNoteBookSchoolsApi {
         return new ResponseEntity<>(schoolDTOMapper.toDTO(createdSchool), HttpStatus.CREATED);
     }
 
+    @Logged
+    @Override
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> deleteSchool(Integer id, String acceptLanguage) {
+        schoolUseCase.softDeleteSchool(id, acceptLanguage);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
 }

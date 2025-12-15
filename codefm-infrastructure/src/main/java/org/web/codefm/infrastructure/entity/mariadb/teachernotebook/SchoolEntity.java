@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.Generated;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
@@ -31,6 +32,9 @@ public class SchoolEntity {
 
     @Column(nullable = false)
     private Integer tlf;
+
+    @Column(name = "deletion_date")
+    private LocalDate deletionDate;
 
     @OneToMany
     @JoinColumn(name = "school_id")

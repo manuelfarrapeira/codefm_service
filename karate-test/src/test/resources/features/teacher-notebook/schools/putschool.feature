@@ -3,7 +3,7 @@ Feature: Teacher Notebook - Create School
 
   Background:
     * configure headers = { 'Cookie': '#(authTokens.karateuseradmin)', 'Accept-Language': 'es' }
-    Given url baseLocalUrl
+    Given url baseHttpsUrl
 
 #  Scenario: Create a new school successfully
 #    * def requestBody =

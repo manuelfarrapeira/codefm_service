@@ -193,4 +193,24 @@ class SchoolUseCaseImplTest {
         assertEquals(teacherId, capturedSchool.getTeacherId());
         assertEquals("New School", capturedSchool.getName());
     }
+
+    @Test
+    void softDeleteSchool_shouldGetTeacherIdFromSessionAndCallService() {
+        // Given
+        Integer schoolId = 1;
+        Integer teacherId = 101;
+        String acceptLanguage = "en";
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
+
+        when(sessionUser.getParameters()).thenReturn(parameters);
+        doNothing().when(schoolService).softDeleteSchool(schoolId, teacherId, acceptLanguage);
+
+        // When
+        schoolUseCase.softDeleteSchool(schoolId, acceptLanguage);
+
+        // Then
+        verify(sessionUser, times(1)).getParameters();
+        verify(schoolService, times(1)).softDeleteSchool(schoolId, teacherId, acceptLanguage);
+    }
 }
