@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.web.codefm.domain.enums.ResourceAccessClient;
 import org.web.codefm.domain.service.SessionUserService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
@@ -41,10 +42,20 @@ public class SessionUserServiceImpl implements SessionUserService {
 
             Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
             if (resourceAccess != null) {
-                Map<String, Object> appAccess = (Map<String, Object>) resourceAccess.get("codefm");
-                if (appAccess != null) {
-                    sessionUser.setRoles((List<String>) appAccess.get("roles"));
+                List<String> allClientRoles = new ArrayList<>();
+                for (ResourceAccessClient clientEnum : ResourceAccessClient.values()) {
+                    String clientId = clientEnum.getClientId();
+                    Map<String, Object> clientAccess = (Map<String, Object>) resourceAccess.get(clientId);
+                    if (clientAccess != null && clientAccess.containsKey("roles")) {
+                        Object rolesObject = clientAccess.get("roles");
+                        if (rolesObject instanceof List) {
+                            allClientRoles.addAll((List<String>) rolesObject);
+                        } else {
+                            log.warn("Roles for client '{}' are not a List<String>: {}", clientId, rolesObject);
+                        }
+                    }
                 }
+                sessionUser.setRoles(allClientRoles);
             }
 
             for (SessionParameter param : SessionParameter.values()) {
