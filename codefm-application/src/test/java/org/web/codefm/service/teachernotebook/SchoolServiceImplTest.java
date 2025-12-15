@@ -12,6 +12,9 @@ import org.web.codefm.domain.exception.teachernotebook.SchoolValidationException
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.SchoolRepository;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,6 +39,36 @@ class SchoolServiceImplTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         schoolService = new SchoolServiceImpl(schoolRepository, messageSource);
+    }
+
+    @Test
+    void getSchoolsByTeacherId_shouldReturnSchools_whenFound() {
+        Integer teacherId = 1;
+        List<School> expectedSchools = Arrays.asList(
+                School.builder().id(1).name("School A").build(),
+                School.builder().id(2).name("School B").build()
+        );
+
+        when(schoolRepository.findByTeacherId(teacherId)).thenReturn(expectedSchools);
+
+        List<School> actualSchools = schoolService.getSchoolsByTeacherId(teacherId);
+
+        assertNotNull(actualSchools);
+        assertEquals(2, actualSchools.size());
+        assertEquals("School A", actualSchools.get(0).getName());
+        verify(schoolRepository, times(1)).findByTeacherId(teacherId);
+    }
+
+    @Test
+    void getSchoolsByTeacherId_shouldReturnEmptyList_whenNoSchoolsFound() {
+        Integer teacherId = 2;
+        when(schoolRepository.findByTeacherId(teacherId)).thenReturn(Collections.emptyList());
+
+        List<School> actualSchools = schoolService.getSchoolsByTeacherId(teacherId);
+
+        assertNotNull(actualSchools);
+        assertTrue(actualSchools.isEmpty());
+        verify(schoolRepository, times(1)).findByTeacherId(teacherId);
     }
 
     @Test
@@ -116,5 +149,25 @@ class SchoolServiceImplTest {
         verify(schoolRepository, never()).save(any());
         verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class));
         verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_VALIDATION_TLF_INVALID), eq(null), any(Locale.class));
+    }
+
+    @Test
+    void createSchool_shouldUseSpanishLocaleForValidationMessages_whenAcceptLanguageIsEs() {
+        School schoolWithNullName = School.builder().name(null).build();
+        String spanishAcceptLanguage = "es";
+        String expectedSpanishMessage = "El nombre del colegio es obligatorio.";
+
+        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), eq(new Locale("es"))))
+                .thenReturn(expectedSpanishMessage);
+
+        SchoolValidationException exception = assertThrows(SchoolValidationException.class, () -> {
+            schoolService.createSchool(schoolWithNullName, spanishAcceptLanguage);
+        });
+
+        assertEquals(1, exception.getErrors().size());
+        assertEquals("name", exception.getErrors().get(0).getParam());
+        assertEquals(expectedSpanishMessage, exception.getErrors().get(0).getMessage());
+        verify(schoolRepository, never()).save(any());
+        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), eq(new Locale("es")));
     }
 }
