@@ -52,6 +52,12 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
         schoolService.softDeleteSchool(schoolId, teacherId, acceptLanguage);
     }
 
+    @Override
+    public School updateSchool(Integer schoolId, School school, String acceptLanguage) {
+        Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
+        return schoolService.updateSchool(schoolId, school, teacherId, acceptLanguage);
+    }
+
     private Integer parseSchoolYear(Class clazz) {
         try {
             String year = clazz.getSchoolYear().replace("/", "");

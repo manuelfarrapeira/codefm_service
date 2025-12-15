@@ -31,7 +31,7 @@ Feature: Teacher Notebook - Create School
 
     Given path '/teacher-notebook/schools'
     And request requestBody
-    When method POST
+    When method PUT
     Then status 400
     And match response.code == "1006"
     And match response.description == "VALIDATION_ERROR"

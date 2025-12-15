@@ -44,4 +44,15 @@ public interface SchoolService {
      * @return An Optional containing the School if found, or empty otherwise.
      */
     Optional<School> getSchoolById(Integer schoolId);
+
+    /**
+     * Updates an existing school.
+     *
+     * @param schoolId       The ID of the school to update.
+     * @param school         The school object containing the updated data.
+     * @param teacherId      The ID of the teacher attempting the update.
+     * @param acceptLanguage The Accept-Language header for error messages.
+     * @return The updated school object.
+     */
+    School updateSchool(Integer schoolId, School school, Integer teacherId, String acceptLanguage);
 }

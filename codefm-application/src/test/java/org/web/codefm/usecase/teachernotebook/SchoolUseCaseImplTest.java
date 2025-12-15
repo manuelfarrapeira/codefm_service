@@ -29,6 +29,8 @@ class SchoolUseCaseImplTest {
     @InjectMocks
     private SchoolUseCaseImpl schoolUseCase;
 
+    private final String defaultAcceptLanguage = "en";
+
     @Test
     void getSchoolsByTeacher_shouldSortSchoolsByMaxSchoolYearAndClassesInternallyDescending() {
         Integer teacherId = 1;
@@ -152,7 +154,6 @@ class SchoolUseCaseImplTest {
     @Test
     void createSchool_shouldSetTeacherIdAndCallService() {
         Integer teacherId = 123;
-        String acceptLanguage = "en";
         Map<String, String> parameters = new HashMap<>();
         parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
 
@@ -162,12 +163,12 @@ class SchoolUseCaseImplTest {
                 .build();
 
         when(sessionUser.getParameters()).thenReturn(parameters);
-        when(schoolService.createSchool(any(School.class), eq(acceptLanguage))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(schoolService.createSchool(any(School.class), eq(defaultAcceptLanguage))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        schoolUseCase.createSchool(schoolToCreate, acceptLanguage);
+        schoolUseCase.createSchool(schoolToCreate, defaultAcceptLanguage);
 
         ArgumentCaptor<School> schoolCaptor = ArgumentCaptor.forClass(School.class);
-        verify(schoolService, times(1)).createSchool(schoolCaptor.capture(), eq(acceptLanguage));
+        verify(schoolService, times(1)).createSchool(schoolCaptor.capture(), eq(defaultAcceptLanguage));
 
         School capturedSchool = schoolCaptor.getValue();
         assertEquals(teacherId, capturedSchool.getTeacherId());
@@ -178,16 +179,53 @@ class SchoolUseCaseImplTest {
     void softDeleteSchool_shouldGetTeacherIdFromSessionAndCallService() {
         Integer schoolId = 1;
         Integer teacherId = 101;
-        String acceptLanguage = "en";
         Map<String, String> parameters = new HashMap<>();
         parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
 
         when(sessionUser.getParameters()).thenReturn(parameters);
-        doNothing().when(schoolService).softDeleteSchool(schoolId, teacherId, acceptLanguage);
+        doNothing().when(schoolService).softDeleteSchool(schoolId, teacherId, defaultAcceptLanguage);
 
-        schoolUseCase.softDeleteSchool(schoolId, acceptLanguage);
+        schoolUseCase.softDeleteSchool(schoolId, defaultAcceptLanguage);
 
         verify(sessionUser, times(1)).getParameters();
-        verify(schoolService, times(1)).softDeleteSchool(schoolId, teacherId, acceptLanguage);
+        verify(schoolService, times(1)).softDeleteSchool(schoolId, teacherId, defaultAcceptLanguage);
+    }
+
+    @Test
+    void updateSchool_shouldGetTeacherIdFromSessionAndCallService() {
+        // Given
+        Integer schoolId = 1;
+        Integer teacherId = 101;
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
+
+        School schoolToUpdate = School.builder()
+                .name("Updated School Name")
+                .town("Updated Town")
+                .tlf(987654321)
+                .build();
+        School updatedSchool = School.builder()
+                .id(schoolId)
+                .teacherId(teacherId)
+                .name("Updated School Name")
+                .town("Updated Town")
+                .tlf(987654321)
+                .build();
+
+        when(sessionUser.getParameters()).thenReturn(parameters);
+        when(schoolService.updateSchool(eq(schoolId), any(School.class), eq(teacherId), eq(defaultAcceptLanguage)))
+                .thenReturn(updatedSchool);
+
+        // When
+        School result = schoolUseCase.updateSchool(schoolId, schoolToUpdate, defaultAcceptLanguage);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(schoolId, result.getId());
+        assertEquals("Updated School Name", result.getName());
+        assertEquals("Updated Town", result.getTown());
+        assertEquals(987654321, result.getTlf());
+        verify(sessionUser, times(1)).getParameters();
+        verify(schoolService, times(1)).updateSchool(eq(schoolId), any(School.class), eq(teacherId), eq(defaultAcceptLanguage));
     }
 }

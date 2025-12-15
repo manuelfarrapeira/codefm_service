@@ -171,46 +171,40 @@ class SchoolServiceImplTest {
 
     @Test
     void softDeleteSchool_shouldCallRepository_whenSchoolExistsAndOwnedByTeacher() {
-        // Given
         Integer schoolId = 1;
         Integer teacherId = 101;
         School school = School.builder().id(schoolId).teacherId(teacherId).name("School A").build();
 
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
-        when(schoolRepository.softDeleteSchool(schoolId, teacherId)).thenReturn(school); // Corrected: return a School object
+        when(schoolRepository.softDeleteSchool(schoolId, teacherId)).thenReturn(school);
 
-        // When
         schoolService.softDeleteSchool(schoolId, teacherId, defaultAcceptLanguage);
 
-        // Then
         verify(schoolRepository, times(1)).findById(schoolId);
         verify(schoolRepository, times(1)).softDeleteSchool(schoolId, teacherId);
     }
 
     @Test
     void softDeleteSchool_shouldThrowSchoolNotFoundException_whenSchoolDoesNotExist() {
-        // Given
         Integer schoolId = 1;
         Integer teacherId = 101;
         String expectedErrorMessage = "School with ID 1 not found.";
 
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.empty());
-        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_NOT_FOUND), any(), any(Locale.class))) // Changed any(Object[].class) to any()
+        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_NOT_FOUND), any(), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
 
-        // When / Then
         SchoolNotFoundException exception = assertThrows(SchoolNotFoundException.class, () ->
                 schoolService.softDeleteSchool(schoolId, teacherId, defaultAcceptLanguage));
 
         assertEquals(expectedErrorMessage, exception.getErrorDescription());
         verify(schoolRepository, times(1)).findById(schoolId);
         verify(schoolRepository, never()).softDeleteSchool(any(), any());
-        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_NOT_FOUND), any(), any(Locale.class)); // Changed any(Object[].class) to any()
+        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_NOT_FOUND), any(), any(Locale.class));
     }
 
     @Test
     void softDeleteSchool_shouldThrowSchoolForbiddenException_whenSchoolNotOwnedByTeacher() {
-        // Given
         Integer schoolId = 1;
         Integer teacherId = 101;
         Integer otherTeacherId = 999;
@@ -218,30 +212,26 @@ class SchoolServiceImplTest {
         String expectedErrorMessage = "You are not authorized to delete this school.";
 
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
-        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_FORBIDDEN), any(), any(Locale.class))) // Changed eq(null) to any()
+        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_FORBIDDEN), any(), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
 
-        // When / Then
         SchoolForbiddenException exception = assertThrows(SchoolForbiddenException.class, () ->
                 schoolService.softDeleteSchool(schoolId, teacherId, defaultAcceptLanguage));
 
         assertEquals(expectedErrorMessage, exception.getErrorDescription());
         verify(schoolRepository, times(1)).findById(schoolId);
         verify(schoolRepository, never()).softDeleteSchool(any(), any());
-        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_FORBIDDEN), any(), any(Locale.class)); // Changed eq(null) to any()
+        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_FORBIDDEN), any(), any(Locale.class));
     }
 
     @Test
     void getSchoolById_shouldReturnSchool_whenFound() {
-        // Given
         Integer schoolId = 1;
         School expectedSchool = School.builder().id(schoolId).name("Test School").build();
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(expectedSchool));
 
-        // When
         Optional<School> result = schoolService.getSchoolById(schoolId);
 
-        // Then
         assertTrue(result.isPresent());
         assertEquals(expectedSchool, result.get());
         verify(schoolRepository, times(1)).findById(schoolId);
@@ -249,15 +239,143 @@ class SchoolServiceImplTest {
 
     @Test
     void getSchoolById_shouldReturnEmpty_whenNotFound() {
-        // Given
         Integer schoolId = 1;
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.empty());
 
-        // When
         Optional<School> result = schoolService.getSchoolById(schoolId);
 
-        // Then
         assertFalse(result.isPresent());
         verify(schoolRepository, times(1)).findById(schoolId);
+    }
+
+
+    @Test
+    void updateSchool_shouldUpdateSchool_whenDataIsValidAndOwnedByTeacher() {
+        Integer schoolId = 1;
+        Integer teacherId = 101;
+        School existingSchool = School.builder().id(schoolId).teacherId(teacherId).name("Old Name").town("Old Town").tlf(111222333).build();
+        School updatedSchoolData = School.builder().name("New Name").town("New Town").tlf(987654321).build();
+        School savedSchool = School.builder().id(schoolId).teacherId(teacherId).name("New Name").town("New Town").tlf(987654321).build();
+
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(existingSchool));
+        when(schoolRepository.save(any(School.class))).thenReturn(savedSchool);
+
+        School result = schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, defaultAcceptLanguage);
+
+        assertNotNull(result);
+        assertEquals(schoolId, result.getId());
+        assertEquals("New Name", result.getName());
+        assertEquals("New Town", result.getTown());
+        assertEquals(987654321, result.getTlf());
+        verify(schoolRepository, times(1)).findById(schoolId);
+        verify(schoolRepository, times(1)).save(existingSchool);
+    }
+
+    @Test
+    void updateSchool_shouldThrowSchoolValidationException_whenNameIsNull() {
+        Integer schoolId = 1;
+        Integer teacherId = 101;
+        School updatedSchoolData = School.builder().name(null).build();
+        String expectedErrorMessage = "School name is required.";
+
+        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class)))
+                .thenReturn(expectedErrorMessage);
+
+        SchoolValidationException exception = assertThrows(SchoolValidationException.class, () ->
+                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, defaultAcceptLanguage));
+
+        assertEquals(1, exception.getErrors().size());
+        assertEquals("name", exception.getErrors().get(0).getParam());
+        assertEquals(expectedErrorMessage, exception.getErrors().get(0).getMessage());
+        verify(schoolRepository, never()).findById(any());
+        verify(schoolRepository, never()).save(any());
+        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class));
+    }
+
+    @Test
+    void updateSchool_shouldThrowSchoolValidationException_whenTlfIsInvalid() {
+        Integer schoolId = 1;
+        Integer teacherId = 101;
+        School existingSchool = School.builder().id(schoolId).teacherId(teacherId).name("Old Name").build();
+        School updatedSchoolData = School.builder().name("Valid Name").tlf(123).build();
+        String expectedErrorMessage = "Telephone number must be 9 digits.";
+
+        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_TLF_INVALID), eq(null), any(Locale.class)))
+                .thenReturn(expectedErrorMessage);
+
+        SchoolValidationException exception = assertThrows(SchoolValidationException.class, () ->
+                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, defaultAcceptLanguage));
+
+        assertEquals(1, exception.getErrors().size());
+        assertEquals("tlf", exception.getErrors().get(0).getParam());
+        assertEquals(expectedErrorMessage, exception.getErrors().get(0).getMessage());
+        verify(schoolRepository, never()).findById(any());
+        verify(schoolRepository, never()).save(any());
+        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_VALIDATION_TLF_INVALID), eq(null), any(Locale.class));
+    }
+
+    @Test
+    void updateSchool_shouldThrowSchoolNotFoundException_whenSchoolDoesNotExist() {
+        Integer schoolId = 1;
+        Integer teacherId = 101;
+        School updatedSchoolData = School.builder().name("New Name").build();
+        String expectedErrorMessage = "School with ID 1 not found.";
+
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.empty());
+        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_NOT_FOUND), any(), any(Locale.class)))
+                .thenReturn(expectedErrorMessage);
+
+        SchoolNotFoundException exception = assertThrows(SchoolNotFoundException.class, () ->
+                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, defaultAcceptLanguage));
+
+        assertEquals(expectedErrorMessage, exception.getErrorDescription());
+        verify(schoolRepository, times(1)).findById(schoolId);
+        verify(schoolRepository, never()).save(any());
+        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_NOT_FOUND), any(), any(Locale.class));
+    }
+
+    @Test
+    void updateSchool_shouldThrowSchoolForbiddenException_whenSchoolNotOwnedByTeacher() {
+        Integer schoolId = 1;
+        Integer teacherId = 101;
+        Integer otherTeacherId = 999;
+        School existingSchool = School.builder().id(schoolId).teacherId(otherTeacherId).name("Old Name").build();
+        School updatedSchoolData = School.builder().name("New Name").build();
+        String expectedErrorMessage = "You are not authorized to update this school.";
+
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(existingSchool));
+        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_FORBIDDEN), any(), any(Locale.class)))
+                .thenReturn(expectedErrorMessage);
+
+        SchoolForbiddenException exception = assertThrows(SchoolForbiddenException.class, () ->
+                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, defaultAcceptLanguage));
+
+        assertEquals(expectedErrorMessage, exception.getErrorDescription());
+        verify(schoolRepository, times(1)).findById(schoolId);
+        verify(schoolRepository, never()).save(any());
+        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_FORBIDDEN), any(), any(Locale.class));
+    }
+
+    @Test
+    void updateSchool_shouldUseSpanishLocaleForValidationMessages_whenAcceptLanguageIsEs() {
+        Integer schoolId = 1;
+        Integer teacherId = 101;
+        School existingSchool = School.builder().id(schoolId).teacherId(teacherId).name("Old Name").build();
+        School updatedSchoolData = School.builder().name(null).build();
+        String spanishAcceptLanguage = "es";
+        String expectedSpanishMessage = "El nombre del colegio es obligatorio.";
+
+        when(messageSource.getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), eq(new Locale("es"))))
+                .thenReturn(expectedSpanishMessage);
+
+        SchoolValidationException exception = assertThrows(SchoolValidationException.class, () ->
+                schoolService.updateSchool(schoolId, updatedSchoolData, teacherId, spanishAcceptLanguage));
+
+        assertEquals(1, exception.getErrors().size());
+        assertEquals("name", exception.getErrors().get(0).getParam());
+        assertEquals(expectedSpanishMessage, exception.getErrors().get(0).getMessage());
+        verify(schoolRepository, never()).findById(any());
+        verify(schoolRepository, never()).save(any());
+        verify(messageSource, times(1)).getMessage(eq(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED), eq(null), eq(new Locale("es")));
     }
 }

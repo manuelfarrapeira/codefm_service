@@ -33,4 +33,14 @@ public interface SchoolUseCase {
      * @param acceptLanguage The Accept-Language header for error messages.
      */
     void softDeleteSchool(Integer schoolId, String acceptLanguage);
+
+    /**
+     * Updates an existing school based on the provided data.
+     *
+     * @param schoolId       The ID of the school to update.
+     * @param school         The school object containing the updated data.
+     * @param acceptLanguage The language accepted by the client for error messages.
+     * @return The updated school object.
+     */
+    School updateSchool(Integer schoolId, School school, String acceptLanguage);
 }

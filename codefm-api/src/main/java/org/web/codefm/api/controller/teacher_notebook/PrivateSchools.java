@@ -12,8 +12,8 @@ import org.web.codefm.api.mapper.SchoolRequestMapper;
 import org.web.codefm.api.utils.Logged;
 import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.domain.usecase.teachernotebook.SchoolUseCase;
-import org.web.codefm.model.CreateSchoolRequestDTO;
 import org.web.codefm.model.SchoolDTO;
+import org.web.codefm.model.SchoolRequestDTO;
 
 import java.util.List;
 
@@ -37,7 +37,7 @@ public class PrivateSchools implements TeacherNoteBookSchoolsApi {
     @Logged
     @Override
     @PreAuthorize("hasRole('TEACHER')")
-    public ResponseEntity<SchoolDTO> createSchool(CreateSchoolRequestDTO createSchoolRequestDTO, String acceptLanguage) {
+    public ResponseEntity<SchoolDTO> createSchool(SchoolRequestDTO createSchoolRequestDTO, String acceptLanguage) {
         School schoolToCreate = schoolRequestMapper.toDomain(createSchoolRequestDTO);
 
         School createdSchool = schoolUseCase.createSchool(schoolToCreate, acceptLanguage);
@@ -52,4 +52,15 @@ public class PrivateSchools implements TeacherNoteBookSchoolsApi {
         schoolUseCase.softDeleteSchool(id, acceptLanguage);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+
+    @Logged
+    @Override
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<SchoolDTO> updateSchool(Integer id, SchoolRequestDTO updateSchoolRequestDTO, String acceptLanguage) {
+        School schoolToUpdate = schoolRequestMapper.toDomain(updateSchoolRequestDTO);
+        School updatedSchool = schoolUseCase.updateSchool(id, schoolToUpdate, acceptLanguage);
+        return ResponseEntity.ok(schoolDTOMapper.toDTO(updatedSchool));
+    }
+
+
 }

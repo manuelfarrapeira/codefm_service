@@ -37,15 +37,7 @@ public class SchoolServiceImpl implements SchoolService {
         List<ErrorMessage> errors = new ArrayList<>();
         Locale locale = getLocale(acceptLanguage);
 
-        if (school.getName() == null || school.getName().trim().isEmpty()) {
-            String translatedMessage = messageSource.getMessage(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED, null, locale);
-            errors.add(new ErrorMessage("name", translatedMessage));
-        }
-
-        if (school.getTlf() != null && String.valueOf(school.getTlf()).length() != 9) {
-            String translatedMessage = messageSource.getMessage(MessageKeys.SCHOOL_VALIDATION_TLF_INVALID, null, locale);
-            errors.add(new ErrorMessage("tlf", translatedMessage));
-        }
+        validateSchool(school, errors, locale);
 
         if (!errors.isEmpty()) {
             throw new SchoolValidationException(errors);
@@ -70,8 +62,46 @@ public class SchoolServiceImpl implements SchoolService {
     }
 
     @Override
+    @Transactional
+    public School updateSchool(Integer schoolId, School school, Integer teacherId, String acceptLanguage) {
+
+        Locale locale = getLocale(acceptLanguage);
+        List<ErrorMessage> errors = new ArrayList<>();
+        validateSchool(school, errors, locale);
+
+        if (!errors.isEmpty()) {
+            throw new SchoolValidationException(errors);
+        }
+
+        School existingSchool = schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new SchoolNotFoundException(messageSource.getMessage(MessageKeys.SCHOOL_NOT_FOUND, null, locale)));
+
+        if (!existingSchool.getTeacherId().equals(teacherId)) {
+            throw new SchoolForbiddenException(messageSource.getMessage(MessageKeys.SCHOOL_FORBIDDEN, null, locale));
+        }
+
+        existingSchool.setName(school.getName());
+        existingSchool.setTown(school.getTown());
+        existingSchool.setTlf(school.getTlf());
+
+        return schoolRepository.save(existingSchool);
+    }
+
+    @Override
     public Optional<School> getSchoolById(Integer schoolId) {
         return schoolRepository.findById(schoolId);
+    }
+
+    private void validateSchool(School school, List<ErrorMessage> errors, Locale locale) {
+        if (school.getName() == null || school.getName().trim().isEmpty()) {
+            String translatedMessage = messageSource.getMessage(MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED, null, locale);
+            errors.add(new ErrorMessage("name", translatedMessage));
+        }
+
+        if (school.getTlf() != null && String.valueOf(school.getTlf()).length() != 9) {
+            String translatedMessage = messageSource.getMessage(MessageKeys.SCHOOL_VALIDATION_TLF_INVALID, null, locale);
+            errors.add(new ErrorMessage("tlf", translatedMessage));
+        }
     }
 
     private Locale getLocale(String acceptLanguage) {

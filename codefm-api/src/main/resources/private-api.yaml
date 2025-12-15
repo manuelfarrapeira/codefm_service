@@ -78,7 +78,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
-    post:
+    put:
       tags:
         - TeacherNoteBookSchools
       operationId: createSchool
@@ -96,7 +96,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateSchoolRequestDTO'
+              $ref: '#/components/schemas/SchoolRequestDTO'
       responses:
         '201':
           description: School created successfully
@@ -158,6 +158,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+    patch:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: updateSchool
+      summary: Update an existing school
+      description: Updates an existing school for the authenticated teacher
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the school to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchoolRequestDTO'
+      responses:
+        '200':
+          description: School updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchoolDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 
 components:
   schemas:
@@ -191,7 +248,7 @@ components:
           type: 'string'
         schoolYear:
           type: 'string'
-    CreateSchoolRequestDTO:
+    SchoolRequestDTO:
       type: 'object'
       properties:
         name:
