@@ -19,8 +19,13 @@ public class IndividualKarateTestRunner {
     }
 
     @Karate.Test
-    Karate testTeacherNotebookSchools() {
+    Karate testTeacherNotebookGetSchools() {
         return Karate.run("features/teacher-notebook/schools/getschools").relativeTo(getClass());
+    }
+
+    @Karate.Test
+    Karate testTeacherNotebookPutSchools() {
+        return Karate.run("features/teacher-notebook/schools/putschool").relativeTo(getClass());
     }
 
 }

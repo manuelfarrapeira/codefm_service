@@ -39,6 +39,13 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
         return schools;
     }
 
+    @Override
+    public School createSchool(School school, String acceptLanguage) {
+        Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
+        school.setTeacherId(teacherId);
+        return schoolService.createSchool(school, acceptLanguage);
+    }
+
     private Integer parseSchoolYear(Class clazz) {
         if (clazz == null || clazz.getSchoolYear() == null || clazz.getSchoolYear().isEmpty()) {
             return 0;

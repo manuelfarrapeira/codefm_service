@@ -2,6 +2,7 @@ package org.web.codefm.usecase.teachernotebook;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -161,5 +162,35 @@ class SchoolUseCaseImplTest {
         assertEquals(1, result.size());
         assertNull(result.get(0).getClasses()); // La lista de clases debe seguir siendo nula
         verify(schoolService, times(1)).getSchoolsByTeacherId(teacherId);
+    }
+
+    @Test
+    void createSchool_shouldSetTeacherIdAndCallService() {
+        // Given
+        Integer teacherId = 123;
+        String acceptLanguage = "en"; // Added acceptLanguage
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
+
+        School schoolToCreate = School.builder()
+                .name("New School")
+                .town("New Town")
+                .build();
+
+        when(sessionUser.getParameters()).thenReturn(parameters);
+        // Updated mock to accept acceptLanguage parameter
+        when(schoolService.createSchool(any(School.class), eq(acceptLanguage))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        schoolUseCase.createSchool(schoolToCreate, acceptLanguage); // Added acceptLanguage
+
+        // Then
+        ArgumentCaptor<School> schoolCaptor = ArgumentCaptor.forClass(School.class);
+        // Updated verify to accept acceptLanguage parameter
+        verify(schoolService, times(1)).createSchool(schoolCaptor.capture(), eq(acceptLanguage));
+
+        School capturedSchool = schoolCaptor.getValue();
+        assertEquals(teacherId, capturedSchool.getTeacherId());
+        assertEquals("New School", capturedSchool.getName());
     }
 }

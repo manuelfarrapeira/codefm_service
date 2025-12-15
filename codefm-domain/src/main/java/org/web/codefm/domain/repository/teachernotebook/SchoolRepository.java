@@ -17,4 +17,12 @@ public interface SchoolRepository {
      * @return List of schools belonging to the specified teacher
      */
     List<School> findByTeacherId(Integer teacherId);
+
+    /**
+     * Saves a new school or updates an existing one.
+     *
+     * @param school The school object to save.
+     * @return The saved school object, typically with the generated ID.
+     */
+    School save(School school);
 }

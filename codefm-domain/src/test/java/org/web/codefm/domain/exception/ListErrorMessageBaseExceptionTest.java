@@ -140,7 +140,6 @@ class ListErrorMessageBaseExceptionTest {
         Assertions.assertEquals("[Code: 1000, CodeDescription: GENERIC_ERROR, Errors: (ErrorMessage(param=field1, message=First error) | ErrorMessage(param=field2, message=Second error))]", message);
     }
 
-    // Clase mock para pruebas
     private static class MockListErrorMessageBaseException extends ListErrorMessageBaseException {
         public MockListErrorMessageBaseException(ErrorCodeEnum errorCodeEnum) {
             super(errorCodeEnum, new ArrayList<>());

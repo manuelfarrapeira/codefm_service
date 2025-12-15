@@ -13,4 +13,6 @@ public interface SchoolMapper {
     School toModel(SchoolEntity entity);
 
     List<School> toModelList(List<SchoolEntity> entities);
+
+    SchoolEntity toEntity(School school);
 }

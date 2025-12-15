@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.web.codefm.domain.exception.UserNotFound;
+import org.web.codefm.domain.exception.teachernotebook.SchoolValidationException;
 
 import java.util.Arrays;
 
@@ -12,7 +13,7 @@ import java.util.Arrays;
 public enum ExceptionStatusEnum {
 
   USER_NOT_FOUND(UserNotFound.class, HttpStatus.NOT_FOUND),
-  BAD_REQUEST(UserNotFound.class, HttpStatus.BAD_REQUEST);
+    VALIDATION_ERROR(SchoolValidationException.class, HttpStatus.BAD_REQUEST);
 
   private final Class<?> exceptionClazz;
 

@@ -10,10 +10,8 @@ import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SchoolEntity
 import org.web.codefm.infrastructure.jpa.teachernotebook.SchoolJPARepository;
 import org.web.codefm.infrastructure.mapper.SchoolMapper;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,38 +27,27 @@ class SchoolRepositoryImplTest {
     private SchoolRepositoryImpl schoolRepository;
 
     @Test
-    void findByTeacherId_shouldReturnSchools() {
-        Integer teacherId = 1;
-        SchoolEntity entity1 = new SchoolEntity(1, teacherId, "School A", "Town A", 123456, null);
-        SchoolEntity entity2 = new SchoolEntity(2, teacherId, "School B", "Town B", 789012, null);
-        List<SchoolEntity> entities = Arrays.asList(entity1, entity2);
+    void save_shouldMapToEntityAndSaveAndMapBackToModel() {
+        // Given
+        School schoolToSave = School.builder().name("New School").build();
+        SchoolEntity schoolEntity = new SchoolEntity();
+        SchoolEntity savedSchoolEntity = new SchoolEntity();
+        School savedSchool = School.builder().id(1).name("New School").build();
 
-        School school1 = School.builder().id(1).teacherId(teacherId).name("School A").town("Town A").tlf(123456).build();
-        School school2 = School.builder().id(2).teacherId(teacherId).name("School B").town("Town B").tlf(789012).build();
-        List<School> expectedSchools = Arrays.asList(school1, school2);
+        when(schoolMapper.toEntity(schoolToSave)).thenReturn(schoolEntity);
+        when(schoolJPARepository.save(schoolEntity)).thenReturn(savedSchoolEntity);
+        when(schoolMapper.toModel(savedSchoolEntity)).thenReturn(savedSchool);
 
-        when(schoolJPARepository.findByTeacherId(teacherId)).thenReturn(entities);
-        when(schoolMapper.toModelList(entities)).thenReturn(expectedSchools);
+        // When
+        School result = schoolRepository.save(schoolToSave);
 
-        List<School> result = schoolRepository.findByTeacherId(teacherId);
-
+        // Then
         assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("School A", result.get(0).getName());
-        verify(schoolJPARepository, times(1)).findByTeacherId(teacherId);
-        verify(schoolMapper, times(1)).toModelList(entities);
-    }
+        assertEquals(1, result.getId());
+        assertEquals("New School", result.getName());
 
-    @Test
-    void findByTeacherId_shouldReturnEmptyList_whenNoSchoolsFound() {
-        Integer teacherId = 999;
-        when(schoolJPARepository.findByTeacherId(teacherId)).thenReturn(List.of());
-        when(schoolMapper.toModelList(List.of())).thenReturn(List.of());
-
-        List<School> result = schoolRepository.findByTeacherId(teacherId);
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(schoolJPARepository, times(1)).findByTeacherId(teacherId);
+        verify(schoolMapper, times(1)).toEntity(schoolToSave);
+        verify(schoolJPARepository, times(1)).save(schoolEntity);
+        verify(schoolMapper, times(1)).toModel(savedSchoolEntity);
     }
 }

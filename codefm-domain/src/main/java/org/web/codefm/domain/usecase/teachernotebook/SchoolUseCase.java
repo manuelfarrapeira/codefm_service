@@ -16,4 +16,13 @@ public interface SchoolUseCase {
      * @return List of schools belonging to the teacher
      */
     List<School> getSchoolsByTeacher();
+
+    /**
+     * Creates a new school based on the provided data and assigns it to the authenticated teacher.
+     *
+     * @param school         The school object containing the data for the new school.
+     * @param acceptLanguage The language accepted by the client for error messages.
+     * @return The created school object.
+     */
+    School createSchool(School school, String acceptLanguage);
 }

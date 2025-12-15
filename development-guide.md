@@ -53,7 +53,7 @@ components:
 
 ### 2. Controller (API Layer)
 
-**Ubicación**: `codefm-api/src/main/java/org/web/codefm/api/controller/`
+**Ubicación**: `codefm-api/src/main/java/org.web.codefm.api/controller/`
 
 ```java
 @RestController
@@ -75,7 +75,7 @@ public class PrivateSchools implements TeacherNoteBookSchoolsApi {
 
 ### 3. Mapper DTO (API Layer)
 
-**Ubicación**: `codefm-api/src/main/java/org/web/codefm/api/mapper/`
+**Ubicación**: `codefm-api/src/main/java/org.web.codefm.api/mapper/`
 
 ```java
 @Mapper(componentModel = "spring")
@@ -87,7 +87,7 @@ public interface SchoolDTOMapper {
 
 ### 4. Caso de Uso - Interfaz (Domain Layer)
 
-**Ubicación**: `codefm-domain/src/main/java/org/web/codefm/domain/usecase/`
+**Ubicación**: `codefm-domain/src/main/java/org.web.codefm.domain/usecase/`
 
 ```java
 /**
@@ -113,7 +113,7 @@ public interface SchoolUseCase {
 
 ### 5. Caso de Uso - Implementación (Application Layer)
 
-**Ubicación**: `codefm-application/src/main/java/org/web/codefm/usecase/`
+**Ubicación**: `codefm-application/src/main/java/org.web.codefm.usecase/`
 
 ```java
 @Service
@@ -135,7 +135,7 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
 
 ### 6. Service - Interfaz (Domain Layer)
 
-**Ubicación**: `codefm-domain/src/main/java/org/web/codefm/domain/service/`
+**Ubicación**: `codefm-domain/src/main/java/org.web.codefm.domain/service/`
 
 ```java
 /**
@@ -365,6 +365,200 @@ public class SessionUser implements Serializable {
 
 **Uso de parameters**: Almacenar datos adicionales del JWT como `teacher_id`
 
+## Manejo de Errores y Excepciones
+
+Para devolver errores de negocio o de validación a la API de forma consistente, se debe seguir un patrón específico que
+se integra con el manejador de excepciones global.
+
+### Flujo de Creación de una Excepción
+
+#### Paso 1: Añadir un Código de Error
+
+Toda excepción de negocio debe tener un código único. Añade una nueva entrada al `enum` ubicado en
+`codefm-domain/src/main/java/org.web.codefm.domain/exception/ErrorCodeEnum.java`.
+
+```java
+// ErrorCodeEnum.java
+public enum ErrorCodeEnum {
+   // ... otros errores
+   VALIDATION_ERROR("1006", "VALIDATION_ERROR");
+}
+```
+
+#### Paso 2: Crear la Clase de Excepción
+
+Crea una nueva clase de excepción en el módulo `codefm-domain`, típicamente en un subpaquete de `exception`.
+
+- **Para errores con múltiples detalles (ej. validación):** La excepción debe extender `ListErrorMessageBaseException`.
+- **Para errores simples:** Puede extender `BaseException` o `ErrorMessageBaseException`.
+
+```java
+// SchoolValidationException.java
+public class SchoolValidationException extends ListErrorMessageBaseException {
+
+   public SchoolValidationException(List<ErrorMessage> errors) {
+      super(ErrorCodeEnum.VALIDATION_ERROR, errors);
+   }
+}
+```
+
+**IMPORTANTE**: La excepción debe usar `org.web.codefm.domain.entity.exception.ErrorMessage` para los detalles, **NUNCA
+** un DTO de la capa de API.
+
+#### Paso 3: Lanzar la Excepción desde el Service
+
+En la capa de servicio (`codefm-application`), donde se realiza la lógica de negocio, se debe instanciar y lanzar la
+excepción cuando una validación falla.
+
+```java
+// SchoolServiceImpl.java
+@Override
+public School createSchool(School school) {
+   List<ErrorMessage> errors = new ArrayList<>();
+
+   if (school.getName() == null || school.getName().trim().isEmpty()) {
+      errors.add(new ErrorMessage("name", "school.validation.name.required"));
+   }
+
+   if (!errors.isEmpty()) {
+      throw new SchoolValidationException(errors);
+   }
+
+   return schoolRepository.save(school);
+}
+```
+
+#### Paso 4: Mapeo de Excepciones a HttpStatus en la API
+
+Para que el `RestExceptionHandler` devuelva el `HttpStatus` correcto para cada excepción de negocio, es necesario
+registrar la excepción y su `HttpStatus` asociado en el `ExceptionStatusEnum`.
+
+**Ubicación**: `codefm-api/src/main/java/org.web.codefm.api/exception/ExceptionStatusEnum.java`
+
+```java
+// ExceptionStatusEnum.java
+@Getter
+@AllArgsConstructor
+public enum ExceptionStatusEnum {
+
+   USER_NOT_FOUND(UserNotFound.class, HttpStatus.NOT_FOUND),
+   VALIDATION_ERROR(SchoolValidationException.class, HttpStatus.BAD_REQUEST); // Ejemplo: Mapeo de SchoolValidationException a 400 Bad Request
+
+   private final Class<?> exceptionClazz;
+   private final HttpStatus status;
+
+   public static <T extends Throwable> ExceptionStatusEnum getExceptionEnum(final Class<T> obj) {
+      return Arrays.stream(ExceptionStatusEnum.values())
+              .filter(ex -> (obj.equals(ex.getExceptionClazz()))).findFirst().orElse(null);
+   }
+}
+```
+
+**Instrucciones para añadir nuevas excepciones**:
+
+1. Asegúrate de que tu excepción de dominio extienda de `BaseException` o una de sus subclases (
+   `ErrorMessageBaseException`, `ListErrorMessageBaseException`).
+2. Añade una nueva entrada al `ExceptionStatusEnum` con un nombre descriptivo, la clase de tu excepción y el
+   `HttpStatus` deseado.
+3. Importa la clase de tu excepción en `ExceptionStatusEnum.java`.
+
+## Internacionalización (i18n) de Mensajes de Error
+
+Para soportar múltiples idiomas en los mensajes de error de la API, se sigue una estrategia de internacionalización (
+i18n) basada en claves.
+
+### Configuración de Spring MessageSource
+
+Para que Spring Boot cargue los ficheros de propiedades de mensajes, se debe añadir la siguiente configuración en
+`codefm-boot/src/main/resources/application.yml`:
+
+```yaml
+spring:
+   messages:
+      basename: messages # Esto indica a Spring que busque messages.properties, messages_en.properties, messages_es.properties, etc.
+      encoding: UTF-8
+```
+
+### Flujo de Internacionalización
+
+#### Paso 1: Añadir Mensajes a los Ficheros de Propiedades
+
+Los textos de los mensajes de error se almacenan en ficheros de propiedades en `codefm-boot/src/main/resources/`.
+
+- `messages_en.properties` (para inglés)
+- `messages_es.properties` (para español)
+
+Cada mensaje tiene una clave única.
+
+```properties
+# messages_en.properties
+school.validation.name.required=School name is required.
+school.validation.tlf.invalid=Telephone number must be 9 digits.
+```
+
+```properties
+# messages_es.properties
+school.validation.name.required=El nombre del colegio es obligatorio.
+school.validation.tlf.invalid=El número de teléfono debe tener 9 dígitos.
+```
+
+#### Paso 2: Centralizar las Claves de Mensaje
+
+Para evitar errores de tipeo y facilitar la refactorización, las claves de los mensajes se deben definir como constantes
+en una clase `MessageKeys` en el dominio.
+
+```java
+// codefm-domain/src/main/java/org.web.codefm.domain/i18n/MessageKeys.java
+@UtilityClass
+public class MessageKeys {
+   public static final String SCHOOL_VALIDATION_NAME_REQUIRED = "school.validation.name.required";
+   public static final String SCHOOL_VALIDATION_TLF_INVALID = "school.validation.tlf.invalid";
+}
+```
+
+#### Paso 3: Usar Claves de Mensaje en el Dominio
+
+La capa de dominio debe permanecer independiente del idioma. Por lo tanto, la clase `ErrorMessage` no contiene el
+mensaje final, sino la **clave del mensaje**.
+
+```java
+// ErrorMessage.java
+public class ErrorMessage {
+   private final String param;
+   private String messageKey; // Contiene la clave, ej: "school.validation.name.required"
+}
+```
+
+Cuando se lanza una excepción en el `Service`, se usan las constantes de `MessageKeys`.
+
+```java
+// SchoolServiceImpl.java
+if(school.getName() ==null||school.
+
+getName().
+
+trim().
+
+isEmpty()){
+        errors.
+
+add(new ErrorMessage("name", MessageKeys.SCHOOL_VALIDATION_NAME_REQUIRED));
+        }
+```
+
+#### Paso 4: Resolución de Mensajes en la Capa de API
+
+La traducción de la clave al mensaje final ocurre en la capa de API, específicamente en el `RestExceptionHandler`.
+
+1. **Inyección de `MessageSource`**: El `RestExceptionHandler` inyecta el `MessageSource` de Spring.
+2. **Detección del Idioma**: El handler inspecciona la cabecera `Accept-Language` de la petición para determinar el
+   `Locale` del usuario.
+3. **Traducción**: Al mapear la excepción a un `ErrorResponseDTO`, se utiliza
+   `messageSource.getMessage(messageKey, null, locale)` para obtener el texto traducido correspondiente a la clave.
+
+Este proceso asegura que el dominio se mantenga limpio y que la responsabilidad de la internacionalización recaiga en la
+capa de API, que es la más cercana al usuario.
+
 ## Testing Unitario
 
 ### Estructura de Tests
@@ -447,7 +641,7 @@ class SchoolUseCaseImplTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(schoolService, times(1)).getSchoolsByTeacherId(teacherId);
+       verify(schoolService, times(1)).findByTeacherId(teacherId);
     }
 }
 ```

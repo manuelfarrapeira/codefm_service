@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.domain.repository.teachernotebook.SchoolRepository;
+import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SchoolEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SchoolJPARepository;
 import org.web.codefm.infrastructure.mapper.SchoolMapper;
 
@@ -21,5 +22,12 @@ public class SchoolRepositoryImpl implements SchoolRepository {
     @Override
     public List<School> findByTeacherId(Integer teacherId) {
         return schoolMapper.toModelList(schoolJPARepository.findByTeacherId(teacherId));
+    }
+
+    @Override
+    public School save(School school) {
+        SchoolEntity schoolEntity = schoolMapper.toEntity(school);
+        SchoolEntity savedEntity = schoolJPARepository.save(schoolEntity);
+        return schoolMapper.toModel(savedEntity);
     }
 }

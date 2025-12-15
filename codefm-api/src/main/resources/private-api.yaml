@@ -78,6 +78,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+    post:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: createSchool
+      summary: Create a new school
+      description: Creates a new school for the authenticated teacher
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSchoolRequestDTO'
+      responses:
+        '201':
+          description: School created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchoolDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 
 components:
   schemas:
@@ -111,3 +149,15 @@ components:
           type: 'string'
         schoolYear:
           type: 'string'
+    CreateSchoolRequestDTO:
+      type: 'object'
+      properties:
+        name:
+          type: 'string'
+          example: 'New School Name'
+        town:
+          type: 'string'
+          example: 'New Town'
+        tlf:
+          type: 'integer'
+          example: 123456789
