@@ -13,6 +13,8 @@ tags:
     description: Private operations related to greeting
   - name: TeacherNoteBookSchools
     description: Operations related to Teacher Notebook Schools
+  - name: TeacherNoteBookClasses
+    description: Operations related to Teacher Notebook School Classes
 
 paths:
   /greeting:
@@ -197,6 +199,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/classes/{schoolId}:
+    get:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: classes
+      summary: Retrieve active classes for a school
+      description: Returns classes for the specified school that have not been soft-deleted.
+      parameters:
+        - name: schoolId
+          in: path
+          required: true
+          description: The ID of the school whose classes are requested.
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassDTO'
         '403':
           description: Forbidden - Teacher does not own this school
           content:

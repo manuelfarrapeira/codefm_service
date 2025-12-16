@@ -3,12 +3,12 @@ package org.web.codefm.usecase.teachernotebook;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 import org.web.codefm.domain.usecase.teachernotebook.SchoolUseCase;
+import org.web.codefm.domain.util.SchoolYearUtil;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -31,7 +31,7 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
         schools.forEach(school ->
                 Optional.ofNullable(school.getClasses())
                         .ifPresent(classes -> classes.sort(Comparator.comparing(
-                                this::parseSchoolYear, Comparator.reverseOrder()))));
+                                SchoolYearUtil::parseSchoolYear, Comparator.reverseOrder()))));
 
         schools.sort(Comparator.comparing(
                 this::getMaxSchoolYearForSchool, Comparator.reverseOrder()));
@@ -58,16 +58,6 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
         return schoolService.updateSchool(schoolId, school, teacherId);
     }
 
-    private Integer parseSchoolYear(Class clazz) {
-        try {
-            String year = clazz.getSchoolYear().replace("/", "");
-            return Integer.parseInt(year);
-        } catch (NumberFormatException e) {
-            log.warn("Invalid schoolYear format: {}", clazz.getSchoolYear());
-            return 0;
-        }
-    }
-
     /**
      * Retrieves the highest (most recent) schoolYear from a school's classes.
      * If the school has no classes or all have invalid formats, it returns 0.
@@ -79,7 +69,7 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
         return Optional.ofNullable(school.getClasses())
                 .orElse(Collections.emptyList())
                 .stream()
-                .map(this::parseSchoolYear)
+                .map(SchoolYearUtil::parseSchoolYear)
                 .max(Comparator.naturalOrder())
                 .orElse(0);
     }
