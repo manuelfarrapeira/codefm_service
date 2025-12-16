@@ -11,6 +11,8 @@ servers:
 tags:
   - name: PrivateHelloWorld
     description: Private operations related to greeting
+  - name: TeacherNoteBookSchools
+    description: Operations related to Teacher Notebook Schools
 
 paths:
   /greeting:
@@ -48,6 +50,171 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/schools:
+    get:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: schools
+      summary: Endpoint to get school information
+      description: Returns school information
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SchoolDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: createSchool
+      summary: Create a new school
+      description: Creates a new school for the authenticated teacher
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchoolRequestDTO'
+      responses:
+        '201':
+          description: School created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchoolDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/schools/{id}:
+    delete:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: deleteSchool
+      summary: Soft-delete a school
+      description: Marks a school as deleted by setting its deletion_date. Only the owning teacher can delete a school.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the school to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: School successfully soft-deleted (No Content)
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    patch:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: updateSchool
+      summary: Update an existing school
+      description: Updates an existing school for the authenticated teacher
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the school to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchoolRequestDTO'
+      responses:
+        '200':
+          description: School updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchoolDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 
 components:
   schemas:
@@ -55,3 +222,41 @@ components:
       $ref: './common-schemas.yaml#/ErrorResponseDTO'
     DetailDTO:
       $ref: './common-schemas.yaml#/DetailDTO'
+    SchoolDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        name:
+          type: 'string'
+        town:
+          type: 'string'
+        tlf:
+          type: 'integer'
+        classes:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ClassDTO'
+    ClassDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        schoolId:
+          type: 'integer'
+        name:
+          type: 'string'
+        schoolYear:
+          type: 'string'
+    SchoolRequestDTO:
+      type: 'object'
+      properties:
+        name:
+          type: 'string'
+          example: 'New School Name'
+        town:
+          type: 'string'
+          example: 'New Town'
+        tlf:
+          type: 'integer'
+          example: 123456789

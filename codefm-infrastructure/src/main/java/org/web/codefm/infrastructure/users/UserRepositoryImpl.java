@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import org.web.codefm.domain.entity.User;
 import org.web.codefm.domain.repository.UserRepository;
-import org.web.codefm.infrastructure.jpa.UserJPARepository;
+import org.web.codefm.infrastructure.jpa.codefm.UserJPARepository;
 import org.web.codefm.infrastructure.mapper.UserMapper;
 
 @Repository

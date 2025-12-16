@@ -27,8 +27,8 @@ public class AuthController implements AuthApi {
         HttpServletResponse response = ((ServletRequestAttributes) RequestContextHolder
                 .getRequestAttributes()).getResponse();
 
-        autenticationUseCase.login(authorization, response);
-        return ResponseEntity.ok().body("Autenticated successful");
+        String givenName = autenticationUseCase.login(authorization, response);
+        return ResponseEntity.ok().body(givenName);
     }
 
     @Override

@@ -129,7 +129,6 @@
                 </configuration>
             </plugin>
 
-            <!-- 🔥 Avro Maven Plugin - Usando resources/avro -->
             <plugin>
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro-maven-plugin</artifactId>

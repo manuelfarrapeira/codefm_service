@@ -6,8 +6,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.User;
-import org.web.codefm.infrastructure.entity.mariadb.users.UserEntity;
-import org.web.codefm.infrastructure.jpa.UserJPARepository;
+import org.web.codefm.infrastructure.entity.mariadb.codefm.UserEntity;
+import org.web.codefm.infrastructure.jpa.codefm.UserJPARepository;
 import org.web.codefm.infrastructure.mapper.UserMapper;
 
 import java.util.Optional;

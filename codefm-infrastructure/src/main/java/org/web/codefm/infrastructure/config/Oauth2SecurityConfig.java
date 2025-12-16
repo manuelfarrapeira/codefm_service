@@ -27,6 +27,7 @@ import org.springframework.security.oauth2.server.resource.web.authentication.Be
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.web.codefm.domain.enums.ResourceAccessClient;
 import org.web.codefm.domain.service.SessionUserService;
 
 import java.io.IOException;
@@ -173,13 +174,18 @@ public class Oauth2SecurityConfig {
                     .map(roles -> (List<?>) roles)
                     .ifPresent(roles -> roles.forEach(role -> authorities.add(new SimpleGrantedAuthority(role.toString()))));
 
-            Optional.ofNullable(jwt.getClaim("resource_access"))
-                    .map(resourceAccess -> ((Map<?, ?>) resourceAccess).get("codefm"))
-                    .filter(Objects::nonNull)
-                    .map(codefm -> ((Map<?, ?>) codefm).get("roles"))
-                    .filter(Objects::nonNull)
-                    .map(roles -> (List<?>) roles)
-                    .ifPresent(roles -> roles.forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role))));
+            Map<?, ?> resourceAccess = jwt.getClaim("resource_access");
+            if (resourceAccess != null) {
+                for (ResourceAccessClient client : ResourceAccessClient.values()) {
+                    Optional.ofNullable(resourceAccess.get(client.getClientId()))
+                            .filter(Objects::nonNull)
+                            .map(clientData -> ((Map<?, ?>) clientData).get("roles"))
+                            .filter(Objects::nonNull)
+                            .map(roles -> (List<?>) roles)
+                            .ifPresent(roles -> roles.forEach(role ->
+                                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role))));
+                }
+            }
 
             return authorities;
         });

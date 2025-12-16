@@ -18,6 +18,25 @@ public class IndividualKarateTestRunner {
         return Karate.run("features/greeting/greeting").relativeTo(getClass());
     }
 
+    @Karate.Test
+    Karate testTeacherNotebookGetSchools() {
+        return Karate.run("features/teacher-notebook/schools/getschools").relativeTo(getClass());
+    }
+
+    @Karate.Test
+    Karate testTeacherNotebookPutSchools() {
+        return Karate.run("features/teacher-notebook/schools/createschool").relativeTo(getClass());
+    }
+
+    @Karate.Test
+    Karate testTeacherNotebookDeleteSchool() {
+        return Karate.run("features/teacher-notebook/schools/deleteschool").relativeTo(getClass());
+    }
+
+    @Karate.Test
+    Karate testTeacherNotebookUpdateSchool() {
+        return Karate.run("features/teacher-notebook/schools/updateschool").relativeTo(getClass());
+    }
 
 
 }

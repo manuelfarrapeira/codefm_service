@@ -1,8 +1,8 @@
-package org.web.codefm.infrastructure.jpa;
+package org.web.codefm.infrastructure.jpa.codefm;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import org.web.codefm.infrastructure.entity.mariadb.users.UserEntity;
+import org.web.codefm.infrastructure.entity.mariadb.codefm.UserEntity;
 
 import java.util.Optional;
 
