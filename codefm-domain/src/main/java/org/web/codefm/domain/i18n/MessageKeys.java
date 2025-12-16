@@ -14,5 +14,7 @@ public class MessageKeys {
     public static final String CLASS_VALIDATION_SCHOOL_YEAR_REQUIRED = "class.validation.schoolYear.required";
     public static final String CLASS_VALIDATION_SCHOOL_YEAR_FORMAT_INVALID = "class.validation.schoolYear.format.invalid";
     public static final String CLASS_VALIDATION_SCHOOL_YEAR_NOT_CONSECUTIVE = "class.validation.schoolYear.notConsecutive";
+    public static final String CLASS_NOT_FOUND = "class.not.found";
+    public static final String CLASS_FORBIDDEN = "class.forbidden";
 
 }

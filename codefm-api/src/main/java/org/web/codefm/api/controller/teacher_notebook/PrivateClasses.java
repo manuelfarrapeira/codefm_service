@@ -42,5 +42,14 @@ public class PrivateClasses implements TeacherNoteBookClassesApi {
         clazz.setSchoolId(schoolId);
         return new ResponseEntity<>(classDTOMapper.toDTO(classUseCase.createClass(clazz)), HttpStatus.CREATED);
     }
+
+    @Logged
+    @Override
+    @Locale(1)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> deleteClass(Integer classId, String acceptLanguage) {
+        classUseCase.softDeleteClass(classId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
 }
 

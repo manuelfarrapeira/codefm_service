@@ -3,6 +3,7 @@ package org.web.codefm.domain.service.teachernotebook;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service interface for class business logic operations.
@@ -27,5 +28,24 @@ public interface ClassService {
      * @return The created class with generated ID
      */
     Class createClass(Class clazz, Integer teacherId);
+
+    /**
+     * Retrieves a class by its ID.
+     *
+     * @param classId The unique identifier of the class
+     * @return An Optional containing the Class if found, or empty otherwise
+     */
+    Optional<Class> getClassById(Integer classId);
+
+    /**
+     * Soft-deletes a class by setting its deletion date.
+     * Validates that the class exists and belongs to a school owned by the specified teacher.
+     *
+     * @param classId   The ID of the class to soft-delete
+     * @param teacherId The ID of the teacher attempting the soft-delete
+     * @throws org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException   if the class does not exist
+     * @throws org.web.codefm.domain.exception.teachernotebook.SchoolForbiddenException if the teacher does not own the school
+     */
+    void softDeleteClass(Integer classId, Integer teacherId);
 }
 

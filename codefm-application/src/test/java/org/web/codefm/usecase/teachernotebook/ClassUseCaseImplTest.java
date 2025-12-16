@@ -10,10 +10,7 @@ import org.web.codefm.domain.service.teachernotebook.ClassService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -69,7 +66,7 @@ class ClassUseCaseImplTest {
         parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
 
         when(sessionUser.getParameters()).thenReturn(parameters);
-        when(classService.getActiveClassesBySchoolIdAndTeacherId(schoolId, teacherId)).thenReturn(Arrays.asList());
+        when(classService.getActiveClassesBySchoolIdAndTeacherId(schoolId, teacherId)).thenReturn(new ArrayList<>());
 
         // When
         List<Class> result = classUseCase.getClassesBySchoolId(schoolId);
@@ -113,6 +110,25 @@ class ClassUseCaseImplTest {
         assertEquals("Math Class", result.getName());
         assertEquals("24/25", result.getSchoolYear());
         verify(classService, times(1)).createClass(classToCreate, teacherId);
+    }
+
+    @Test
+    void softDeleteClass_shouldGetTeacherIdFromSessionAndCallService() {
+        // Given
+        Integer classId = 1;
+        Integer teacherId = 1;
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
+
+        when(sessionUser.getParameters()).thenReturn(parameters);
+        doNothing().when(classService).softDeleteClass(classId, teacherId);
+
+        // When
+        classUseCase.softDeleteClass(classId);
+
+        // Then
+        verify(sessionUser, times(1)).getParameters();
+        verify(classService, times(1)).softDeleteClass(classId, teacherId);
     }
 }
 

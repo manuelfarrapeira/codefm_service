@@ -43,4 +43,9 @@ public class IndividualKarateTestRunner {
         return Karate.run("features/teacher-notebook/classes/getclasses").relativeTo(getClass());
     }
 
+    @Karate.Test
+    Karate testTeacherNotebookDeleteClasses() {
+        return Karate.run("features/teacher-notebook/classes/deleteclass").relativeTo(getClass());
+    }
+
 }

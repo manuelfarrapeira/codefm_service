@@ -3,6 +3,7 @@ package org.web.codefm.domain.repository.teachernotebook;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository interface for class data access operations.
@@ -26,5 +27,22 @@ public interface ClassRepository {
      * @return The saved class with generated ID
      */
     Class save(Class clazz);
+
+    /**
+     * Finds a class by its ID.
+     *
+     * @param classId The unique identifier of the class
+     * @return An Optional containing the Class if found, or empty otherwise
+     */
+    Optional<Class> findById(Integer classId);
+
+    /**
+     * Soft-deletes a class by setting its deletion date.
+     *
+     * @param classId   The ID of the class to soft-delete
+     * @param teacherId The ID of the teacher attempting the soft-delete
+     * @return The soft-deleted Class object
+     */
+    Class softDeleteClass(Integer classId, Integer teacherId);
 }
 

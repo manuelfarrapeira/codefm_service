@@ -4,10 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.web.codefm.domain.exception.UserNotFound;
-import org.web.codefm.domain.exception.teachernotebook.ClassValidationException;
-import org.web.codefm.domain.exception.teachernotebook.SchoolForbiddenException;
-import org.web.codefm.domain.exception.teachernotebook.SchoolNotFoundException;
-import org.web.codefm.domain.exception.teachernotebook.SchoolValidationException;
+import org.web.codefm.domain.exception.teachernotebook.*;
+import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 
 import java.util.Arrays;
 
@@ -19,7 +17,9 @@ public enum ExceptionStatusEnum {
   VALIDATION_ERROR(SchoolValidationException.class, HttpStatus.BAD_REQUEST),
     CLASS_VALIDATION_ERROR(ClassValidationException.class, HttpStatus.BAD_REQUEST),
   SCHOOL_NOT_FOUND(SchoolNotFoundException.class, HttpStatus.NOT_FOUND),
-  SCHOOL_FORBIDDEN(SchoolForbiddenException.class, HttpStatus.FORBIDDEN);
+    SCHOOL_FORBIDDEN(SchoolForbiddenException.class, HttpStatus.FORBIDDEN),
+    CLASS_NOT_FOUND(ClassNotFoundException.class, HttpStatus.NOT_FOUND),
+    CLASS_FORBIDDEN(ClassForbiddenException.class, HttpStatus.FORBIDDEN);
 
   private final Class<?> exceptionClazz;
 

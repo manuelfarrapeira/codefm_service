@@ -8,9 +8,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.School;
-import org.web.codefm.domain.exception.teachernotebook.ClassValidationException;
-import org.web.codefm.domain.exception.teachernotebook.SchoolForbiddenException;
-import org.web.codefm.domain.exception.teachernotebook.SchoolNotFoundException;
+import org.web.codefm.domain.exception.teachernotebook.*;
+import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
@@ -302,6 +301,124 @@ class ClassServiceImplTest {
 
         verify(schoolService, times(1)).getSchoolById(schoolId);
         verify(classRepository, never()).save(any());
+    }
+
+    @Test
+    void softDeleteClass_shouldCallRepository_whenClassExistsAndSchoolOwnedByTeacher() {
+        // Given
+        Integer classId = 1;
+        Integer teacherId = 1;
+        Integer schoolId = 10;
+
+        Class clazz = Class.builder()
+                .id(classId)
+                .schoolId(schoolId)
+                .name("Test Class")
+                .schoolYear("24/25")
+                .build();
+
+        School school = School.builder()
+                .id(schoolId)
+                .teacherId(teacherId)
+                .name("Test School")
+                .build();
+
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(classRepository.findById(classId)).thenReturn(Optional.of(clazz));
+        when(schoolService.getSchoolById(schoolId)).thenReturn(Optional.of(school));
+        when(classRepository.softDeleteClass(classId, teacherId)).thenReturn(clazz);
+
+        // When
+        classService.softDeleteClass(classId, teacherId);
+
+        // Then
+        verify(classRepository, times(1)).findById(classId);
+        verify(schoolService, times(1)).getSchoolById(schoolId);
+        verify(classRepository, times(1)).softDeleteClass(classId, teacherId);
+    }
+
+    @Test
+    void softDeleteClass_shouldThrowClassNotFoundException_whenClassDoesNotExist() {
+        // Given
+        Integer classId = 999;
+        Integer teacherId = 1;
+
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(classRepository.findById(classId)).thenReturn(Optional.empty());
+        when(messageSource.getMessage(MessageKeys.CLASS_NOT_FOUND, null, Locale.ENGLISH))
+                .thenReturn("Class not found.");
+
+        // When & Then
+        assertThrows(ClassNotFoundException.class,
+                () -> classService.softDeleteClass(classId, teacherId));
+
+        verify(classRepository, times(1)).findById(classId);
+        verify(classRepository, never()).softDeleteClass(any(), any());
+    }
+
+    @Test
+    void softDeleteClass_shouldThrowClassForbiddenException_whenSchoolNotOwnedByTeacher() {
+        // Given
+        Integer classId = 1;
+        Integer teacherId = 1;
+        Integer schoolId = 10;
+        Integer differentTeacherId = 999;
+
+        Class clazz = Class.builder()
+                .id(classId)
+                .schoolId(schoolId)
+                .name("Test Class")
+                .schoolYear("24/25")
+                .build();
+
+        School school = School.builder()
+                .id(schoolId)
+                .teacherId(differentTeacherId)
+                .name("Test School")
+                .build();
+
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(classRepository.findById(classId)).thenReturn(Optional.of(clazz));
+        when(schoolService.getSchoolById(schoolId)).thenReturn(Optional.of(school));
+        when(messageSource.getMessage(MessageKeys.CLASS_FORBIDDEN, null, Locale.ENGLISH))
+                .thenReturn("You are not authorized to delete this class.");
+
+        // When & Then
+        assertThrows(ClassForbiddenException.class,
+                () -> classService.softDeleteClass(classId, teacherId));
+
+        verify(classRepository, times(1)).findById(classId);
+        verify(schoolService, times(1)).getSchoolById(schoolId);
+        verify(classRepository, never()).softDeleteClass(any(), any());
+    }
+
+    @Test
+    void softDeleteClass_shouldThrowClassForbiddenException_whenSchoolNotFound() {
+        // Given
+        Integer classId = 1;
+        Integer teacherId = 1;
+        Integer schoolId = 10;
+
+        Class clazz = Class.builder()
+                .id(classId)
+                .schoolId(schoolId)
+                .name("Test Class")
+                .schoolYear("24/25")
+                .build();
+
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(classRepository.findById(classId)).thenReturn(Optional.of(clazz));
+        when(schoolService.getSchoolById(schoolId)).thenReturn(Optional.empty());
+        when(messageSource.getMessage(MessageKeys.CLASS_FORBIDDEN, null, Locale.ENGLISH))
+                .thenReturn("You are not authorized to delete this class.");
+
+        // When & Then
+        assertThrows(ClassForbiddenException.class,
+                () -> classService.softDeleteClass(classId, teacherId));
+
+        verify(classRepository, times(1)).findById(classId);
+        verify(schoolService, times(1)).getSchoolById(schoolId);
+        verify(classRepository, never()).softDeleteClass(any(), any());
     }
 }
 

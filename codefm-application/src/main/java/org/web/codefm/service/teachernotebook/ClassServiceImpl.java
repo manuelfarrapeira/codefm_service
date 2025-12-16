@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.exception.teachernotebook.ClassValidationException;
@@ -12,11 +13,13 @@ import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.service.teachernotebook.ClassService;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionUser;
+import org.web.codefm.util.ClassValidationUtil;
 import org.web.codefm.util.SchoolValidationUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -53,6 +56,20 @@ public class ClassServiceImpl implements ClassService {
         }
 
         return classRepository.save(clazz);
+    }
+
+    @Override
+    public Optional<Class> getClassById(Integer classId) {
+        return classRepository.findById(classId);
+    }
+
+    @Override
+    @Transactional
+    public void softDeleteClass(Integer classId, Integer teacherId) {
+        Locale locale = sessionUser.getLocale();
+        ClassValidationUtil.validateClassOwnership(classId, teacherId, this, schoolService, messageSource, locale);
+
+        classRepository.softDeleteClass(classId, teacherId);
     }
 
     private void validateClass(Class clazz, List<ErrorMessage> errors, Locale locale) {

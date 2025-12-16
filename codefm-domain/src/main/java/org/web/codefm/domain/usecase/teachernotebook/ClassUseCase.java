@@ -25,5 +25,15 @@ public interface ClassUseCase {
      * @return The created class with generated ID
      */
     Class createClass(Class clazz);
+
+    /**
+     * Soft-deletes a class for the authenticated teacher.
+     * Retrieves the teacher ID from the session and delegates to the service.
+     *
+     * @param classId The ID of the class to soft-delete
+     * @throws org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException   if the class does not exist
+     * @throws org.web.codefm.domain.exception.teachernotebook.SchoolForbiddenException if the teacher does not own the school
+     */
+    void softDeleteClass(Integer classId);
 }
 

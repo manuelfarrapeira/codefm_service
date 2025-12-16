@@ -37,5 +37,11 @@ public class ClassUseCaseImpl implements ClassUseCase {
         Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
         return classService.createClass(clazz, teacherId);
     }
+
+    @Override
+    public void softDeleteClass(Integer classId) {
+        Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
+        classService.softDeleteClass(classId, teacherId);
+    }
 }
 

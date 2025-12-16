@@ -265,8 +265,27 @@ public class SchoolRepositoryImpl implements SchoolRepository {
             schoolJPARepository.findByTeacherId(teacherId)
         );
     }
+
+    @Override
+    public School softDeleteSchool(Integer schoolId, Integer teacherId) {
+        SchoolEntity schoolEntity = schoolJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)
+                .orElseThrow(() -> new IllegalArgumentException("School not found or not owned by teacher or already deleted."));
+
+        schoolEntity.setDeletionDate(LocalDate.now());
+        SchoolEntity updatedEntity = schoolJPARepository.save(schoolEntity);
+        return schoolMapper.toModel(updatedEntity);
+    }
 }
 ```
+
+**Patrón de Soft Delete**:
+
+- Buscar la entidad con validación de ownership usando un método JPA específico (ej.
+  `findByIdAndTeacherIdAndDeletionDateIsNull`)
+- Lanzar `IllegalArgumentException` si no se encuentra o no pertenece al usuario
+- Establecer `deletionDate` con `LocalDate.now()`
+- Guardar la entidad actualizada con `save()`
+- Retornar la entidad mapeada al dominio
 
 ### 11. JPA Repository (Infrastructure Layer)
 
@@ -406,6 +425,30 @@ public enum ErrorCodeEnum {
    VALIDATION_ERROR("1006", "VALIDATION_ERROR");
 }
 ```
+
+**IMPORTANTE - Reutilización de Códigos Genéricos**:
+
+- Antes de crear nuevos códigos de error, verifica si existen códigos genéricos que puedan reutilizarse.
+- Códigos genéricos disponibles:
+    - `RESOURCE_NOT_FOUND("1003", "RESOURCE_NOT_FOUND")` - Para recursos no encontrados (School, Class, etc.)
+    - `RESOURCE_FORBIDDEN("1004", "RESOURCE_FORBIDDEN")` - Para accesos denegados a recursos
+    - `VALIDATION_ERROR("1006", "VALIDATION_ERROR")` - Para errores de validación
+- Solo crea códigos específicos cuando el error requiera un tratamiento o comportamiento diferenciado.
+- Ejemplo de reutilización:
+  ```java
+  // Usar RESOURCE_NOT_FOUND para diferentes tipos de recursos
+  public class SchoolNotFoundException extends BaseException {
+      public SchoolNotFoundException(String message) {
+          super(ErrorCodeEnum.RESOURCE_NOT_FOUND, message);
+      }
+  }
+  
+  public class ClassNotFoundException extends BaseException {
+      public ClassNotFoundException(String message) {
+          super(ErrorCodeEnum.RESOURCE_NOT_FOUND, message);
+      }
+  }
+  ```
 
 #### Paso 2: Crear la Clase de Excepción
 
