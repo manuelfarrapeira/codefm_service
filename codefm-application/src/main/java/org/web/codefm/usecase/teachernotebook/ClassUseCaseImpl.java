@@ -31,5 +31,11 @@ public class ClassUseCaseImpl implements ClassUseCase {
 
         return classes;
     }
+
+    @Override
+    public Class createClass(Class clazz) {
+        Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
+        return classService.createClass(clazz, teacherId);
+    }
 }
 

@@ -4,23 +4,28 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
+import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.Class;
-import org.web.codefm.domain.entity.teachernotebook.School;
-import org.web.codefm.domain.exception.teachernotebook.SchoolForbiddenException;
-import org.web.codefm.domain.exception.teachernotebook.SchoolNotFoundException;
+import org.web.codefm.domain.exception.teachernotebook.ClassValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.service.teachernotebook.ClassService;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionUser;
+import org.web.codefm.util.SchoolValidationUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ClassServiceImpl implements ClassService {
+
+    private static final Pattern SCHOOL_YEAR_PATTERN = Pattern.compile("^\\d{2}/\\d{2}$");
+    private static final String FIELD_SCHOOL_YEAR = "schoolYear";
 
     private final ClassRepository classRepository;
     private final SchoolService schoolService;
@@ -30,17 +35,48 @@ public class ClassServiceImpl implements ClassService {
     @Override
     public List<Class> getActiveClassesBySchoolIdAndTeacherId(Integer schoolId, Integer teacherId) {
         Locale locale = sessionUser.getLocale();
+        SchoolValidationUtil.validateSchoolOwnership(schoolId, teacherId, schoolService, messageSource, locale);
+        return classRepository.findActiveClassesBySchoolIdAndTeacherId(schoolId, teacherId);
+    }
 
-        School school = schoolService.getSchoolById(schoolId)
-                .orElseThrow(() -> new SchoolNotFoundException(
-                        messageSource.getMessage(MessageKeys.SCHOOL_NOT_FOUND, null, locale)));
+    @Override
+    public Class createClass(Class clazz, Integer teacherId) {
+        Locale locale = sessionUser.getLocale();
+        List<ErrorMessage> errors = new ArrayList<>();
 
-        if (!school.getTeacherId().equals(teacherId)) {
-            throw new SchoolForbiddenException(
-                    messageSource.getMessage(MessageKeys.SCHOOL_FORBIDDEN, null, locale));
+        SchoolValidationUtil.validateSchoolOwnership(clazz.getSchoolId(), teacherId, schoolService, messageSource, locale);
+
+        validateClass(clazz, errors, locale);
+
+        if (!errors.isEmpty()) {
+            throw new ClassValidationException(errors);
         }
 
-        return classRepository.findActiveClassesBySchoolIdAndTeacherId(schoolId, teacherId);
+        return classRepository.save(clazz);
+    }
+
+    private void validateClass(Class clazz, List<ErrorMessage> errors, Locale locale) {
+        if (clazz.getName() == null || clazz.getName().trim().isEmpty()) {
+            errors.add(new ErrorMessage("name", messageSource.getMessage(MessageKeys.CLASS_VALIDATION_NAME_REQUIRED, null, locale)));
+        }
+
+        if (clazz.getSchoolYear() == null || clazz.getSchoolYear().trim().isEmpty()) {
+            errors.add(new ErrorMessage(FIELD_SCHOOL_YEAR, messageSource.getMessage(MessageKeys.CLASS_VALIDATION_SCHOOL_YEAR_REQUIRED, null, locale)));
+        } else if (!SCHOOL_YEAR_PATTERN.matcher(clazz.getSchoolYear()).matches()) {
+            errors.add(new ErrorMessage(FIELD_SCHOOL_YEAR, messageSource.getMessage(MessageKeys.CLASS_VALIDATION_SCHOOL_YEAR_FORMAT_INVALID, null, locale)));
+        } else {
+            String[] years = clazz.getSchoolYear().split("/");
+            try {
+                int firstYear = Integer.parseInt(years[0]);
+                int secondYear = Integer.parseInt(years[1]);
+                if (secondYear != firstYear + 1) {
+                    errors.add(new ErrorMessage(FIELD_SCHOOL_YEAR, messageSource.getMessage(MessageKeys.CLASS_VALIDATION_SCHOOL_YEAR_NOT_CONSECUTIVE, null, locale)));
+                }
+            } catch (NumberFormatException e) {
+                log.warn("Failed to parse schoolYear: {}", clazz.getSchoolYear(), e);
+                errors.add(new ErrorMessage(FIELD_SCHOOL_YEAR, messageSource.getMessage(MessageKeys.CLASS_VALIDATION_SCHOOL_YEAR_FORMAT_INVALID, null, locale)));
+            }
+        }
     }
 }
 

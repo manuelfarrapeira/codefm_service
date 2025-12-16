@@ -18,5 +18,13 @@ public interface ClassRepository {
      * @return List of active classes belonging to the specified school
      */
     List<Class> findActiveClassesBySchoolIdAndTeacherId(Integer schoolId, Integer teacherId);
+
+    /**
+     * Saves a new class to the database.
+     *
+     * @param clazz The class data to save
+     * @return The saved class with generated ID
+     */
+    Class save(Class clazz);
 }
 

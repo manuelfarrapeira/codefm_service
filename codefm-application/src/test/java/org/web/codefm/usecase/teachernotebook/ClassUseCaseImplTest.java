@@ -79,5 +79,40 @@ class ClassUseCaseImplTest {
         assertEquals(0, result.size());
         verify(classService, times(1)).getActiveClassesBySchoolIdAndTeacherId(schoolId, teacherId);
     }
+
+    @Test
+    void createClass_shouldCreateClass() {
+        // Given
+        Integer schoolId = 1;
+        Integer teacherId = 1;
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
+
+        Class classToCreate = Class.builder()
+                .schoolId(schoolId)
+                .name("Math Class")
+                .schoolYear("24/25")
+                .build();
+
+        Class createdClass = Class.builder()
+                .id(1)
+                .schoolId(schoolId)
+                .name("Math Class")
+                .schoolYear("24/25")
+                .build();
+
+        when(sessionUser.getParameters()).thenReturn(parameters);
+        when(classService.createClass(classToCreate, teacherId)).thenReturn(createdClass);
+
+        // When
+        Class result = classUseCase.createClass(classToCreate);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.getId());
+        assertEquals("Math Class", result.getName());
+        assertEquals("24/25", result.getSchoolYear());
+        verify(classService, times(1)).createClass(classToCreate, teacherId);
+    }
 }
 

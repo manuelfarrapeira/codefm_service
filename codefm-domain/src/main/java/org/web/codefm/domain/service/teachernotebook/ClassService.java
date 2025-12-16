@@ -18,5 +18,14 @@ public interface ClassService {
      * @return List of active classes belonging to the specified school
      */
     List<Class> getActiveClassesBySchoolIdAndTeacherId(Integer schoolId, Integer teacherId);
+
+    /**
+     * Creates a new class for a specific school, validating data and teacher ownership.
+     *
+     * @param clazz     The class data to create
+     * @param teacherId The unique identifier of the teacher
+     * @return The created class with generated ID
+     */
+    Class createClass(Class clazz, Integer teacherId);
 }
 

@@ -74,5 +74,42 @@ class ClassRepositoryImplTest {
         verify(classJPARepository, times(1)).findActiveClassesBySchoolIdAndTeacherId(schoolId, teacherId);
         verify(classMapper, times(1)).toModelList(entities);
     }
+
+    @Test
+    void save_shouldSaveClass() {
+        // Given
+        Integer schoolId = 1;
+        Class classToSave = Class.builder()
+                .schoolId(schoolId)
+                .name("Math Class")
+                .schoolYear("24/25")
+                .build();
+
+        ClassEntity entityToSave = new ClassEntity(null, schoolId, "Math Class", "24/25", null);
+        ClassEntity savedEntity = new ClassEntity(1, schoolId, "Math Class", "24/25", null);
+
+        Class expectedClass = Class.builder()
+                .id(1)
+                .schoolId(schoolId)
+                .name("Math Class")
+                .schoolYear("24/25")
+                .build();
+
+        when(classMapper.toEntity(classToSave)).thenReturn(entityToSave);
+        when(classJPARepository.save(entityToSave)).thenReturn(savedEntity);
+        when(classMapper.toModel(savedEntity)).thenReturn(expectedClass);
+
+        // When
+        Class result = classRepository.save(classToSave);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.getId());
+        assertEquals("Math Class", result.getName());
+        assertEquals("24/25", result.getSchoolYear());
+        verify(classMapper, times(1)).toEntity(classToSave);
+        verify(classJPARepository, times(1)).save(entityToSave);
+        verify(classMapper, times(1)).toModel(savedEntity);
+    }
 }
 

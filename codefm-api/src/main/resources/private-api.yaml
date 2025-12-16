@@ -259,6 +259,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: createClass
+      summary: Create a new class for a school
+      description: Creates a new class for the specified school owned by the authenticated teacher.
+      parameters:
+        - name: schoolId
+          in: path
+          required: true
+          description: The ID of the school to create the class for.
+          schema:
+            type: integer
+            format: int32
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred language for response messages
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassRequestDTO'
+      responses:
+        '201':
+          description: Class created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassDTO'
+        '400':
+          description: Bad Request - Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 
 components:
   schemas:
@@ -292,6 +349,18 @@ components:
           type: 'string'
         schoolYear:
           type: 'string'
+    ClassRequestDTO:
+      type: 'object'
+      required:
+        - name
+        - schoolYear
+      properties:
+        name:
+          type: 'string'
+          example: '1º A'
+        schoolYear:
+          type: 'string'
+          example: '24/25'
     SchoolRequestDTO:
       type: 'object'
       properties:

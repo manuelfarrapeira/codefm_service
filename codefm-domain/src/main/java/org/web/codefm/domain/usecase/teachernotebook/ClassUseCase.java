@@ -17,5 +17,13 @@ public interface ClassUseCase {
      * @return List of active classes belonging to the specified school
      */
     List<Class> getClassesBySchoolId(Integer schoolId);
+
+    /**
+     * Creates a new class for a specific school owned by the authenticated teacher.
+     *
+     * @param clazz The class data to create
+     * @return The created class with generated ID
+     */
+    Class createClass(Class clazz);
 }
 

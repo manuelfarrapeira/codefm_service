@@ -7,13 +7,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.School;
-import org.web.codefm.domain.exception.teachernotebook.SchoolForbiddenException;
-import org.web.codefm.domain.exception.teachernotebook.SchoolNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SchoolValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.SchoolRepository;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionUser;
+import org.web.codefm.util.SchoolValidationUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,35 +51,23 @@ public class SchoolServiceImpl implements SchoolService {
     @Transactional
     public void softDeleteSchool(Integer schoolId, Integer teacherId) {
         Locale locale = sessionUser.getLocale();
-
-        School school = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new SchoolNotFoundException(messageSource.getMessage(MessageKeys.SCHOOL_NOT_FOUND, null, locale)));
-
-        if (!school.getTeacherId().equals(teacherId)) {
-            throw new SchoolForbiddenException(messageSource.getMessage(MessageKeys.SCHOOL_FORBIDDEN, null, locale));
-        }
-
+        SchoolValidationUtil.validateSchoolOwnership(schoolId, teacherId, this, messageSource, locale);
         schoolRepository.softDeleteSchool(schoolId, teacherId);
     }
 
     @Override
     @Transactional
     public School updateSchool(Integer schoolId, School school, Integer teacherId) {
-
         Locale locale = sessionUser.getLocale();
         List<ErrorMessage> errors = new ArrayList<>();
+
         validateSchool(school, errors, locale);
 
         if (!errors.isEmpty()) {
             throw new SchoolValidationException(errors);
         }
 
-        School existingSchool = schoolRepository.findById(schoolId)
-                .orElseThrow(() -> new SchoolNotFoundException(messageSource.getMessage(MessageKeys.SCHOOL_NOT_FOUND, null, locale)));
-
-        if (!existingSchool.getTeacherId().equals(teacherId)) {
-            throw new SchoolForbiddenException(messageSource.getMessage(MessageKeys.SCHOOL_FORBIDDEN, null, locale));
-        }
+        School existingSchool = SchoolValidationUtil.validateSchoolOwnership(schoolId, teacherId, this, messageSource, locale);
 
         existingSchool.setName(school.getName());
         existingSchool.setTown(school.getTown());
