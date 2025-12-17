@@ -12,4 +12,6 @@ public interface ClassMapper {
     Class toModel(ClassEntity entity);
 
     List<Class> toModelList(List<ClassEntity> entities);
+
+    ClassEntity toEntity(Class clazz);
 }

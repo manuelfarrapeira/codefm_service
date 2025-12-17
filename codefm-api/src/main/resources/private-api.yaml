@@ -13,6 +13,8 @@ tags:
     description: Private operations related to greeting
   - name: TeacherNoteBookSchools
     description: Operations related to Teacher Notebook Schools
+  - name: TeacherNoteBookClasses
+    description: Operations related to Teacher Notebook School Classes
 
 paths:
   /greeting:
@@ -50,7 +52,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
-  /teacher-notebook/schools:
+  /teacher-notebook/v1/schools:
     get:
       tags:
         - TeacherNoteBookSchools
@@ -116,7 +118,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
-  /teacher-notebook/schools/{id}:
+  /teacher-notebook/v1/schools/{id}:
     delete:
       tags:
         - TeacherNoteBookSchools
@@ -215,6 +217,204 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/school/{schoolId}/classes:
+    get:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: classes
+      summary: Retrieve active classes for a school
+      description: Returns classes for the specified school that have not been soft-deleted.
+      parameters:
+        - name: schoolId
+          in: path
+          required: true
+          description: The ID of the school whose classes are requested.
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassDTO'
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: createClass
+      summary: Create a new class for a school
+      description: Creates a new class for the specified school owned by the authenticated teacher.
+      parameters:
+        - name: schoolId
+          in: path
+          required: true
+          description: The ID of the school to create the class for.
+          schema:
+            type: integer
+            format: int32
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred language for response messages
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassRequestDTO'
+      responses:
+        '201':
+          description: Class created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassDTO'
+        '400':
+          description: Bad Request - Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/classes/{classId}:
+    delete:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: deleteClass
+      summary: Soft-delete a class
+      description: Marks a class as deleted by setting its deletion_date. Only the teacher who owns the school can delete its classes.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Class successfully soft-deleted (No Content)
+        '403':
+          description: Forbidden - Teacher does not own the school of this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    patch:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: updateClass
+      summary: Update an existing class
+      description: Updates an existing class for the authenticated teacher. Only name and schoolYear can be updated.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassRequestDTO'
+      responses:
+        '200':
+          description: Class updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own the school of this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 
 components:
   schemas:
@@ -248,6 +448,15 @@ components:
           type: 'string'
         schoolYear:
           type: 'string'
+    ClassRequestDTO:
+      type: 'object'
+      properties:
+        name:
+          type: 'string'
+          example: '1º A'
+        schoolYear:
+          type: 'string'
+          example: '24/25'
     SchoolRequestDTO:
       type: 'object'
       properties:

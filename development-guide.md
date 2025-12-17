@@ -63,6 +63,7 @@ public class PrivateSchools implements TeacherNoteBookSchoolsApi {
     private final SchoolUseCase schoolUseCase;
     private final SchoolDTOMapper schoolDTOMapper;
     
+    @Logged
     @Override
     @PreAuthorize("hasRole('" + UserRole.TEACHER.getRoleName() + "')")
     public ResponseEntity<List<SchoolDTO>> schools() {
@@ -70,8 +71,29 @@ public class PrivateSchools implements TeacherNoteBookSchoolsApi {
         List<SchoolDTO> dtos = schoolDTOMapper.toDTOList(schools);
         return ResponseEntity.ok(dtos);
     }
+    
+    @Logged
+    @Override
+    @Locale(1)
+    @PreAuthorize("hasRole('" + UserRole.TEACHER.getRoleName() + "')")
+    public ResponseEntity<SchoolDTO> createSchool(
+        SchoolRequestDTO dto,           // posición 0
+        String acceptLanguage           // posición 1
+    ) {
+        School schoolToCreate = schoolRequestMapper.toDomain(dto);
+        School createdSchool = schoolUseCase.createSchool(schoolToCreate);
+        return new ResponseEntity<>(schoolDTOMapper.toDTO(createdSchool), HttpStatus.CREATED);
+    }
 }
 ```
+
+**Anotaciones importantes**:
+
+- `@Logged`: Logging automático de entrada/salida del método
+- `@PreAuthorize`: Control de acceso basado en roles
+- `@Locale(position)`: **OBLIGATORIO** cuando el endpoint recibe header `Accept-Language`. Indica la posición (
+  0-indexed) del parámetro para actualizar el locale de SessionUser
+- `@Override`: Implementa el método generado desde OpenAPI
 
 ### 3. Mapper DTO (API Layer)
 
@@ -243,8 +265,27 @@ public class SchoolRepositoryImpl implements SchoolRepository {
             schoolJPARepository.findByTeacherId(teacherId)
         );
     }
+
+    @Override
+    public School softDeleteSchool(Integer schoolId, Integer teacherId) {
+        SchoolEntity schoolEntity = schoolJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)
+                .orElseThrow(() -> new IllegalArgumentException("School not found or not owned by teacher or already deleted."));
+
+        schoolEntity.setDeletionDate(LocalDate.now());
+        SchoolEntity updatedEntity = schoolJPARepository.save(schoolEntity);
+        return schoolMapper.toModel(updatedEntity);
+    }
 }
 ```
+
+**Patrón de Soft Delete**:
+
+- Buscar la entidad con validación de ownership usando un método JPA específico (ej.
+  `findByIdAndTeacherIdAndDeletionDateIsNull`)
+- Lanzar `IllegalArgumentException` si no se encuentra o no pertenece al usuario
+- Establecer `deletionDate` con `LocalDate.now()`
+- Guardar la entidad actualizada con `save()`
+- Retornar la entidad mapeada al dominio
 
 ### 11. JPA Repository (Infrastructure Layer)
 
@@ -385,6 +426,30 @@ public enum ErrorCodeEnum {
 }
 ```
 
+**IMPORTANTE - Reutilización de Códigos Genéricos**:
+
+- Antes de crear nuevos códigos de error, verifica si existen códigos genéricos que puedan reutilizarse.
+- Códigos genéricos disponibles:
+    - `RESOURCE_NOT_FOUND("1003", "RESOURCE_NOT_FOUND")` - Para recursos no encontrados (School, Class, etc.)
+    - `RESOURCE_FORBIDDEN("1004", "RESOURCE_FORBIDDEN")` - Para accesos denegados a recursos
+    - `VALIDATION_ERROR("1006", "VALIDATION_ERROR")` - Para errores de validación
+- Solo crea códigos específicos cuando el error requiera un tratamiento o comportamiento diferenciado.
+- Ejemplo de reutilización:
+  ```java
+  // Usar RESOURCE_NOT_FOUND para diferentes tipos de recursos
+  public class SchoolNotFoundException extends BaseException {
+      public SchoolNotFoundException(String message) {
+          super(ErrorCodeEnum.RESOURCE_NOT_FOUND, message);
+      }
+  }
+  
+  public class ClassNotFoundException extends BaseException {
+      public ClassNotFoundException(String message) {
+          super(ErrorCodeEnum.RESOURCE_NOT_FOUND, message);
+      }
+  }
+  ```
+
 #### Paso 2: Crear la Clase de Excepción
 
 Crea una nueva clase de excepción en el módulo `codefm-domain`, típicamente en un subpaquete de `exception`.
@@ -499,8 +564,21 @@ school.validation.tlf.invalid=Telephone number must be 9 digits.
 ```properties
 # messages_es.properties
 school.validation.name.required=El nombre del colegio es obligatorio.
-school.validation.tlf.invalid=El número de teléfono debe tener 9 dígitos.
+school.validation.tlf.invalid=El n\u00famero de tel\u00e9fono debe tener 9 d\u00edgitos.
 ```
+
+**IMPORTANTE - Codificación de Caracteres**:
+
+- Los archivos `messages_es.properties` deben usar **codificación ASCII** con escape de caracteres especiales.
+- Los caracteres especiales del español (á, é, í, ó, ú, ñ, ¿, ¡) deben codificarse usando secuencias Unicode (`\uXXXX`).
+- Ejemplos de codificación:
+    - `ñ` → `\u00f1`
+    - `á` → `\u00e1`
+    - `é` → `\u00e9`
+    - `í` → `\u00ed`
+    - `ó` → `\u00f3`
+    - `ú` → `\u00fa`
+- Esta codificación garantiza la compatibilidad entre diferentes sistemas y evita problemas de visualización.
 
 #### Paso 2: Centralizar las Claves de Mensaje
 
@@ -802,6 +880,10 @@ mvn test -pl karate-test
 14. [ ] Crear Test de UseCase (codefm-application/src/test/usecase/)
 15. [ ] Crear Mapper DTO (codefm-api/mapper/)
 16. [ ] Implementar Controller (codefm-api/controller/)
+    - [ ] Si el endpoint tiene header `Accept-Language`, añadir anotación `@Locale(position)` con la posición correcta
+      del parámetro
+    - [ ] Añadir anotación `@Logged` para logging automático
+    - [ ] Añadir anotación `@PreAuthorize` para control de acceso
 17. [ ] Crear Test de Karate (karate-test/)
 18. [ ] Ejecutar `mvn clean compile`
 19. [ ] Ejecutar `mvn test` para verificar todos los tests
@@ -846,3 +928,38 @@ mvn test -pl karate-test
 9. **Ordenamiento de Clases**: Al obtener `List<School>`, las `List<Class>` dentro de cada `School` deben ser ordenadas
    por el campo `schoolYear` de mayor a menor. El formato "YY/YY" de `schoolYear` debe ser convertido a un número (ej.
    2425) para el ordenamiento.
+10. **Anotación @Locale**: Cuando un endpoint recibe el header `Accept-Language`, es **OBLIGATORIO** añadir la anotación
+    `@Locale(position)` sobre el método del controller. Esta anotación indica la posición (0-indexed) del parámetro
+    `Accept-Language` en la firma del método, y es necesaria para actualizar el campo `locale` de `SessionUser`, que se
+    utiliza para definir el idioma de los mensajes de error y validación.
+    - La posición se cuenta desde 0, empezando por el primer parámetro:
+      ```java
+      @Locale(2)  // Accept-Language está en posición 2
+      public ResponseEntity<ClassDTO> createClass(
+          Integer schoolId,        // posición 0
+          ClassRequestDTO dto,     // posición 1
+          String acceptLanguage    // posición 2
+      )
+      ```
+    - **Ejemplo completo**:
+      ```java
+      @Logged
+      @Override
+      @Locale(1)
+      @PreAuthorize("hasRole('TEACHER')")
+      public ResponseEntity<SchoolDTO> createSchool(
+          SchoolRequestDTO dto,           // posición 0
+          String acceptLanguage           // posición 1
+      ) {
+          // implementación
+      }
+      ```
+    - **Siempre** añadir el parámetro `Accept-Language` en el OpenAPI YAML como header:
+      ```yaml
+      parameters:
+        - name: Accept-Language
+          in: header
+          required: false
+          schema:
+            type: string
+      ```

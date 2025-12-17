@@ -1,5 +1,22 @@
 package org.web.codefm.usecase.teachernotebook;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -11,11 +28,6 @@ import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
-
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SchoolUseCaseImplTest {
@@ -29,12 +41,14 @@ class SchoolUseCaseImplTest {
     @InjectMocks
     private SchoolUseCaseImpl schoolUseCase;
 
+  @BeforeEach
+  void setUp() {
+    lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(1);
+  }
 
     @Test
     void getSchoolsByTeacher_shouldSortSchoolsByMaxSchoolYearAndClassesInternallyDescending() {
         Integer teacherId = 1;
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
 
         Class s1c1 = Class.builder().id(1).schoolId(1).name("Class A").schoolYear("23/24").build();
         Class s1c2 = Class.builder().id(2).schoolId(1).name("Class B").schoolYear("25/26").build();
@@ -88,7 +102,6 @@ class SchoolUseCaseImplTest {
 
         List<School> schoolsFromService = Arrays.asList(school2, school4, school1, school5, school3);
 
-        when(sessionUser.getParameters()).thenReturn(parameters);
         when(schoolService.getSchoolsByTeacherId(teacherId)).thenReturn(schoolsFromService);
 
         List<School> result = schoolUseCase.getSchoolsByTeacher();
@@ -126,8 +139,6 @@ class SchoolUseCaseImplTest {
     @Test
     void getSchoolsByTeacher_shouldHandleSchoolsWithNullClassesList() {
         Integer teacherId = 1;
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
 
         School schoolWithNullClasses = School.builder()
                 .id(1)
@@ -139,7 +150,6 @@ class SchoolUseCaseImplTest {
 
         List<School> schoolsFromService = Collections.singletonList(schoolWithNullClasses);
 
-        when(sessionUser.getParameters()).thenReturn(parameters);
         when(schoolService.getSchoolsByTeacherId(teacherId)).thenReturn(schoolsFromService);
 
         List<School> result = schoolUseCase.getSchoolsByTeacher();
@@ -152,16 +162,13 @@ class SchoolUseCaseImplTest {
 
     @Test
     void createSchool_shouldSetTeacherIdAndCallService() {
-        Integer teacherId = 123;
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
+      Integer teacherId = 1;
 
         School schoolToCreate = School.builder()
                 .name("New School")
                 .town("New Town")
                 .build();
 
-        when(sessionUser.getParameters()).thenReturn(parameters);
         when(schoolService.createSchool(any(School.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         schoolUseCase.createSchool(schoolToCreate);
@@ -177,16 +184,13 @@ class SchoolUseCaseImplTest {
     @Test
     void softDeleteSchool_shouldGetTeacherIdFromSessionAndCallService() {
         Integer schoolId = 1;
-        Integer teacherId = 101;
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
+      Integer teacherId = 1;
 
-        when(sessionUser.getParameters()).thenReturn(parameters);
         doNothing().when(schoolService).softDeleteSchool(schoolId, teacherId);
 
         schoolUseCase.softDeleteSchool(schoolId);
 
-        verify(sessionUser, times(1)).getParameters();
+      verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
         verify(schoolService, times(1)).softDeleteSchool(schoolId, teacherId);
     }
 
@@ -194,9 +198,7 @@ class SchoolUseCaseImplTest {
     void updateSchool_shouldGetTeacherIdFromSessionAndCallService() {
         // Given
         Integer schoolId = 1;
-        Integer teacherId = 101;
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
+      Integer teacherId = 1;
 
         School schoolToUpdate = School.builder()
                 .name("Updated School Name")
@@ -211,7 +213,6 @@ class SchoolUseCaseImplTest {
                 .tlf(987654321)
                 .build();
 
-        when(sessionUser.getParameters()).thenReturn(parameters);
         when(schoolService.updateSchool(eq(schoolId), any(School.class), eq(teacherId)))
                 .thenReturn(updatedSchool);
 
@@ -224,7 +225,7 @@ class SchoolUseCaseImplTest {
         assertEquals("Updated School Name", result.getName());
         assertEquals("Updated Town", result.getTown());
         assertEquals(987654321, result.getTlf());
-        verify(sessionUser, times(1)).getParameters();
+      verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
         verify(schoolService, times(1)).updateSchool(eq(schoolId), any(School.class), eq(teacherId));
     }
 }

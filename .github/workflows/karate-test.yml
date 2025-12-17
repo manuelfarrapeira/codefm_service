@@ -48,7 +48,25 @@ jobs:
         run: |
           cd karate-test
           mvn clean test "-Dkarate.options=--tags @Regresion" | tee test-output.log
-          echo "TEST_SUMMARY=$(grep -o "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" test-output.log | tail -1)" >> $GITHUB_OUTPUT 
+          echo "TEST_SUMMARY=$(grep -o "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" test-output.log | tail -1)" >> $GITHUB_OUTPUT
+          
+          # Extraer detalles de features
+          echo "FEATURE_DETAILS<<EOF" >> $GITHUB_OUTPUT
+          grep -E "feature:|scenarios:|passed:|failed:|time:" test-output.log | sed 's/^[[:space:]]*//' | awk '
+          BEGIN { feature=""; scenarios=""; passed=""; failed=""; time="" }
+          /^feature:/ { 
+            if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed " | time: " time
+            feature=$0; gsub(/^feature: /, "", feature); gsub(/classpath:features\//, "", feature); gsub(/\.feature/, "", feature)
+            scenarios=""; passed=""; failed=""; time=""
+          }
+          /^scenarios:/ { scenarios=$0; gsub(/^scenarios:[[:space:]]*/, "", scenarios) }
+          /^passed:/ { passed=$0; gsub(/^passed:[[:space:]]*/, "", passed) }
+          /^failed:/ { failed=$0; gsub(/^failed:[[:space:]]*/, "", failed) }
+          /^time:/ { time=$0; gsub(/^time:[[:space:]]*/, "", time) }
+          END { if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed " | time: " time }
+          ' >> temp-features.txt 2>/dev/null || true
+          cat temp-features.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT 
 
       - name: List test reports
         if: always()
@@ -70,34 +88,57 @@ jobs:
 
       - name: Comment PR with test results
         uses: actions/github-script@v6
+        if: always()
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const testSummary = '${{ steps.run-tests.outputs.TEST_SUMMARY }}';
+            const testSummary = `${{ steps.run-tests.outputs.TEST_SUMMARY }}`;
+            const rawFeatureDetails = `${{ steps.run-tests.outputs.FEATURE_DETAILS }}`;
             let prNumber = null;
             
-            // Obtener número de PR según el tipo de ejecución
             if (context.payload.pull_request) {
               prNumber = context.payload.pull_request.number;
-            } else if ('${{ github.event.inputs.pr_number }}') {
-              prNumber = '${{ github.event.inputs.pr_number }}';
+            } else if (context.payload.inputs?.pr_number) {
+              prNumber = parseInt(context.payload.inputs.pr_number);
             }
             
-            // Preparar el mensaje con formato e iconos
             const failureMatch = testSummary.match(/Failures: (\d+)/);
             const failures = failureMatch ? parseInt(failureMatch[1]) : 0;
-            const statusIcon = failures > 0 ? '❌ ' : '✅ ';
-            const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}`;
+            const statusIcon = failures > 0 ? '❌' : '✅';
             
-            // Comentar en la PR si tenemos un número
+            let featuresSummary = '';
+            if (rawFeatureDetails && rawFeatureDetails.trim()) {
+              featuresSummary = '\n\n### 📋 Feature Details\n\n';
+              featuresSummary += '| Status | Feature | Scenarios | Passed | Failed | Time |\n';
+              featuresSummary += '|--------|---------|-----------|--------|--------|------|\n';
+              const features = rawFeatureDetails.split('\n').filter(line => line.trim());
+              features.forEach(feature => {
+                const failedMatch = feature.match(/failed:\s*(\d+)/);
+                const scenariosMatch = feature.match(/scenarios:\s*(\d+)/);
+                const passedMatch = feature.match(/passed:\s*(\d+)/);
+                const timeMatch = feature.match(/time:\s*([\d.]+)/);
+                const failedCount = failedMatch ? parseInt(failedMatch[1]) : 0;
+                const scenarios = scenariosMatch ? scenariosMatch[1] : '0';
+                const passed = passedMatch ? passedMatch[1] : '0';
+                const time = timeMatch ? timeMatch[1] + 's' : 'N/A';
+                const featureName = feature.split(' |')[0].trim();
+                const icon = failedCount > 0 ? '❌' : '✅';
+                featuresSummary += `| ${icon} | ${featureName} | ${scenarios} | ${passed} | ${failedCount} | ${time} |\n`;
+              });
+            }
+            
+            const reportLink = `\n\n---\n📦 [Download Karate & Jacoco Reports](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            
+            const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}${featuresSummary}${reportLink}`;
+            
             if (prNumber) {
-              github.rest.issues.createComment({
-                issue_number: parseInt(prNumber),
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: formattedMessage
               });
-              console.log(`Commented on PR #${prNumber}: ${testSummary}`);
+              console.log(`Commented on PR #${prNumber}`);
             } else {
-              console.log('Test Summary: ' + formattedMessage);
+              console.log('No PR to comment on. Test Summary:\n' + formattedMessage);
             }
