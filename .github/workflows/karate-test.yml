@@ -88,30 +88,28 @@ jobs:
 
       - name: Comment PR with test results
         uses: actions/github-script@v6
+        if: always()
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const testSummary = '${{ steps.run-tests.outputs.TEST_SUMMARY }}';
-            const featureDetails = '${{ steps.run-tests.outputs.FEATURE_DETAILS }}';
+            const testSummary = `${{ steps.run-tests.outputs.TEST_SUMMARY }}`;
+            const rawFeatureDetails = `${{ steps.run-tests.outputs.FEATURE_DETAILS }}`;
             let prNumber = null;
             
-            // Obtener número de PR según el tipo de ejecución
             if (context.payload.pull_request) {
               prNumber = context.payload.pull_request.number;
-            } else if ('${{ github.event.inputs.pr_number }}') {
-              prNumber = '${{ github.event.inputs.pr_number }}';
+            } else if (context.payload.inputs?.pr_number) {
+              prNumber = parseInt(context.payload.inputs.pr_number);
             }
             
-            // Preparar el mensaje con formato e iconos
             const failureMatch = testSummary.match(/Failures: (\d+)/);
             const failures = failureMatch ? parseInt(failureMatch[1]) : 0;
-            const statusIcon = failures > 0 ? '❌ ' : '✅ ';
+            const statusIcon = failures > 0 ? '❌' : '✅';
             
-            // Construir resumen de features
             let featuresSummary = '';
-            if (featureDetails && featureDetails.trim()) {
+            if (rawFeatureDetails && rawFeatureDetails.trim()) {
               featuresSummary = '\n\n### 📋 Feature Details\n```\n';
-              const features = featureDetails.split('\n').filter(line => line.trim());
+              const features = rawFeatureDetails.split('\n').filter(line => line.trim());
               features.forEach(feature => {
                 const failedMatch = feature.match(/failed:\s*(\d+)/);
                 const failedCount = failedMatch ? parseInt(failedMatch[1]) : 0;
@@ -123,15 +121,14 @@ jobs:
             
             const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}${featuresSummary}`;
             
-            // Comentar en la PR si tenemos un número
             if (prNumber) {
-              github.rest.issues.createComment({
-                issue_number: parseInt(prNumber),
+              await github.rest.issues.createComment({
+                issue_number: prNumber,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: formattedMessage
               });
-              console.log(`Commented on PR #${prNumber}: ${testSummary}`);
+              console.log(`Commented on PR #${prNumber}`);
             } else {
-              console.log('Test Summary: ' + formattedMessage);
+              console.log('No PR to comment on. Test Summary:\n' + formattedMessage);
             }
