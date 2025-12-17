@@ -127,7 +127,8 @@ jobs:
               });
             }
             
-            const reportLink = `\n\n---\n📊 [View Jacoco Coverage Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            const artifactUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+            const reportLink = `\n\n---\n📦 [Download Karate & Jacoco Reports](${artifactUrl}#artifacts)`;
             const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}${featuresSummary}${reportLink}`;
             
             if (prNumber) {
