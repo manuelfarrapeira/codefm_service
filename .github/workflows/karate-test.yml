@@ -52,17 +52,18 @@ jobs:
           
           # Extraer detalles de features
           echo "FEATURE_DETAILS<<EOF" >> $GITHUB_OUTPUT
-          grep -E "feature:|scenarios:|passed:|failed:" test-output.log | sed 's/^[[:space:]]*//' | awk '
-          BEGIN { feature=""; scenarios=""; passed=""; failed="" }
+          grep -E "feature:|scenarios:|passed:|failed:|time:" test-output.log | sed 's/^[[:space:]]*//' | awk '
+          BEGIN { feature=""; scenarios=""; passed=""; failed=""; time="" }
           /^feature:/ { 
-            if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed
+            if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed " | time: " time
             feature=$0; gsub(/^feature: /, "", feature); gsub(/classpath:features\//, "", feature); gsub(/\.feature/, "", feature)
-            scenarios=""; passed=""; failed=""
+            scenarios=""; passed=""; failed=""; time=""
           }
           /^scenarios:/ { scenarios=$0; gsub(/^scenarios:[[:space:]]*/, "", scenarios) }
           /^passed:/ { passed=$0; gsub(/^passed:[[:space:]]*/, "", passed) }
           /^failed:/ { failed=$0; gsub(/^failed:[[:space:]]*/, "", failed) }
-          END { if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed }
+          /^time:/ { time=$0; gsub(/^time:[[:space:]]*/, "", time) }
+          END { if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed " | time: " time }
           ' >> temp-features.txt 2>/dev/null || true
           cat temp-features.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT 
@@ -108,19 +109,21 @@ jobs:
             let featuresSummary = '';
             if (rawFeatureDetails && rawFeatureDetails.trim()) {
               featuresSummary = '\n\n### 📋 Feature Details\n\n';
-              featuresSummary += '| Status | Feature | Scenarios | Passed | Failed |\n';
-              featuresSummary += '|--------|---------|-----------|--------|--------|\n';
+              featuresSummary += '| Status | Feature | Scenarios | Passed | Failed | Time |\n';
+              featuresSummary += '|--------|---------|-----------|--------|--------|------|\n';
               const features = rawFeatureDetails.split('\n').filter(line => line.trim());
               features.forEach(feature => {
                 const failedMatch = feature.match(/failed:\s*(\d+)/);
                 const scenariosMatch = feature.match(/scenarios:\s*(\d+)/);
                 const passedMatch = feature.match(/passed:\s*(\d+)/);
+                const timeMatch = feature.match(/time:\s*([\d.]+)/);
                 const failedCount = failedMatch ? parseInt(failedMatch[1]) : 0;
                 const scenarios = scenariosMatch ? scenariosMatch[1] : '0';
                 const passed = passedMatch ? passedMatch[1] : '0';
+                const time = timeMatch ? timeMatch[1] + 's' : 'N/A';
                 const featureName = feature.split(' |')[0].trim();
                 const icon = failedCount > 0 ? '❌' : '✅';
-                featuresSummary += `| ${icon} | ${featureName} | ${scenarios} | ${passed} | ${failedCount} |\n`;
+                featuresSummary += `| ${icon} | ${featureName} | ${scenarios} | ${passed} | ${failedCount} | ${time} |\n`;
               });
             }
             
