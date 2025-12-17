@@ -9,7 +9,7 @@ Feature: Teacher Notebook - Schools
     * def classSchema = { id: '#number', schoolId: '#number', name: '#string', schoolYear: '#string' }
     * def schoolSchema = { id: '#number', name: '#string', town: '#string', tlf: '#number', classes: '#[] classSchema' }
 
-    Given path '/teacher-notebook/schools'
+    Given path '/teacher-notebook/v1/schools'
     When method GET
     Then status 200
     And match each response == schoolSchema

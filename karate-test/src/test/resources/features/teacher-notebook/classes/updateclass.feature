@@ -3,7 +3,7 @@ Feature: Teacher Notebook - Update Class
 
   Background:
     * configure headers = { 'Cookie': '#(authTokens.karateuseradmin)', 'Accept-Language': 'es' }
-    Given url baseLocalUrl
+    Given url baseHttpsUrl
 
   #  Scenario: Update a class successfully
   #    * def requestBody =
@@ -27,7 +27,7 @@ Feature: Teacher Notebook - Update Class
     * if (requestBody.name == null) karate.remove('requestBody', 'name')
     * if (requestBody.schoolYear == null) karate.remove('requestBody', 'schoolYear')
 
-    Given path '/teacher-notebook/classes/' + <classId>
+    Given path '/teacher-notebook/v1/classes/' + <classId>
     And request requestBody
     When method PATCH
     Then status <status>
@@ -47,7 +47,7 @@ Feature: Teacher Notebook - Update Class
   Scenario Outline: Fail to update class with access errors
     * def requestBody = { name: 'New Name', schoolYear: '24/25' }
 
-    Given path '/teacher-notebook/classes/' + <classId>
+    Given path '/teacher-notebook/v1/classes/' + <classId>
     And request requestBody
     When method PATCH
     Then status <status>

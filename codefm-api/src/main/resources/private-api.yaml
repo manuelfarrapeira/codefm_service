@@ -52,7 +52,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
-  /teacher-notebook/schools:
+  /teacher-notebook/v1/schools:
     get:
       tags:
         - TeacherNoteBookSchools
@@ -118,7 +118,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
-  /teacher-notebook/schools/{id}:
+  /teacher-notebook/v1/schools/{id}:
     delete:
       tags:
         - TeacherNoteBookSchools
@@ -217,7 +217,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
-  /teacher-notebook/classes/{schoolId}:
+  /teacher-notebook/v1/school/{schoolId}/classes:
     get:
       tags:
         - TeacherNoteBookClasses
@@ -316,7 +316,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
-  /teacher-notebook/classes/{classId}:
+  /teacher-notebook/v1/classes/{classId}:
     delete:
       tags:
         - TeacherNoteBookClasses

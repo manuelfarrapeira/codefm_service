@@ -29,7 +29,7 @@ Feature: Teacher Notebook - Create School
     * if (requestBody.town == null) karate.remove('requestBody', 'town')
     * if (requestBody.tlf == null) karate.remove('requestBody', 'tlf')
 
-    Given path '/teacher-notebook/schools'
+    Given path '/teacher-notebook/v1/schools'
     And request requestBody
     When method PUT
     Then status 400
