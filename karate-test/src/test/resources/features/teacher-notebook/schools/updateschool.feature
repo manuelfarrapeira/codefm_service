@@ -30,7 +30,7 @@ Feature: Delete School API
     * if (requestBody.town == null) karate.remove('requestBody', 'town')
     * if (requestBody.tlf == null) karate.remove('requestBody', 'tlf')
 
-    Given path '/teacher-notebook/schools/' + <schoolId>
+    Given path '/teacher-notebook/v1/schools/' + <schoolId>
     And request requestBody
     When method PATCH
     Then status <status>
