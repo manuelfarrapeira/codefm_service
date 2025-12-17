@@ -52,18 +52,17 @@ jobs:
           
           # Extraer detalles de features
           echo "FEATURE_DETAILS<<EOF" >> $GITHUB_OUTPUT
-          grep -E "feature:|scenarios:|passed:|failed:|time:" test-output.log | sed 's/^[[:space:]]*//' | awk '
-          BEGIN { feature=""; scenarios=""; passed=""; failed=""; time="" }
+          grep -E "feature:|scenarios:|passed:|failed:" test-output.log | sed 's/^[[:space:]]*//' | awk '
+          BEGIN { feature=""; scenarios=""; passed=""; failed="" }
           /^feature:/ { 
-            if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed " | time: " time
+            if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed
             feature=$0; gsub(/^feature: /, "", feature); gsub(/classpath:features\//, "", feature); gsub(/\.feature/, "", feature)
-            scenarios=""; passed=""; failed=""; time=""
+            scenarios=""; passed=""; failed=""
           }
           /^scenarios:/ { scenarios=$0; gsub(/^scenarios:[[:space:]]*/, "", scenarios) }
           /^passed:/ { passed=$0; gsub(/^passed:[[:space:]]*/, "", passed) }
           /^failed:/ { failed=$0; gsub(/^failed:[[:space:]]*/, "", failed) }
-          /^time:/ { time=$0; gsub(/^time:[[:space:]]*/, "", time) }
-          END { if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed " | time: " time }
+          END { if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed }
           ' >> temp-features.txt 2>/dev/null || true
           cat temp-features.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT 
@@ -108,15 +107,21 @@ jobs:
             
             let featuresSummary = '';
             if (rawFeatureDetails && rawFeatureDetails.trim()) {
-              featuresSummary = '\n\n### 📋 Feature Details\n```\n';
+              featuresSummary = '\n\n### 📋 Feature Details\n\n';
+              featuresSummary += '| Status | Feature | Scenarios | Passed | Failed |\n';
+              featuresSummary += '|--------|---------|-----------|--------|--------|\n';
               const features = rawFeatureDetails.split('\n').filter(line => line.trim());
               features.forEach(feature => {
                 const failedMatch = feature.match(/failed:\s*(\d+)/);
+                const scenariosMatch = feature.match(/scenarios:\s*(\d+)/);
+                const passedMatch = feature.match(/passed:\s*(\d+)/);
                 const failedCount = failedMatch ? parseInt(failedMatch[1]) : 0;
+                const scenarios = scenariosMatch ? scenariosMatch[1] : '0';
+                const passed = passedMatch ? passedMatch[1] : '0';
+                const featureName = feature.split(' |')[0].trim();
                 const icon = failedCount > 0 ? '❌' : '✅';
-                featuresSummary += `${icon} ${feature}\n`;
+                featuresSummary += `| ${icon} | ${featureName} | ${scenarios} | ${passed} | ${failedCount} |\n`;
               });
-              featuresSummary += '```';
             }
             
             const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}${featuresSummary}`;
