@@ -127,23 +127,7 @@ jobs:
               });
             }
             
-            let reportLink = '';
-            try {
-              const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                run_id: context.runId
-              });
-            
-              const karateArtifact = artifacts.data.artifacts.find(a => a.name === 'karate-reports');
-              if (karateArtifact && karateArtifact.id) {
-                const downloadUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/artifacts/${karateArtifact.id}`;
-                reportLink = `\n\n---\n📦 [Download Karate & Jacoco Reports](${downloadUrl})`;
-              }
-            } catch (error) {
-              console.log('Could not fetch artifact URL:', error);
-              reportLink = `\n\n---\n📦 [View Reports](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
-            }
+            const reportLink = `\n\n---\n📦 [Download Karate & Jacoco Reports](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
             
             const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}${featuresSummary}${reportLink}`;
             
