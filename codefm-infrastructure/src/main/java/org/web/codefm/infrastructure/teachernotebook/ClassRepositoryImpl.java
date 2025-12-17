@@ -1,5 +1,9 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -8,10 +12,6 @@ import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ClassEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.ClassJPARepository;
 import org.web.codefm.infrastructure.mapper.ClassMapper;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -30,8 +30,7 @@ public class ClassRepositoryImpl implements ClassRepository {
 
     @Override
     public Class save(Class clazz) {
-        ClassEntity entity = classMapper.toEntity(clazz);
-        ClassEntity savedEntity = classJPARepository.save(entity);
+      ClassEntity savedEntity = classJPARepository.save(classMapper.toEntity(clazz));
         return classMapper.toModel(savedEntity);
     }
 

@@ -1,5 +1,8 @@
 package org.web.codefm.usecase.teachernotebook;
 
+import java.util.Comparator;
+import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -9,9 +12,6 @@ import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 import org.web.codefm.domain.usecase.teachernotebook.ClassUseCase;
 import org.web.codefm.domain.util.SchoolYearUtil;
-
-import java.util.Comparator;
-import java.util.List;
 
 @Slf4j
 @Service
@@ -43,5 +43,11 @@ public class ClassUseCaseImpl implements ClassUseCase {
         Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
         classService.softDeleteClass(classId, teacherId);
     }
+
+  @Override
+  public Class updateClass(Integer classId, Class clazz) {
+    Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
+    return classService.updateClass(classId, clazz, teacherId);
+  }
 }
 

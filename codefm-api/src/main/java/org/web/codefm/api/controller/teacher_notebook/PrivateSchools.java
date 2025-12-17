@@ -1,5 +1,7 @@
 package org.web.codefm.api.controller.teacher_notebook;
 
+import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,8 +18,6 @@ import org.web.codefm.domain.usecase.teachernotebook.SchoolUseCase;
 import org.web.codefm.model.SchoolDTO;
 import org.web.codefm.model.SchoolRequestDTO;
 
-import java.util.List;
-
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -31,8 +31,7 @@ public class PrivateSchools implements TeacherNoteBookSchoolsApi {
     @Override
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<List<SchoolDTO>> schools() {
-        List<School> schools = schoolUseCase.getSchoolsByTeacher();
-        return ResponseEntity.ok(schoolDTOMapper.toDTOList(schools));
+      return ResponseEntity.ok(schoolDTOMapper.toDTOList(schoolUseCase.getSchoolsByTeacher()));
     }
 
     @Logged
@@ -40,9 +39,8 @@ public class PrivateSchools implements TeacherNoteBookSchoolsApi {
     @Locale(1)
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<SchoolDTO> createSchool(SchoolRequestDTO createSchoolRequestDTO, String acceptLanguage) {
-        School schoolToCreate = schoolRequestMapper.toDomain(createSchoolRequestDTO);
 
-        School createdSchool = schoolUseCase.createSchool(schoolToCreate);
+      School createdSchool = schoolUseCase.createSchool(schoolRequestMapper.toDomain(createSchoolRequestDTO));
 
         return new ResponseEntity<>(schoolDTOMapper.toDTO(createdSchool), HttpStatus.CREATED);
     }
@@ -61,8 +59,7 @@ public class PrivateSchools implements TeacherNoteBookSchoolsApi {
     @Locale(2)
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<SchoolDTO> updateSchool(Integer id, SchoolRequestDTO updateSchoolRequestDTO, String acceptLanguage) {
-        School schoolToUpdate = schoolRequestMapper.toDomain(updateSchoolRequestDTO);
-        School updatedSchool = schoolUseCase.updateSchool(id, schoolToUpdate);
+      School updatedSchool = schoolUseCase.updateSchool(id, schoolRequestMapper.toDomain(updateSchoolRequestDTO));
         return ResponseEntity.ok(schoolDTOMapper.toDTO(updatedSchool));
     }
 

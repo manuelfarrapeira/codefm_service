@@ -1,8 +1,8 @@
 package org.web.codefm.domain.usecase.teachernotebook;
 
-import org.web.codefm.domain.entity.teachernotebook.Class;
-
 import java.util.List;
+
+import org.web.codefm.domain.entity.teachernotebook.Class;
 
 /**
  * Interface that defines class operations for teachers.
@@ -35,5 +35,17 @@ public interface ClassUseCase {
      * @throws org.web.codefm.domain.exception.teachernotebook.SchoolForbiddenException if the teacher does not own the school
      */
     void softDeleteClass(Integer classId);
+
+  /**
+   * Updates an existing class for the authenticated teacher. Retrieves the teacher ID from the session and delegates to the service.
+   *
+   * @param classId The ID of the class to update
+   * @param clazz The class data with updated fields
+   * @return The updated class
+   * @throws org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException if the class does not exist
+   * @throws org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException if the teacher does not own the school
+   * @throws org.web.codefm.domain.exception.teachernotebook.ClassValidationException if validation fails
+   */
+  Class updateClass(Integer classId, Class clazz);
 }
 

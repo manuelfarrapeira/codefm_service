@@ -1,5 +1,7 @@
 package org.web.codefm.api.controller.teacher_notebook;
 
+import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -14,8 +16,6 @@ import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.usecase.teachernotebook.ClassUseCase;
 import org.web.codefm.model.ClassDTO;
 import org.web.codefm.model.ClassRequestDTO;
-
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -51,5 +51,14 @@ public class PrivateClasses implements TeacherNoteBookClassesApi {
         classUseCase.softDeleteClass(classId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+
+  @Logged
+  @Override
+  @Locale(2)
+  @PreAuthorize("hasRole('TEACHER')")
+  public ResponseEntity<ClassDTO> updateClass(Integer classId, ClassRequestDTO classRequestDTO, String acceptLanguage) {
+    Class updatedClass = classUseCase.updateClass(classId, classDTOMapper.toDomain(classRequestDTO));
+    return ResponseEntity.ok(classDTOMapper.toDTO(updatedClass));
+  }
 }
 

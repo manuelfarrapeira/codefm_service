@@ -1,5 +1,20 @@
 package org.web.codefm.service.teachernotebook;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -8,20 +23,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.School;
-import org.web.codefm.domain.exception.teachernotebook.*;
+import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
 import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
+import org.web.codefm.domain.exception.teachernotebook.ClassValidationException;
+import org.web.codefm.domain.exception.teachernotebook.SchoolForbiddenException;
+import org.web.codefm.domain.exception.teachernotebook.SchoolNotFoundException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionUser;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ClassServiceImplTest {
@@ -420,5 +430,156 @@ class ClassServiceImplTest {
         verify(schoolService, times(1)).getSchoolById(schoolId);
         verify(classRepository, never()).softDeleteClass(any(), any());
     }
+
+  @Test
+  void updateClass_shouldUpdateClass_whenDataIsValidAndTeacherOwnsSchool() {
+    // Given
+    Integer classId = 1;
+    Integer teacherId = 1;
+    Integer schoolId = 10;
+
+    Class existingClass = Class.builder()
+        .id(classId)
+        .schoolId(schoolId)
+        .name("Old Name")
+        .schoolYear("23/24")
+        .build();
+
+    Class updateData = Class.builder()
+        .name("New Name")
+        .schoolYear("24/25")
+        .build();
+
+    Class updatedClass = Class.builder()
+        .id(classId)
+        .schoolId(schoolId)
+        .name("New Name")
+        .schoolYear("24/25")
+        .build();
+
+    School school = School.builder()
+        .id(schoolId)
+        .teacherId(teacherId)
+        .name("Test School")
+        .build();
+
+    when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+    when(classRepository.findById(classId)).thenReturn(Optional.of(existingClass));
+    when(schoolService.getSchoolById(schoolId)).thenReturn(Optional.of(school));
+    when(classRepository.save(any(Class.class))).thenReturn(updatedClass);
+
+    // When
+    Class result = classService.updateClass(classId, updateData, teacherId);
+
+    // Then
+    assertNotNull(result);
+    assertEquals("New Name", result.getName());
+    assertEquals("24/25", result.getSchoolYear());
+    verify(classRepository, times(1)).findById(classId);
+    verify(schoolService, times(1)).getSchoolById(schoolId);
+    verify(classRepository, times(1)).save(any(Class.class));
+  }
+
+  @Test
+  void updateClass_shouldThrowClassNotFoundException_whenClassDoesNotExist() {
+    // Given
+    Integer classId = 999;
+    Integer teacherId = 1;
+    Class updateData = Class.builder().name("New Name").schoolYear("24/25").build();
+
+    when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+    when(classRepository.findById(classId)).thenReturn(Optional.empty());
+    when(messageSource.getMessage(MessageKeys.CLASS_NOT_FOUND, null, Locale.ENGLISH))
+        .thenReturn("Class not found.");
+
+    // When & Then
+    assertThrows(ClassNotFoundException.class,
+        () -> classService.updateClass(classId, updateData, teacherId));
+
+    verify(classRepository, times(1)).findById(classId);
+    verify(classRepository, never()).save(any());
+  }
+
+  @Test
+  void updateClass_shouldThrowClassValidationException_whenNameIsEmpty() {
+    // Given
+    Integer classId = 1;
+    Integer teacherId = 1;
+    Class updateData = Class.builder().name("").schoolYear("24/25").build();
+
+    when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+    when(messageSource.getMessage(MessageKeys.CLASS_VALIDATION_NAME_REQUIRED, null, Locale.ENGLISH))
+        .thenReturn("Class name is required.");
+
+    // When & Then
+    ClassValidationException exception = assertThrows(ClassValidationException.class,
+        () -> classService.updateClass(classId, updateData, teacherId));
+
+    assertNotNull(exception.getErrors());
+    assertEquals(1, exception.getErrors().size());
+    verify(classRepository, never()).findById(any());
+    verify(classRepository, never()).save(any());
+  }
+
+  @Test
+  void updateClass_shouldThrowClassValidationException_whenSchoolYearIsInvalid() {
+    // Given
+    Integer classId = 1;
+    Integer teacherId = 1;
+    Class updateData = Class.builder().name("Valid Name").schoolYear("23/25").build();
+
+    when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+    when(messageSource.getMessage(MessageKeys.CLASS_VALIDATION_SCHOOL_YEAR_NOT_CONSECUTIVE, null, Locale.ENGLISH))
+        .thenReturn("School year numbers must be consecutive.");
+
+    // When & Then
+    ClassValidationException exception = assertThrows(ClassValidationException.class,
+        () -> classService.updateClass(classId, updateData, teacherId));
+
+    assertNotNull(exception.getErrors());
+    verify(classRepository, never()).findById(any());
+    verify(classRepository, never()).save(any());
+  }
+
+  @Test
+  void updateClass_shouldThrowClassForbiddenException_whenTeacherDoesNotOwnSchool() {
+    // Given
+    Integer classId = 1;
+    Integer teacherId = 1;
+    Integer schoolId = 10;
+    Integer differentTeacherId = 999;
+
+    Class existingClass = Class.builder()
+        .id(classId)
+        .schoolId(schoolId)
+        .name("Old Name")
+        .schoolYear("23/24")
+        .build();
+
+    Class updateData = Class.builder()
+        .name("New Name")
+        .schoolYear("24/25")
+        .build();
+
+    School school = School.builder()
+        .id(schoolId)
+        .teacherId(differentTeacherId)
+        .name("Test School")
+        .build();
+
+    when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+    when(classRepository.findById(classId)).thenReturn(Optional.of(existingClass));
+    when(schoolService.getSchoolById(schoolId)).thenReturn(Optional.of(school));
+    when(messageSource.getMessage(MessageKeys.CLASS_FORBIDDEN, null, Locale.ENGLISH))
+        .thenReturn("You are not authorized to update this class.");
+
+    // When & Then
+    assertThrows(ClassForbiddenException.class,
+        () -> classService.updateClass(classId, updateData, teacherId));
+
+    verify(classRepository, times(1)).findById(classId);
+    verify(schoolService, times(1)).getSchoolById(schoolId);
+    verify(classRepository, never()).save(any());
+  }
 }
 

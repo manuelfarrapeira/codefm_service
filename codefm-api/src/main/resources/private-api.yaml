@@ -358,6 +358,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+    patch:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: updateClass
+      summary: Update an existing class
+      description: Updates an existing class for the authenticated teacher. Only name and schoolYear can be updated.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassRequestDTO'
+      responses:
+        '200':
+          description: Class updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own the school of this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 
 components:
   schemas:
@@ -393,9 +450,6 @@ components:
           type: 'string'
     ClassRequestDTO:
       type: 'object'
-      required:
-        - name
-        - schoolYear
       properties:
         name:
           type: 'string'

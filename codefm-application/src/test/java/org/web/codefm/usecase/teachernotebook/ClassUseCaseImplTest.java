@@ -1,5 +1,18 @@
 package org.web.codefm.usecase.teachernotebook;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -9,12 +22,6 @@ import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.service.teachernotebook.ClassService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
-
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ClassUseCaseImplTest {
@@ -130,5 +137,39 @@ class ClassUseCaseImplTest {
         verify(sessionUser, times(1)).getParameters();
         verify(classService, times(1)).softDeleteClass(classId, teacherId);
     }
+
+  @Test
+  void updateClass_shouldGetTeacherIdFromSessionAndCallService() {
+    // Given
+    Integer classId = 1;
+    Integer teacherId = 1;
+    Map<String, String> parameters = new HashMap<>();
+    parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
+
+    Class updateData = Class.builder()
+        .name("New Name")
+        .schoolYear("24/25")
+        .build();
+
+    Class updatedClass = Class.builder()
+        .id(classId)
+        .schoolId(10)
+        .name("New Name")
+        .schoolYear("24/25")
+        .build();
+
+    when(sessionUser.getParameters()).thenReturn(parameters);
+    when(classService.updateClass(classId, updateData, teacherId)).thenReturn(updatedClass);
+
+    // When
+    Class result = classUseCase.updateClass(classId, updateData);
+
+    // Then
+    assertNotNull(result);
+    assertEquals("New Name", result.getName());
+    assertEquals("24/25", result.getSchoolYear());
+    verify(sessionUser, times(1)).getParameters();
+    verify(classService, times(1)).updateClass(classId, updateData, teacherId);
+  }
 }
 

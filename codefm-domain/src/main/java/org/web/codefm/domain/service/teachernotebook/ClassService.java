@@ -1,9 +1,9 @@
 package org.web.codefm.domain.service.teachernotebook;
 
-import org.web.codefm.domain.entity.teachernotebook.Class;
-
 import java.util.List;
 import java.util.Optional;
+
+import org.web.codefm.domain.entity.teachernotebook.Class;
 
 /**
  * Service interface for class business logic operations.
@@ -47,5 +47,19 @@ public interface ClassService {
      * @throws org.web.codefm.domain.exception.teachernotebook.SchoolForbiddenException if the teacher does not own the school
      */
     void softDeleteClass(Integer classId, Integer teacherId);
+
+  /**
+   * Updates an existing class. Validates that the class exists, belongs to a school owned by the specified teacher, and that the new data
+   * is valid.
+   *
+   * @param classId The ID of the class to update
+   * @param clazz The class data with updated fields
+   * @param teacherId The ID of the teacher attempting the update
+   * @return The updated class
+   * @throws org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException if the class does not exist
+   * @throws org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException if the teacher does not own the school
+   * @throws org.web.codefm.domain.exception.teachernotebook.ClassValidationException if validation fails
+   */
+  Class updateClass(Integer classId, Class clazz, Integer teacherId);
 }
 
