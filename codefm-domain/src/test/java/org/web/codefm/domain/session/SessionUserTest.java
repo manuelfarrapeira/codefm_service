@@ -193,7 +193,7 @@ class SessionUserTest {
   void getParameterAsList_shouldReturnNull_whenParameterDoesNotExist() {
     List<String> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, String.class);
 
-    assertNull(result);
+    assertTrue(result.isEmpty());
   }
 
   @ParameterizedTest

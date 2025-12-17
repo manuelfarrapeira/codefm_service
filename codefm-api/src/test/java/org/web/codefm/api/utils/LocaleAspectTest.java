@@ -10,6 +10,8 @@ import org.aspectj.lang.JoinPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -53,18 +55,10 @@ class LocaleAspectTest {
     verify(sessionUser).setLocale(new Locale("es"));
   }
 
-  @Test
-  void setLocaleToEnglish_whenAcceptLanguageHeaderIsEn() {
-    when(joinPoint.getArgs()).thenReturn(new Object[]{"en"});
-
-    localeAspect.setLocale(joinPoint, localeAnnotation);
-
-    verify(sessionUser).setLocale(Locale.ENGLISH);
-  }
-
-  @Test
-  void setLocaleToEnglish_whenAcceptLanguageHeaderIsUnknown() {
-    when(joinPoint.getArgs()).thenReturn(new Object[]{"fr"});
+  @ParameterizedTest
+  @ValueSource(strings = {"en", "fr", "de", "pt", ""})
+  void setLocaleToEnglish_whenAcceptLanguageHeaderIsInvalidOrEmpty(String header) {
+    when(joinPoint.getArgs()).thenReturn(new Object[]{header});
 
     localeAspect.setLocale(joinPoint, localeAnnotation);
 
@@ -84,14 +78,6 @@ class LocaleAspectTest {
   void setLocaleToEnglish_whenAcceptLanguageHeaderIsNull() {
     when(joinPoint.getArgs()).thenReturn(new Object[]{null});
 
-    localeAspect.setLocale(joinPoint, localeAnnotation);
-
-    verify(sessionUser).setLocale(Locale.ENGLISH);
-  }
-
-  @Test
-  void setLocaleToEnglish_whenAcceptLanguageHeaderIsEmpty() {
-    when(joinPoint.getArgs()).thenReturn(new Object[]{""});
 
     localeAspect.setLocale(joinPoint, localeAnnotation);
 
@@ -134,9 +120,10 @@ class LocaleAspectTest {
     assertEquals(1, order);
   }
 
-  @Test
-  void setLocaleToEnglish_whenAcceptLanguageHeaderIsEsButWithLeadingWhitespace() {
-    when(joinPoint.getArgs()).thenReturn(new Object[]{" es"});
+  @ParameterizedTest
+  @ValueSource(strings = {" es", "  es", "\tes"})
+  void setLocaleToEnglish_whenAcceptLanguageHeaderHasWhitespace(String header) {
+    when(joinPoint.getArgs()).thenReturn(new Object[]{header});
 
     localeAspect.setLocale(joinPoint, localeAnnotation);
 

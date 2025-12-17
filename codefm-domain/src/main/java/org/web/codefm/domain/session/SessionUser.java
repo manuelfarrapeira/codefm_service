@@ -3,6 +3,7 @@ package org.web.codefm.domain.session;
 import static java.util.Arrays.stream;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -78,7 +79,7 @@ public class SessionUser implements Serializable {
     try {
       String value = parameters.get(parameter.getClaimName());
       if (value == null) {
-        return null;
+        return Collections.emptyList();
       }
       String[] elements = value.split(",");
       return stream(elements).map(String::trim)
