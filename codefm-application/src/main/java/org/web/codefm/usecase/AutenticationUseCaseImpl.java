@@ -40,7 +40,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
     private static final String ACCESS_TOKEN = "access_token";
 
-    private static final String SAMESITE = "Strict";
+    private static final String SAMESITE = "Lax";
 
     private static final String REFRESH_PATH = "public/auth/refresh";
 
