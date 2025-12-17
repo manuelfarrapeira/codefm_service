@@ -48,7 +48,25 @@ jobs:
         run: |
           cd karate-test
           mvn clean test "-Dkarate.options=--tags @Regresion" | tee test-output.log
-          echo "TEST_SUMMARY=$(grep -o "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" test-output.log | tail -1)" >> $GITHUB_OUTPUT 
+          echo "TEST_SUMMARY=$(grep -o "Tests run: [0-9]*, Failures: [0-9]*, Errors: [0-9]*, Skipped: [0-9]*" test-output.log | tail -1)" >> $GITHUB_OUTPUT
+          
+          # Extraer detalles de features
+          echo "FEATURE_DETAILS<<EOF" >> $GITHUB_OUTPUT
+          grep -E "feature:|scenarios:|passed:|failed:|time:" test-output.log | sed 's/^[[:space:]]*//' | awk '
+          BEGIN { feature=""; scenarios=""; passed=""; failed=""; time="" }
+          /^feature:/ { 
+            if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed " | time: " time
+            feature=$0; gsub(/^feature: /, "", feature); gsub(/classpath:features\//, "", feature); gsub(/\.feature/, "", feature)
+            scenarios=""; passed=""; failed=""; time=""
+          }
+          /^scenarios:/ { scenarios=$0; gsub(/^scenarios:[[:space:]]*/, "", scenarios) }
+          /^passed:/ { passed=$0; gsub(/^passed:[[:space:]]*/, "", passed) }
+          /^failed:/ { failed=$0; gsub(/^failed:[[:space:]]*/, "", failed) }
+          /^time:/ { time=$0; gsub(/^time:[[:space:]]*/, "", time) }
+          END { if (feature != "") print feature " | scenarios: " scenarios " | passed: " passed " | failed: " failed " | time: " time }
+          ' >> temp-features.txt 2>/dev/null || true
+          cat temp-features.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT 
 
       - name: List test reports
         if: always()
@@ -74,6 +92,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const testSummary = '${{ steps.run-tests.outputs.TEST_SUMMARY }}';
+            const featureDetails = '${{ steps.run-tests.outputs.FEATURE_DETAILS }}';
             let prNumber = null;
             
             // Obtener número de PR según el tipo de ejecución
@@ -87,7 +106,22 @@ jobs:
             const failureMatch = testSummary.match(/Failures: (\d+)/);
             const failures = failureMatch ? parseInt(failureMatch[1]) : 0;
             const statusIcon = failures > 0 ? '❌ ' : '✅ ';
-            const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}`;
+            
+            // Construir resumen de features
+            let featuresSummary = '';
+            if (featureDetails && featureDetails.trim()) {
+              featuresSummary = '\n\n### 📋 Feature Details\n```\n';
+              const features = featureDetails.split('\n').filter(line => line.trim());
+              features.forEach(feature => {
+                const failedMatch = feature.match(/failed:\s*(\d+)/);
+                const failedCount = failedMatch ? parseInt(failedMatch[1]) : 0;
+                const icon = failedCount > 0 ? '❌' : '✅';
+                featuresSummary += `${icon} ${feature}\n`;
+              });
+              featuresSummary += '```';
+            }
+            
+            const formattedMessage = `## 🧪 Karate Test Results\n\n${statusIcon} ${testSummary || 'Test results not available'}${featuresSummary}`;
             
             // Comentar en la PR si tenemos un número
             if (prNumber) {
