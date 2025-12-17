@@ -23,7 +23,7 @@ public class ClassUseCaseImpl implements ClassUseCase {
 
     @Override
     public List<Class> getClassesBySchoolId(Integer schoolId) {
-        Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
+      Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
 
         List<Class> classes = classService.getActiveClassesBySchoolIdAndTeacherId(schoolId, teacherId);
 
@@ -34,19 +34,19 @@ public class ClassUseCaseImpl implements ClassUseCase {
 
     @Override
     public Class createClass(Class clazz) {
-        Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
+      Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
         return classService.createClass(clazz, teacherId);
     }
 
     @Override
     public void softDeleteClass(Integer classId) {
-        Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
+      Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
         classService.softDeleteClass(classId, teacherId);
     }
 
   @Override
   public Class updateClass(Integer classId, Class clazz) {
-    Integer teacherId = Integer.valueOf(sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName()));
+    Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
     return classService.updateClass(classId, clazz, teacherId);
   }
 }

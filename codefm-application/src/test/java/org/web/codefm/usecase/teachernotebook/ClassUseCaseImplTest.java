@@ -3,16 +3,16 @@ package org.web.codefm.usecase.teachernotebook;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,20 +35,22 @@ class ClassUseCaseImplTest {
     @InjectMocks
     private ClassUseCaseImpl classUseCase;
 
+  @BeforeEach
+  void setUp() {
+    lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(1);
+  }
+
     @Test
     void getClassesBySchoolId_shouldReturnSortedClasses() {
         // Given
         Integer schoolId = 1;
         Integer teacherId = 1;
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
 
         Class class1 = Class.builder().id(1).schoolId(schoolId).name("Math 2023").schoolYear("23/24").build();
         Class class2 = Class.builder().id(2).schoolId(schoolId).name("Math 2024").schoolYear("24/25").build();
         Class class3 = Class.builder().id(3).schoolId(schoolId).name("Math 2022").schoolYear("22/23").build();
         List<Class> unsortedClasses = Arrays.asList(class1, class2, class3);
 
-        when(sessionUser.getParameters()).thenReturn(parameters);
         when(classService.getActiveClassesBySchoolIdAndTeacherId(schoolId, teacherId)).thenReturn(unsortedClasses);
 
         // When
@@ -69,10 +71,7 @@ class ClassUseCaseImplTest {
         // Given
         Integer schoolId = 1;
         Integer teacherId = 1;
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
 
-        when(sessionUser.getParameters()).thenReturn(parameters);
         when(classService.getActiveClassesBySchoolIdAndTeacherId(schoolId, teacherId)).thenReturn(new ArrayList<>());
 
         // When
@@ -89,8 +88,6 @@ class ClassUseCaseImplTest {
         // Given
         Integer schoolId = 1;
         Integer teacherId = 1;
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
 
         Class classToCreate = Class.builder()
                 .schoolId(schoolId)
@@ -105,7 +102,6 @@ class ClassUseCaseImplTest {
                 .schoolYear("24/25")
                 .build();
 
-        when(sessionUser.getParameters()).thenReturn(parameters);
         when(classService.createClass(classToCreate, teacherId)).thenReturn(createdClass);
 
         // When
@@ -124,17 +120,14 @@ class ClassUseCaseImplTest {
         // Given
         Integer classId = 1;
         Integer teacherId = 1;
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
 
-        when(sessionUser.getParameters()).thenReturn(parameters);
         doNothing().when(classService).softDeleteClass(classId, teacherId);
 
         // When
         classUseCase.softDeleteClass(classId);
 
         // Then
-        verify(sessionUser, times(1)).getParameters();
+      verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
         verify(classService, times(1)).softDeleteClass(classId, teacherId);
     }
 
@@ -143,8 +136,6 @@ class ClassUseCaseImplTest {
     // Given
     Integer classId = 1;
     Integer teacherId = 1;
-    Map<String, String> parameters = new HashMap<>();
-    parameters.put(SessionParameter.TEACHER_ID.getClaimName(), String.valueOf(teacherId));
 
     Class updateData = Class.builder()
         .name("New Name")
@@ -158,7 +149,6 @@ class ClassUseCaseImplTest {
         .schoolYear("24/25")
         .build();
 
-    when(sessionUser.getParameters()).thenReturn(parameters);
     when(classService.updateClass(classId, updateData, teacherId)).thenReturn(updatedClass);
 
     // When
@@ -168,7 +158,7 @@ class ClassUseCaseImplTest {
     assertNotNull(result);
     assertEquals("New Name", result.getName());
     assertEquals("24/25", result.getSchoolYear());
-    verify(sessionUser, times(1)).getParameters();
+    verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
     verify(classService, times(1)).updateClass(classId, updateData, teacherId);
   }
 }
