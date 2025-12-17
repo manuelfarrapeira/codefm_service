@@ -15,7 +15,10 @@ public class CorsConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);
-        config.addAllowedOriginPattern("*");
+        config.addAllowedOrigin("http://localhost:5173");
+        config.addAllowedOriginPattern("https://*.codefm.synology.me");
+        config.addAllowedOriginPattern("https://codefm.synology.me");
+        config.addAllowedOrigin("app://.");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
 
