@@ -1,12 +1,18 @@
 package org.web.codefm.usecase;
 
+import java.util.Base64;
+
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -14,10 +20,9 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.web.codefm.domain.exception.ErrorCodeEnum;
 import org.web.codefm.domain.exception.UserNotFound;
 import org.web.codefm.domain.service.RestTemplateService;
+import org.web.codefm.domain.session.LoginResponse;
 import org.web.codefm.domain.session.TokenResponse;
 import org.web.codefm.domain.usecase.AutenticationUseCase;
-
-import java.util.Base64;
 
 @Slf4j
 @Service
@@ -48,7 +53,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
 
     @Override
-    public String login(String authHeader, HttpServletResponse response) {
+    public LoginResponse login(String authHeader, HttpServletResponse response) {
 
         try {
             String base64Credentials = authHeader.substring("Basic".length()).trim();
@@ -66,7 +71,10 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
             map.add("password", password);
 
             TokenResponse tokens = getToken(response, map, tokenEndpoint);
-            return extractGivenName(tokens.getAccessToken());
+          String accessToken = tokens.getAccessToken();
+          String userName = extractGivenName(accessToken);
+
+          return new LoginResponse(accessToken, userName);
 
         } catch (HttpClientErrorException e) {
             log.error("Authentication error: {}", e.getMessage());
