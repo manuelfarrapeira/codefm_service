@@ -14,6 +14,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.web.codefm.domain.exception.ErrorCodeEnum;
 import org.web.codefm.domain.exception.UserNotFound;
 import org.web.codefm.domain.service.RestTemplateService;
+import org.web.codefm.domain.session.LoginResponse;
 import org.web.codefm.domain.session.TokenResponse;
 import org.web.codefm.domain.usecase.AutenticationUseCase;
 
@@ -40,7 +41,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
     private static final String ACCESS_TOKEN = "access_token";
 
-    private static final String SAMESITE = "None";
+    private static final String SAMESITE = "Strict";
 
     private static final String REFRESH_PATH = "public/auth/refresh";
 
@@ -48,7 +49,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
 
     @Override
-    public String login(String authHeader, HttpServletResponse response) {
+    public LoginResponse login(String authHeader, HttpServletResponse response) {
 
         try {
             String base64Credentials = authHeader.substring("Basic".length()).trim();
@@ -66,7 +67,10 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
             map.add("password", password);
 
             TokenResponse tokens = getToken(response, map, tokenEndpoint);
-            return extractGivenName(tokens.getAccessToken());
+          String accessToken = tokens.getAccessToken();
+          String userName = extractGivenName(accessToken);
+
+          return new LoginResponse(accessToken, userName);
 
         } catch (HttpClientErrorException e) {
             log.error("Authentication error: {}", e.getMessage());

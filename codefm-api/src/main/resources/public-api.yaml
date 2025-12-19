@@ -52,8 +52,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
-                example: "Autenticated successful"
+                $ref: '#/components/schemas/LoginResponseDTO'
         '401':
           description: Invalid credentials
           content:
@@ -104,6 +103,20 @@ paths:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 components:
   schemas:
+    LoginResponseDTO:
+      type: object
+      required:
+        - userName
+        - accessToken
+      properties:
+        userName:
+          type: string
+          description: User's full name
+          example: "John Doe"
+        accessToken:
+          type: string
+          description: JWT access token
+          example: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
     ErrorResponseDTO:
       $ref: './common-schemas.yaml#/ErrorResponseDTO'
     DetailDTO:

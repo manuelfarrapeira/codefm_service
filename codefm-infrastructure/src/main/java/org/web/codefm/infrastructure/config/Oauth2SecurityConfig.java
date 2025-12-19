@@ -1,5 +1,13 @@
 package org.web.codefm.infrastructure.config;
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -29,9 +37,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.web.codefm.domain.enums.ResourceAccessClient;
 import org.web.codefm.domain.service.SessionUserService;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Configuration class for OAuth2 security settings and JWT token handling.
@@ -115,7 +120,8 @@ public class Oauth2SecurityConfig {
     }
 
     /**
-     * Filter component for handling authentication via cookies.
+     * Filter component for handling authentication via Bearer token or cookies.
+     * Supports both Authorization header (Bearer token) and cookie-based authentication.
      */
     @Component
     public static class CookieAuthenticationFilter extends OncePerRequestFilter {
@@ -131,24 +137,33 @@ public class Oauth2SecurityConfig {
         protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
                 throws ServletException, IOException {
             try {
-                Cookie[] cookies = request.getCookies();
                 String token = null;
 
-                if (cookies != null) {
-                    for (Cookie cookie : cookies) {
-                        if ("access_token".equals(cookie.getName())) {
-                            token = cookie.getValue();
-                            break;
-                        }
-                    }
-                }
+              String authorizationHeader = request.getHeader("Authorization");
+              if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                token = authorizationHeader.substring(7);
+                log.debug("Token extracted from Authorization header");
+              }
 
+              if (token == null) {
+                Cookie[] cookies = request.getCookies();
+                if (cookies != null) {
+                  for (Cookie cookie : cookies) {
+                    if ("access_token".equals(cookie.getName())) {
+                      token = cookie.getValue();
+                      log.debug("Token extracted from cookie");
+                      break;
+                    }
+                  }
+                }
+              }
+                
                 if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     Jwt jwt = jwtDecoder.decode(token);
                     SecurityContextHolder.getContext().setAuthentication(jwtAuthConverter.convert(jwt));
                 }
             } catch (Exception e) {
-                log.info("Error al procesar el token JWT", e);
+              log.info("Error processing JWT token", e);
             }
             filterChain.doFilter(request, response);
         }
