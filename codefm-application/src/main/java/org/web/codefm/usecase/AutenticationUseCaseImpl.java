@@ -1,18 +1,12 @@
 package org.web.codefm.usecase;
 
-import java.util.Base64;
-
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -23,6 +17,8 @@ import org.web.codefm.domain.service.RestTemplateService;
 import org.web.codefm.domain.session.LoginResponse;
 import org.web.codefm.domain.session.TokenResponse;
 import org.web.codefm.domain.usecase.AutenticationUseCase;
+
+import java.util.Base64;
 
 @Slf4j
 @Service
@@ -45,7 +41,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
     private static final String ACCESS_TOKEN = "access_token";
 
-    private static final String SAMESITE = "None";
+    private static final String SAMESITE = "Strict";
 
     private static final String REFRESH_PATH = "public/auth/refresh";
 
