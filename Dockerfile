@@ -12,12 +12,12 @@ RUN apt-get update && apt-get install -y bash curl && curl -1sLf \
 
 
 WORKDIR /app
+RUN mkdir -p /app/logs
+RUN mkdir -p /app/data/student-photos
 COPY --from=build /app/codefm-boot/target/codefm-boot-*.jar app.jar
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
 EXPOSE 8080
 
 ENV INFISICAL_API_URL=http://infisical-server:8080
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["infisical", "run", "--projectId", "491fe430-7bf6-40b0-aa05-58d7f5268b28", "--env", "prod", "--", "java", "-jar", "app.jar"]
+ENTRYPOINT ["infisical", "run", "--projectId", "491fe430-7bf6-40b0-aa05-58d7f5268b28", "--env", "prod", "--"]
+CMD ["java", "-jar", "app.jar"]
