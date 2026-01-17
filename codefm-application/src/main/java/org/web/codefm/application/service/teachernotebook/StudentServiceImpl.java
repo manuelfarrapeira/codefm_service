@@ -1,6 +1,7 @@
 package org.web.codefm.application.service.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository studentRepository;
@@ -128,6 +130,7 @@ public class StudentServiceImpl implements StudentService {
             return photoFileName;
 
         } catch (IOException e) {
+            log.error("Error saving student photo", e);
             throw new StudentPhotoUploadException(
                     messageSource.getMessage(MessageKeys.STUDENT_PHOTO_UPLOAD_ERROR, null, sessionUser.getLocale()),
                     e
