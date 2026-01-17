@@ -17,4 +17,16 @@ public class MessageKeys {
     public static final String CLASS_NOT_FOUND = "class.not.found";
     public static final String CLASS_FORBIDDEN = "class.forbidden";
 
+    public static final String STUDENT_VALIDATION_NAME_REQUIRED = "student.validation.name.required";
+    public static final String STUDENT_VALIDATION_NAME_MIN_LENGTH = "student.validation.name.minLength";
+    public static final String STUDENT_VALIDATION_SURNAMES_REQUIRED = "student.validation.surnames.required";
+    public static final String STUDENT_VALIDATION_SURNAMES_MIN_LENGTH = "student.validation.surnames.minLength";
+    public static final String STUDENT_VALIDATION_DATE_FORMAT_INVALID = "student.validation.dateOfBirth.format.invalid";
+    public static final String STUDENT_NOT_FOUND = "student.not.found";
+    public static final String STUDENT_PHOTO_EMPTY = "student.photo.empty";
+    public static final String STUDENT_PHOTO_UPLOAD_ERROR = "student.photo.upload.error";
+    public static final String STUDENT_PHOTO_INVALID_EXTENSION = "student.photo.invalid.extension";
+    public static final String STUDENT_PHOTO_SIZE_EXCEEDED = "student.photo.size.exceeded";
+    public static final String STUDENT_SEARCH_NO_FILTERS = "student.search.no.filters";
+
 }

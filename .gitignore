@@ -36,3 +36,8 @@ karate-test/src/test/resources/.env.secret
 
 ### Amazon Q ###
 .amazonq/
+
+### Student Photos ###
+data/
+/data/
+

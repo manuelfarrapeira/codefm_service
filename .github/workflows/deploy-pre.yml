@@ -75,14 +75,16 @@ jobs:
           source: ".env"
           target: "~/codefm-pre"
 
-      - name: Create logs folder on Synology
+      - name: Create logs and data folders on Synology
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SYNOLOGY_HOST }}
           username: ${{ secrets.SYNOLOGY_USER }}
           password: ${{ secrets.SYNOLOGY_PASS }}
           port: 33
-          script: mkdir -p ~/codefm-pre/logs
+          script: |
+            mkdir -p ~/codefm-pre/logs
+            mkdir -p ~/codefm-pre/data/student-photos
 
       - name: Deploy PRE via SSH
         uses: appleboy/ssh-action@v1
