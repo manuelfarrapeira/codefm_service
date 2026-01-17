@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y bash curl && curl -1sLf \
 
 WORKDIR /app
 RUN mkdir -p /app/logs
+RUN mkdir -p /app/photos && chmod 755 /app/photos
 COPY --from=build /app/codefm-boot/target/codefm-boot-*.jar app.jar
 EXPOSE 8080
 

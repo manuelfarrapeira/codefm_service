@@ -22,6 +22,7 @@ services:
       prometheus_target: 'codefm.synology.me:8081'
     volumes:
       - ./logs:/app/logs
+      - student-photos-pre:/app/photos
     networks:
       - logging
       - infisical_external
