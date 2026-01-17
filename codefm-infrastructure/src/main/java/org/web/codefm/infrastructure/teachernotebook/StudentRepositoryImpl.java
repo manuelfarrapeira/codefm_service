@@ -1,0 +1,60 @@
+package org.web.codefm.infrastructure.teachernotebook;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Repository;
+import org.web.codefm.domain.entity.teachernotebook.Student;
+import org.web.codefm.domain.repository.teachernotebook.StudentRepository;
+import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.StudentEntity;
+import org.web.codefm.infrastructure.jpa.teachernotebook.StudentJPARepository;
+import org.web.codefm.infrastructure.mapper.StudentMapper;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+@RequiredArgsConstructor
+@Slf4j
+public class StudentRepositoryImpl implements StudentRepository {
+
+    private final StudentJPARepository studentJPARepository;
+    private final StudentMapper studentMapper;
+
+    @Override
+    public Student save(Student student) {
+        StudentEntity studentEntity = studentMapper.toEntity(student);
+        StudentEntity savedEntity = studentJPARepository.save(studentEntity);
+        return studentMapper.toModel(savedEntity);
+    }
+
+    @Override
+    public Optional<Student> findByIdAndDeletionDateIsNull(Integer id) {
+        return studentJPARepository.findByIdAndDeletionDateIsNull(id)
+                .map(studentMapper::toModel);
+    }
+
+    @Override
+    public Student update(Student student) {
+        StudentEntity studentEntity = studentMapper.toEntity(student);
+        StudentEntity updatedEntity = studentJPARepository.save(studentEntity);
+        return studentMapper.toModel(updatedEntity);
+    }
+
+    @Override
+    public Student softDelete(Integer id) {
+        StudentEntity studentEntity = studentJPARepository.findByIdAndDeletionDateIsNull(id)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found or already deleted."));
+
+        studentEntity.setDeletionDate(LocalDate.now());
+        StudentEntity updatedEntity = studentJPARepository.save(studentEntity);
+        return studentMapper.toModel(updatedEntity);
+    }
+
+    @Override
+    public List<Student> searchStudents(Integer id, String name, String surnames) {
+        return studentMapper.toModelList(
+                studentJPARepository.searchStudents(id, name, surnames)
+        );
+    }
+}

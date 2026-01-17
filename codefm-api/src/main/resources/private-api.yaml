@@ -15,6 +15,8 @@ tags:
     description: Operations related to Teacher Notebook Schools
   - name: TeacherNoteBookClasses
     description: Operations related to Teacher Notebook School Classes
+  - name: TeacherNoteBookStudents
+    description: Operations related to Teacher Notebook Students
 
 paths:
   /greeting:
@@ -416,6 +418,243 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/students:
+    get:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: searchStudents
+      summary: Search students by filters
+      description: Search students by id, name or surnames. At least one filter must be provided.
+      parameters:
+        - name: id
+          in: query
+          required: false
+          description: Student ID
+          schema:
+            type: integer
+            format: int32
+        - name: name
+          in: query
+          required: false
+          description: Student name (partial match)
+          schema:
+            type: string
+        - name: surnames
+          in: query
+          required: false
+          description: Student surnames (partial match)
+          schema:
+            type: string
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Students found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentDTO'
+        '400':
+          description: Validation error - At least one filter is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: createStudent
+      summary: Create a new student
+      description: Creates a new student
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRequestDTO'
+      responses:
+        '201':
+          description: Student created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/students/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: updateStudent
+      summary: Update an existing student
+      description: Updates an existing student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRequestDTO'
+      responses:
+        '200':
+          description: Student updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Student with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: deleteStudent
+      summary: Soft-delete a student
+      description: Marks a student as deleted by setting its deletion_date
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Student successfully soft-deleted (No Content)
+        '404':
+          description: Not Found - Student with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/students/{id}/photo:
+    post:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: uploadStudentPhoto
+      summary: Upload a photo for a student
+      description: Uploads a photo file for the specified student. The file will be saved with the student's ID as the filename.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The photo file to upload
+      responses:
+        '200':
+          description: Photo uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photoPath:
+                    type: string
+                    description: The path where the photo was saved
+        '404':
+          description: Not Found - Student with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
 components:
   schemas:
     ErrorResponseDTO:
@@ -469,3 +708,36 @@ components:
         tlf:
           type: 'integer'
           example: 123456789
+    StudentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        name:
+          type: 'string'
+        surnames:
+          type: 'string'
+        dateOfBirth:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2010'
+        additionalInfo:
+          type: 'string'
+        photo:
+          type: 'string'
+    StudentRequestDTO:
+      type: 'object'
+      properties:
+        name:
+          type: 'string'
+          example: 'Juan'
+        surnames:
+          type: 'string'
+          example: 'García López'
+        dateOfBirth:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2010'
+        additionalInfo:
+          type: 'string'
+          example: 'Additional information about the student'

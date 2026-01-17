@@ -40,3 +40,7 @@ networks:
     external: true
   kafka-network:
     external: true
+
+volumes:
+  student-photos-pre:
+    driver: local

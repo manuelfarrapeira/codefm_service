@@ -114,3 +114,7 @@ kafka:
   schema:
     registry:
       url: http://codefm.synology.me:8082
+
+student:
+  photos:
+    directory: ./data/student-photos

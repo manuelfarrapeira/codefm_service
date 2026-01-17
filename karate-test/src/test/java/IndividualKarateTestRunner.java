@@ -57,4 +57,30 @@ public class IndividualKarateTestRunner {
     return Karate.run("features/teacher-notebook/classes/createclass").relativeTo(getClass());
   }
 
+  @Karate.Test
+  Karate testTeacherNotebookSearchStudent() {
+    return Karate.run("features/teacher-notebook/students/searchstudents").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookCreateStudent() {
+    return Karate.run("features/teacher-notebook/students/createstudent").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookUpdateStudent() {
+    return Karate.run("features/teacher-notebook/students/updatestudent").relativeTo(getClass());
+  }
+
+
+  @Karate.Test
+  Karate testTeacherNotebooDeleteStudent() {
+    return Karate.run("features/teacher-notebook/students/deletestudent").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebooUploadPhoto() {
+    return Karate.run("features/teacher-notebook/students/uploadphoto").relativeTo(getClass());
+  }
+
 }
