@@ -11,6 +11,8 @@ import org.web.codefm.infrastructure.jpa.teachernotebook.StudentJPARepository;
 import org.web.codefm.infrastructure.mapper.StudentMapper;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -228,6 +230,168 @@ class StudentRepositoryImplTest {
 
         verify(studentJPARepository, times(1)).findByIdAndDeletionDateIsNull(studentId);
         verify(studentJPARepository, never()).save(any(StudentEntity.class));
+    }
+
+    @Test
+    void searchStudents_shouldReturnStudentsById() {
+        // Given
+        Integer studentId = 1;
+        StudentEntity studentEntity1 = new StudentEntity();
+        studentEntity1.setId(1);
+        studentEntity1.setName("Juan");
+        studentEntity1.setSurnames("García López");
+
+        Student student1 = Student.builder()
+                .id(1)
+                .name("Juan")
+                .surnames("García López")
+                .build();
+
+        List<StudentEntity> entities = Arrays.asList(studentEntity1);
+        List<Student> expectedStudents = Arrays.asList(student1);
+
+        when(studentJPARepository.searchStudents(studentId, null, null)).thenReturn(entities);
+        when(studentMapper.toModelList(entities)).thenReturn(expectedStudents);
+
+        // When
+        List<Student> result = studentRepository.searchStudents(studentId, null, null);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Juan", result.get(0).getName());
+        verify(studentJPARepository, times(1)).searchStudents(studentId, null, null);
+        verify(studentMapper, times(1)).toModelList(entities);
+    }
+
+    @Test
+    void searchStudents_shouldReturnStudentsByName() {
+        // Given
+        String name = "Juan";
+        StudentEntity studentEntity1 = new StudentEntity();
+        studentEntity1.setId(1);
+        studentEntity1.setName("Juan");
+        studentEntity1.setSurnames("García López");
+
+        StudentEntity studentEntity2 = new StudentEntity();
+        studentEntity2.setId(2);
+        studentEntity2.setName("Juan Carlos");
+        studentEntity2.setSurnames("Pérez Martín");
+
+        Student student1 = Student.builder()
+                .id(1)
+                .name("Juan")
+                .surnames("García López")
+                .build();
+
+        Student student2 = Student.builder()
+                .id(2)
+                .name("Juan Carlos")
+                .surnames("Pérez Martín")
+                .build();
+
+        List<StudentEntity> entities = Arrays.asList(studentEntity1, studentEntity2);
+        List<Student> expectedStudents = Arrays.asList(student1, student2);
+
+        when(studentJPARepository.searchStudents(null, name, null)).thenReturn(entities);
+        when(studentMapper.toModelList(entities)).thenReturn(expectedStudents);
+
+        // When
+        List<Student> result = studentRepository.searchStudents(null, name, null);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("Juan", result.get(0).getName());
+        assertEquals("Juan Carlos", result.get(1).getName());
+        verify(studentJPARepository, times(1)).searchStudents(null, name, null);
+        verify(studentMapper, times(1)).toModelList(entities);
+    }
+
+    @Test
+    void searchStudents_shouldReturnStudentsBySurnames() {
+        // Given
+        String surnames = "García";
+        StudentEntity studentEntity1 = new StudentEntity();
+        studentEntity1.setId(1);
+        studentEntity1.setName("Juan");
+        studentEntity1.setSurnames("García López");
+
+        Student student1 = Student.builder()
+                .id(1)
+                .name("Juan")
+                .surnames("García López")
+                .build();
+
+        List<StudentEntity> entities = Arrays.asList(studentEntity1);
+        List<Student> expectedStudents = Arrays.asList(student1);
+
+        when(studentJPARepository.searchStudents(null, null, surnames)).thenReturn(entities);
+        when(studentMapper.toModelList(entities)).thenReturn(expectedStudents);
+
+        // When
+        List<Student> result = studentRepository.searchStudents(null, null, surnames);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("García López", result.get(0).getSurnames());
+        verify(studentJPARepository, times(1)).searchStudents(null, null, surnames);
+        verify(studentMapper, times(1)).toModelList(entities);
+    }
+
+    @Test
+    void searchStudents_shouldReturnStudentsByMultipleFilters() {
+        // Given
+        String name = "Juan";
+        String surnames = "García";
+        StudentEntity studentEntity1 = new StudentEntity();
+        studentEntity1.setId(1);
+        studentEntity1.setName("Juan");
+        studentEntity1.setSurnames("García López");
+
+        Student student1 = Student.builder()
+                .id(1)
+                .name("Juan")
+                .surnames("García López")
+                .build();
+
+        List<StudentEntity> entities = Arrays.asList(studentEntity1);
+        List<Student> expectedStudents = Arrays.asList(student1);
+
+        when(studentJPARepository.searchStudents(null, name, surnames)).thenReturn(entities);
+        when(studentMapper.toModelList(entities)).thenReturn(expectedStudents);
+
+        // When
+        List<Student> result = studentRepository.searchStudents(null, name, surnames);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Juan", result.get(0).getName());
+        assertEquals("García López", result.get(0).getSurnames());
+        verify(studentJPARepository, times(1)).searchStudents(null, name, surnames);
+        verify(studentMapper, times(1)).toModelList(entities);
+    }
+
+    @Test
+    void searchStudents_shouldReturnEmptyListWhenNoStudentsFound() {
+        // Given
+        Integer studentId = 999;
+        List<StudentEntity> emptyEntities = Arrays.asList();
+        List<Student> emptyStudents = Arrays.asList();
+
+        when(studentJPARepository.searchStudents(studentId, null, null)).thenReturn(emptyEntities);
+        when(studentMapper.toModelList(emptyEntities)).thenReturn(emptyStudents);
+
+        // When
+        List<Student> result = studentRepository.searchStudents(studentId, null, null);
+
+        // Then
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(studentJPARepository, times(1)).searchStudents(studentId, null, null);
+        verify(studentMapper, times(1)).toModelList(emptyEntities);
     }
 }
 
