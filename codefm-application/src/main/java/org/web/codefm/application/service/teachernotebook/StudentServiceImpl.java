@@ -191,4 +191,10 @@ public class StudentServiceImpl implements StudentService {
                 sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
         );
     }
+
+    @Override
+    public List<Student> getAllStudents() {
+        Integer teacherId = getTeacherId();
+        return studentRepository.findAllByTeacherId(teacherId);
+    }
 }

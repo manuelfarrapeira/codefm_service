@@ -23,4 +23,6 @@ public interface StudentJPARepository extends JpaRepository<StudentEntity, Integ
                                        @Param("id") Integer id,
                                        @Param("name") String name,
                                        @Param("surnames") String surnames);
+
+    List<StudentEntity> findAllByTeacherIdAndDeletionDateIsNull(Integer teacherId);
 }

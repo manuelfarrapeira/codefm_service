@@ -75,4 +75,13 @@ public class PrivateStudents implements TeacherNoteBookStudentsApi {
         response.setPhotoPath(photoPath);
         return ResponseEntity.ok(response);
     }
+
+    @Logged
+    @Override
+    @Locale(0)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<StudentDTO>> getAllStudents(String acceptLanguage) {
+        List<Student> students = studentUseCase.getAllStudents();
+        return ResponseEntity.ok(studentDTOMapper.toDTOList(students));
+    }
 }

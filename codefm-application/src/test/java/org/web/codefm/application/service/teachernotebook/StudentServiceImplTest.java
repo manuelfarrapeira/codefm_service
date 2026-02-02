@@ -663,4 +663,48 @@ class StudentServiceImplTest {
         assertTrue(result.isEmpty());
         verify(studentRepository, times(1)).searchStudents(teacherId, null, name, null);
     }
+
+    @Test
+    void getAllStudents_shouldReturnAllStudents() {
+        Integer teacherId = 1;
+        Student student1 = Student.builder()
+                .id(1)
+                .teacherId(teacherId)
+                .name("Juan")
+                .surnames("García López")
+                .build();
+
+        Student student2 = Student.builder()
+                .id(2)
+                .teacherId(teacherId)
+                .name("María")
+                .surnames("Pérez Martínez")
+                .build();
+
+        List<Student> expectedStudents = Arrays.asList(student1, student2);
+
+        when(studentRepository.findAllByTeacherId(teacherId)).thenReturn(expectedStudents);
+
+        List<Student> result = studentService.getAllStudents();
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("Juan", result.get(0).getName());
+        assertEquals("María", result.get(1).getName());
+        verify(studentRepository, times(1)).findAllByTeacherId(teacherId);
+    }
+
+    @Test
+    void getAllStudents_shouldReturnEmptyListWhenNoStudents() {
+        Integer teacherId = 1;
+        List<Student> emptyList = List.of();
+
+        when(studentRepository.findAllByTeacherId(teacherId)).thenReturn(emptyList);
+
+        List<Student> result = studentService.getAllStudents();
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(studentRepository, times(1)).findAllByTeacherId(teacherId);
+    }
 }

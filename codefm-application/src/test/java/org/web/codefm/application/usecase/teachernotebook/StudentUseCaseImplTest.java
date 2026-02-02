@@ -188,5 +188,33 @@ class StudentUseCaseImplTest {
         verify(studentService, times(1)).searchStudents(null, name, surnames);
     }
 
-}
+    @Test
+    void getAllStudents_shouldCallServiceAndReturnAllStudents() {
+        Student student1 = Student.builder()
+                .id(1)
+                .teacherId(TEACHER_ID)
+                .name("Juan")
+                .surnames("García López")
+                .build();
 
+        Student student2 = Student.builder()
+                .id(2)
+                .teacherId(TEACHER_ID)
+                .name("María")
+                .surnames("Pérez Martínez")
+                .build();
+
+        List<Student> expectedStudents = Arrays.asList(student1, student2);
+
+        when(studentService.getAllStudents()).thenReturn(expectedStudents);
+
+        List<Student> result = studentUseCase.getAllStudents();
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("Juan", result.get(0).getName());
+        assertEquals("María", result.get(1).getName());
+        verify(studentService, times(1)).getAllStudents();
+    }
+
+}

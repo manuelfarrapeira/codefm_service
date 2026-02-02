@@ -55,4 +55,12 @@ public interface StudentRepository {
      * @return List of students matching the filters
      */
     List<Student> searchStudents(Integer teacherId, Integer id, String name, String surnames);
+
+    /**
+     * Finds all students for a specific teacher. Excludes soft-deleted students.
+     *
+     * @param teacherId The unique identifier of the teacher
+     * @return List of all students belonging to the teacher
+     */
+    List<Student> findAllByTeacherId(Integer teacherId);
 }

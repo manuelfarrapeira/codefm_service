@@ -62,4 +62,12 @@ public interface StudentService {
      * @throws org.web.codefm.domain.exception.teachernotebook.StudentSearchValidationException if no filters are provided
      */
     List<Student> searchStudents(Integer id, String name, String surnames);
+
+    /**
+     * Retrieves all students for the authenticated teacher. Excludes soft-deleted students.
+     * The teacher ID is obtained from the session user.
+     *
+     * @return List of all students belonging to the teacher
+     */
+    List<Student> getAllStudents();
 }

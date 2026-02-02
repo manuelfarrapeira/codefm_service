@@ -83,4 +83,9 @@ public class IndividualKarateTestRunner {
     return Karate.run("features/teacher-notebook/students/uploadphoto").relativeTo(getClass());
   }
 
+  @Karate.Test
+  Karate testTeacherNoteboogetAllStudents() {
+    return Karate.run("features/teacher-notebook/students/getallstudents").relativeTo(getClass());
+  }
+
 }

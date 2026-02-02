@@ -57,4 +57,11 @@ public class StudentRepositoryImpl implements StudentRepository {
                 studentJPARepository.searchStudents(teacherId, id, name, surnames)
         );
     }
+
+    @Override
+    public List<Student> findAllByTeacherId(Integer teacherId) {
+        return studentMapper.toModelList(
+                studentJPARepository.findAllByTeacherIdAndDeletionDateIsNull(teacherId)
+        );
+    }
 }
