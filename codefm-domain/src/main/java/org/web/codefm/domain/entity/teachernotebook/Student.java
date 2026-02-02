@@ -11,6 +11,7 @@ import java.time.LocalDate;
 @Generated
 public class Student {
     private Integer id;
+    private Integer teacherId;
     private String name;
     private String surnames;
     private LocalDate dateOfBirth;

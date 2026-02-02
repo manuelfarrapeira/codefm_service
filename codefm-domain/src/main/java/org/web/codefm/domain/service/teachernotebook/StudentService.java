@@ -13,6 +13,7 @@ public interface StudentService {
 
     /**
      * Creates a new student with validation.
+     * The teacher ID is obtained from the session user.
      *
      * @param student The student to create
      * @return The created student
@@ -22,6 +23,7 @@ public interface StudentService {
 
     /**
      * Updates an existing student with validation.
+     * The teacher ID is obtained from the session user.
      *
      * @param id      The unique identifier of the student
      * @param student The student data to update
@@ -32,6 +34,7 @@ public interface StudentService {
 
     /**
      * Performs soft delete on a student.
+     * The teacher ID is obtained from the session user.
      *
      * @param id The unique identifier of the student
      */
@@ -39,6 +42,7 @@ public interface StudentService {
 
     /**
      * Saves a student photo.
+     * The teacher ID is obtained from the session user.
      *
      * @param studentId The unique identifier of the student
      * @param file      The photo file
@@ -48,7 +52,8 @@ public interface StudentService {
     String saveStudentPhoto(Integer studentId, MultipartFile file);
 
     /**
-     * Searches students by filters. At least one filter must be provided.
+     * Searches students by filters for the authenticated teacher. At least one filter must be provided.
+     * The teacher ID is obtained from the session user.
      *
      * @param id       Student ID (optional)
      * @param name     Student name (optional, partial match)

@@ -15,6 +15,7 @@ import org.web.codefm.domain.exception.teachernotebook.StudentValidationExceptio
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.StudentRepository;
 import org.web.codefm.domain.service.teachernotebook.StudentService;
+import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 
 import java.io.IOException;
@@ -43,15 +44,18 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public Student createStudent(Student student) {
+        Integer teacherId = getTeacherId();
         validateStudent(student);
+        student.setTeacherId(teacherId);
         return studentRepository.save(student);
     }
 
     @Override
     public Student updateStudent(Integer id, Student student) {
+        Integer teacherId = getTeacherId();
         validateStudent(student);
 
-        Student existingStudent = studentRepository.findByIdAndDeletionDateIsNull(id)
+        Student existingStudent = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(id, teacherId)
                 .orElseThrow(() -> new StudentNotFoundException(
                         messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
                 ));
@@ -66,17 +70,15 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public void softDeleteStudent(Integer id) {
-        studentRepository.findByIdAndDeletionDateIsNull(id)
-                .orElseThrow(() -> new StudentNotFoundException(
-                        messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
-                ));
+        Integer teacherId = getTeacherId();
 
-        studentRepository.softDelete(id);
+        studentRepository.softDelete(id, teacherId);
     }
 
     @Override
     public String saveStudentPhoto(Integer studentId, MultipartFile file) {
-        Student student = studentRepository.findByIdAndDeletionDateIsNull(studentId)
+        Integer teacherId = getTeacherId();
+        Student student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId)
                 .orElseThrow(() -> new StudentNotFoundException(
                         messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
                 ));
@@ -138,6 +140,23 @@ public class StudentServiceImpl implements StudentService {
         }
     }
 
+    @Override
+    public List<Student> searchStudents(Integer id, String name, String surnames) {
+        Integer teacherId = getTeacherId();
+
+        if (id == null && (name == null || name.trim().isEmpty()) &&
+                (surnames == null || surnames.trim().isEmpty())) {
+            String message = messageSource.getMessage(
+                    MessageKeys.STUDENT_SEARCH_NO_FILTERS,
+                    null,
+                    sessionUser.getLocale()
+            );
+            throw new StudentSearchValidationException(message);
+        }
+
+        return studentRepository.searchStudents(teacherId, id, name, surnames);
+    }
+
     private void validateStudent(Student student) {
         List<ErrorMessage> errors = new ArrayList<>();
 
@@ -167,18 +186,9 @@ public class StudentServiceImpl implements StudentService {
         }
     }
 
-    @Override
-    public List<Student> searchStudents(Integer id, String name, String surnames) {
-        if (id == null && (name == null || name.trim().isEmpty()) &&
-                (surnames == null || surnames.trim().isEmpty())) {
-            String message = messageSource.getMessage(
-                    MessageKeys.STUDENT_SEARCH_NO_FILTERS,
-                    null,
-                    sessionUser.getLocale()
-            );
-            throw new StudentSearchValidationException(message);
-        }
-
-        return studentRepository.searchStudents(id, name, surnames);
+    private Integer getTeacherId() {
+        return Integer.valueOf(
+                sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
+        );
     }
 }

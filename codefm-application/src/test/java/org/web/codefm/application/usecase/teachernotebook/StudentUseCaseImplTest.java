@@ -26,6 +26,8 @@ class StudentUseCaseImplTest {
     @InjectMocks
     private StudentUseCaseImpl studentUseCase;
 
+    private static final Integer TEACHER_ID = 1;
+
 
     @Test
     void createStudent_shouldCallServiceAndReturnStudent() {
@@ -35,12 +37,20 @@ class StudentUseCaseImplTest {
                 .dateOfBirth(LocalDate.of(2010, 3, 15))
                 .build();
 
-        when(studentService.createStudent(studentToCreate)).thenReturn(studentToCreate);
+        Student createdStudent = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .teacherId(TEACHER_ID)
+                .dateOfBirth(LocalDate.of(2010, 3, 15))
+                .build();
+
+        when(studentService.createStudent(studentToCreate)).thenReturn(createdStudent);
 
         Student result = studentUseCase.createStudent(studentToCreate);
 
         assertNotNull(result);
         assertEquals("Juan", result.getName());
+        assertEquals(TEACHER_ID, result.getTeacherId());
         verify(studentService, times(1)).createStudent(studentToCreate);
     }
 
@@ -92,6 +102,7 @@ class StudentUseCaseImplTest {
         Integer studentId = 1;
         Student student1 = Student.builder()
                 .id(1)
+                .teacherId(TEACHER_ID)
                 .name("Juan")
                 .surnames("García López")
                 .build();
@@ -112,11 +123,13 @@ class StudentUseCaseImplTest {
         String name = "Juan";
         Student student1 = Student.builder()
                 .id(1)
+                .teacherId(TEACHER_ID)
                 .name("Juan")
                 .surnames("García López")
                 .build();
         Student student2 = Student.builder()
                 .id(2)
+                .teacherId(TEACHER_ID)
                 .name("Juan Carlos")
                 .surnames("Pérez Martín")
                 .build();
@@ -136,6 +149,7 @@ class StudentUseCaseImplTest {
         String surnames = "García";
         Student student1 = Student.builder()
                 .id(1)
+                .teacherId(TEACHER_ID)
                 .name("Juan")
                 .surnames("García López")
                 .build();
@@ -157,6 +171,7 @@ class StudentUseCaseImplTest {
         String surnames = "García";
         Student student1 = Student.builder()
                 .id(1)
+                .teacherId(TEACHER_ID)
                 .name("Juan")
                 .surnames("García López")
                 .build();

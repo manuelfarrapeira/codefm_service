@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "students", schema = "teacher_notebook_pre")
+@Table(name = "students")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,6 +19,9 @@ public class StudentEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @Column(name = "teacher_id", nullable = false)
+    private Integer teacherId;
 
     @Column(nullable = false, length = 60)
     private String name;

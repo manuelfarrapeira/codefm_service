@@ -29,8 +29,8 @@ public class StudentRepositoryImpl implements StudentRepository {
     }
 
     @Override
-    public Optional<Student> findByIdAndDeletionDateIsNull(Integer id) {
-        return studentJPARepository.findByIdAndDeletionDateIsNull(id)
+    public Optional<Student> findByIdAndTeacherIdAndDeletionDateIsNull(Integer id, Integer teacherId) {
+        return studentJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(id, teacherId)
                 .map(studentMapper::toModel);
     }
 
@@ -42,9 +42,9 @@ public class StudentRepositoryImpl implements StudentRepository {
     }
 
     @Override
-    public Student softDelete(Integer id) {
-        StudentEntity studentEntity = studentJPARepository.findByIdAndDeletionDateIsNull(id)
-                .orElseThrow(() -> new IllegalArgumentException("Student not found or already deleted."));
+    public Student softDelete(Integer id, Integer teacherId) {
+        StudentEntity studentEntity = studentJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(id, teacherId)
+                .orElseThrow(() -> new IllegalArgumentException("Student not found or not owned by teacher or already deleted."));
 
         studentEntity.setDeletionDate(LocalDate.now());
         StudentEntity updatedEntity = studentJPARepository.save(studentEntity);
@@ -52,9 +52,9 @@ public class StudentRepositoryImpl implements StudentRepository {
     }
 
     @Override
-    public List<Student> searchStudents(Integer id, String name, String surnames) {
+    public List<Student> searchStudents(Integer teacherId, Integer id, String name, String surnames) {
         return studentMapper.toModelList(
-                studentJPARepository.searchStudents(id, name, surnames)
+                studentJPARepository.searchStudents(teacherId, id, name, surnames)
         );
     }
 }

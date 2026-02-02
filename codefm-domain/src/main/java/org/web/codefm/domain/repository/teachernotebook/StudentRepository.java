@@ -20,12 +20,13 @@ public interface StudentRepository {
     Student save(Student student);
 
     /**
-     * Finds a student by ID if not deleted.
+     * Finds a student by ID and teacher ID if not deleted.
      *
-     * @param id The unique identifier of the student
+     * @param id        The unique identifier of the student
+     * @param teacherId The unique identifier of the teacher
      * @return Optional containing the student if found and not deleted
      */
-    Optional<Student> findByIdAndDeletionDateIsNull(Integer id);
+    Optional<Student> findByIdAndTeacherIdAndDeletionDateIsNull(Integer id, Integer teacherId);
 
     /**
      * Updates an existing student.
@@ -38,18 +39,20 @@ public interface StudentRepository {
     /**
      * Performs soft delete on a student.
      *
-     * @param id The unique identifier of the student to delete
+     * @param id        The unique identifier of the student to delete
+     * @param teacherId The unique identifier of the teacher
      * @return The deleted student
      */
-    Student softDelete(Integer id);
+    Student softDelete(Integer id, Integer teacherId);
 
     /**
-     * Searches students by filters. Excludes soft-deleted students.
+     * Searches students by filters for a specific teacher. Excludes soft-deleted students.
      *
-     * @param id       Student ID (optional)
-     * @param name     Student name (optional, partial match)
-     * @param surnames Student surnames (optional, partial match)
+     * @param teacherId The unique identifier of the teacher
+     * @param id        Student ID (optional)
+     * @param name      Student name (optional, partial match)
+     * @param surnames  Student surnames (optional, partial match)
      * @return List of students matching the filters
      */
-    List<Student> searchStudents(Integer id, String name, String surnames);
+    List<Student> searchStudents(Integer teacherId, Integer id, String name, String surnames);
 }
