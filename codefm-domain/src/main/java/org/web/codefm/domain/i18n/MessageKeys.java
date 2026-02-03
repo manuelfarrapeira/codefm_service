@@ -29,4 +29,7 @@ public class MessageKeys {
     public static final String STUDENT_PHOTO_SIZE_EXCEEDED = "student.photo.size.exceeded";
     public static final String STUDENT_SEARCH_NO_FILTERS = "student.search.no.filters";
 
+    public static final String STUDENT_ALREADY_IN_CLASS = "student.already.in.class";
+    public static final String STUDENT_NOT_IN_CLASS = "student.not.in.class";
+
 }

@@ -2,6 +2,17 @@
 
 Este documento proporciona las directrices que debo seguir cada vez que trabajes conmigo en el proyecto CodeFM.
 
+## Reglas Generales de Código
+
+**IMPORTANTE - NO INCLUIR COMENTARIOS EN EL CÓDIGO**:
+
+- **NUNCA** agregar comentarios inline en el código Java
+- **NUNCA** agregar comentarios explicativos dentro de métodos
+- El código debe ser autoexplicativo mediante nombres descriptivos
+- **ÚNICA EXCEPCIÓN**: JavaDoc obligatorio en interfaces (Repository, Service, UseCase) según se especifica más adelante
+
+---
+
 ## Información del Proyecto
 
 **CodeFM** es una aplicación Java con arquitectura hexagonal (Clean Architecture) que sigue un patrón multi-capa con
