@@ -11,7 +11,7 @@ import org.web.codefm.infrastructure.jpa.teachernotebook.StudentClassJPAReposito
 import org.web.codefm.infrastructure.mapper.StudentClassMapper;
 
 import java.time.LocalDate;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,7 +34,6 @@ class StudentClassRepositoryImplTest {
 
     @Test
     void findByClassIdAndStudentId_shouldReturnStudentClass_whenExists() {
-        // Given
         StudentClassEntity entity = new StudentClassEntity(1, classId, studentId, null);
         StudentClass studentClass = StudentClass.builder()
                 .id(1)
@@ -46,10 +45,8 @@ class StudentClassRepositoryImplTest {
                 .thenReturn(Optional.of(entity));
         when(studentClassMapper.toModel(entity)).thenReturn(studentClass);
 
-        // When
         Optional<StudentClass> result = studentClassRepository.findByClassIdAndStudentId(classId, studentId);
 
-        // Then
         assertTrue(result.isPresent());
         assertEquals(classId, result.get().getClassId());
         assertEquals(studentId, result.get().getStudentId());
@@ -59,14 +56,11 @@ class StudentClassRepositoryImplTest {
 
     @Test
     void findByClassIdAndStudentId_shouldReturnEmpty_whenNotExists() {
-        // Given
         when(studentClassJPARepository.findByClassIdAndStudentId(classId, studentId))
                 .thenReturn(Optional.empty());
 
-        // When
         Optional<StudentClass> result = studentClassRepository.findByClassIdAndStudentId(classId, studentId);
 
-        // Then
         assertFalse(result.isPresent());
         verify(studentClassJPARepository).findByClassIdAndStudentId(classId, studentId);
         verify(studentClassMapper, never()).toModel(any());
@@ -74,7 +68,6 @@ class StudentClassRepositoryImplTest {
 
     @Test
     void save_shouldSaveAndReturnStudentClass() {
-        // Given
         StudentClass studentClass = StudentClass.builder()
                 .classId(classId)
                 .studentId(studentId)
@@ -91,10 +84,8 @@ class StudentClassRepositoryImplTest {
         when(studentClassJPARepository.save(entity)).thenReturn(savedEntity);
         when(studentClassMapper.toModel(savedEntity)).thenReturn(savedStudentClass);
 
-        // When
         StudentClass result = studentClassRepository.save(studentClass);
 
-        // Then
         assertNotNull(result);
         assertEquals(1, result.getId());
         assertEquals(classId, result.getClassId());
@@ -106,7 +97,6 @@ class StudentClassRepositoryImplTest {
 
     @Test
     void update_shouldUpdateAndReturnStudentClass() {
-        // Given
         StudentClass studentClass = StudentClass.builder()
                 .id(1)
                 .classId(classId)
@@ -126,10 +116,8 @@ class StudentClassRepositoryImplTest {
         when(studentClassJPARepository.save(entity)).thenReturn(updatedEntity);
         when(studentClassMapper.toModel(updatedEntity)).thenReturn(updatedStudentClass);
 
-        // When
         StudentClass result = studentClassRepository.update(studentClass);
 
-        // Then
         assertNotNull(result);
         assertEquals(1, result.getId());
         assertNull(result.getDeletionDate());
@@ -140,17 +128,14 @@ class StudentClassRepositoryImplTest {
 
     @Test
     void softDelete_shouldSetDeletionDate_whenAssociationExists() {
-        // Given
         StudentClassEntity entity = new StudentClassEntity(1, classId, studentId, null);
 
         when(studentClassJPARepository.findByClassIdAndStudentId(classId, studentId))
                 .thenReturn(Optional.of(entity));
         when(studentClassJPARepository.save(any(StudentClassEntity.class))).thenReturn(entity);
 
-        // When
         studentClassRepository.softDelete(classId, studentId);
 
-        // Then
         assertNotNull(entity.getDeletionDate());
         assertEquals(LocalDate.now(), entity.getDeletionDate());
         verify(studentClassJPARepository).findByClassIdAndStudentId(classId, studentId);
@@ -158,12 +143,101 @@ class StudentClassRepositoryImplTest {
     }
 
     @Test
+    void findClassIdsByStudentId_shouldReturnListOfClassIds() {
+        Integer studentId = 1;
+        List<Integer> expectedClassIds = Arrays.asList(10, 20, 30);
+
+        when(studentClassJPARepository.findClassIdsByStudentIdAndDeletionDateIsNull(studentId))
+                .thenReturn(expectedClassIds);
+
+        List<Integer> result = studentClassRepository.findClassIdsByStudentId(studentId);
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+        assertEquals(expectedClassIds, result);
+        verify(studentClassJPARepository).findClassIdsByStudentIdAndDeletionDateIsNull(studentId);
+    }
+
+    @Test
+    void findClassIdsByStudentId_shouldReturnEmptyList_whenNoClassesFound() {
+        Integer studentId = 1;
+        List<Integer> emptyList = Collections.emptyList();
+
+        when(studentClassJPARepository.findClassIdsByStudentIdAndDeletionDateIsNull(studentId))
+                .thenReturn(emptyList);
+
+        List<Integer> result = studentClassRepository.findClassIdsByStudentId(studentId);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(studentClassJPARepository).findClassIdsByStudentIdAndDeletionDateIsNull(studentId);
+    }
+
+    @Test
+    void findClassIdsByTeacherId_shouldReturnMapOfStudentIdsToClassIds() {
+        Integer teacherId = 1;
+        StudentClassEntity entity1 = new StudentClassEntity(1, 10, 100, null);
+        StudentClassEntity entity2 = new StudentClassEntity(2, 20, 100, null);
+        StudentClassEntity entity3 = new StudentClassEntity(3, 30, 200, null);
+        StudentClassEntity entity4 = new StudentClassEntity(4, 40, 200, null);
+        List<StudentClassEntity> entities = Arrays.asList(entity1, entity2, entity3, entity4);
+
+        when(studentClassJPARepository.findAllByTeacherIdAndDeletionDateIsNull(teacherId))
+                .thenReturn(entities);
+
+        Map<Integer, List<Integer>> result = studentClassRepository.findClassIdsByTeacherId(teacherId);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertTrue(result.containsKey(100));
+        assertTrue(result.containsKey(200));
+        assertEquals(Arrays.asList(10, 20), result.get(100));
+        assertEquals(Arrays.asList(30, 40), result.get(200));
+        verify(studentClassJPARepository).findAllByTeacherIdAndDeletionDateIsNull(teacherId);
+    }
+
+    @Test
+    void findClassIdsByTeacherId_shouldReturnEmptyMap_whenNoAssociationsFound() {
+        Integer teacherId = 1;
+        List<StudentClassEntity> emptyList = Collections.emptyList();
+
+        when(studentClassJPARepository.findAllByTeacherIdAndDeletionDateIsNull(teacherId))
+                .thenReturn(emptyList);
+
+        Map<Integer, List<Integer>> result = studentClassRepository.findClassIdsByTeacherId(teacherId);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(studentClassJPARepository).findAllByTeacherIdAndDeletionDateIsNull(teacherId);
+    }
+
+    @Test
+    void findClassIdsByTeacherId_shouldGroupMultipleClassesByStudent() {
+        Integer teacherId = 1;
+        Integer studentId = 100;
+        StudentClassEntity entity1 = new StudentClassEntity(1, 10, studentId, null);
+        StudentClassEntity entity2 = new StudentClassEntity(2, 20, studentId, null);
+        StudentClassEntity entity3 = new StudentClassEntity(3, 30, studentId, null);
+        List<StudentClassEntity> entities = Arrays.asList(entity1, entity2, entity3);
+
+        when(studentClassJPARepository.findAllByTeacherIdAndDeletionDateIsNull(teacherId))
+                .thenReturn(entities);
+
+        Map<Integer, List<Integer>> result = studentClassRepository.findClassIdsByTeacherId(teacherId);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertTrue(result.containsKey(studentId));
+        assertEquals(3, result.get(studentId).size());
+        assertEquals(Arrays.asList(10, 20, 30), result.get(studentId));
+        verify(studentClassJPARepository).findAllByTeacherIdAndDeletionDateIsNull(teacherId);
+    }
+
+    @Test
     void softDelete_shouldThrowException_whenAssociationNotFound() {
-        // Given
         when(studentClassJPARepository.findByClassIdAndStudentId(classId, studentId))
                 .thenReturn(Optional.empty());
 
-        // When & Then
         assertThrows(IllegalArgumentException.class, () ->
                 studentClassRepository.softDelete(classId, studentId));
 

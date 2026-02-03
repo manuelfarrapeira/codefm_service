@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Generated;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -18,5 +19,6 @@ public class Student {
     private String additionalInfo;
     private String photo;
     private LocalDate deletionDate;
+    private List<Integer> classIds;
 }
 

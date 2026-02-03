@@ -8,22 +8,22 @@ Feature: Teacher Notebook - Search Students
   Scenario: Search students by name successfully
     # Search by name
     Given path '/teacher-notebook/v1/students'
-    And param name = 'Usuario'
+    And param name = 'Antonio'
     When method GET
     Then status 200
     And match response == '#array'
-    And match response[*].name contains 'Usuario'
+    And match response[*].name contains 'Antonio'
 
 
   Scenario: Search students by surnames successfully
 
     # Search by surnames
     Given path '/teacher-notebook/v1/students'
-    And param surnames = 'Prueba'
+    And param surnames = 'González alonso'
     When method GET
     Then status 200
     And match response == '#array'
-    And match response[*].surnames contains 'Prueba'
+    And match response[*].surnames contains 'González alonso'
 
   Scenario: Search students by id successfully
 
@@ -34,19 +34,19 @@ Feature: Teacher Notebook - Search Students
     Then status 200
     And match response == '#array'
     And match response[0].id == 1
-    And match response[0].name == 'Usuario'
-    And match response[0].surnames == 'Prueba'
+    And match response[0].name == 'Antonio'
+    And match response[0].surnames == 'González alonso'
 
   Scenario: Search students with multiple criteria
     # Search by name and surnames
     Given path '/teacher-notebook/v1/students'
-    And param name = 'Usuario'
-    And param surnames = 'Prueba'
+    And param name = 'Antonio'
+    And param surnames = 'González alonso'
     When method GET
     Then status 200
     And match response == '#array'
-    And match response[0].name == 'Usuario'
-    And match response[0].surnames == 'Prueba'
+    And match response[0].name == 'Antonio'
+    And match response[0].surnames == 'González alonso'
 
   Scenario: Search students returns empty array when no matches found
     Given path '/teacher-notebook/v1/students'

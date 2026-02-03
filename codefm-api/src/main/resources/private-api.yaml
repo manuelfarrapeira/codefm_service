@@ -654,6 +654,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+    get:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: downloadStudentPhoto
+      summary: Download a photo for a student
+      description: Downloads the photo file for the specified student.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Photo downloaded successfully
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Not Found - Student or photo does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: deleteStudentPhoto
+      summary: Delete a photo for a student
+      description: Deletes the photo file for the specified student.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Photo deleted successfully
+        '404':
+          description: Not Found - Student or photo does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 
   /teacher-notebook/v1/students/all:
     get:
@@ -847,6 +922,11 @@ components:
           type: 'string'
         photo:
           type: 'string'
+        classIds:
+          type: 'array'
+          items:
+            type: 'integer'
+          description: 'List of class IDs the student belongs to'
     StudentRequestDTO:
       type: 'object'
       properties:

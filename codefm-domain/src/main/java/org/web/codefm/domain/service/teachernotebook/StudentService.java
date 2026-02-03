@@ -52,6 +52,25 @@ public interface StudentService {
     String saveStudentPhoto(Integer studentId, MultipartFile file);
 
     /**
+     * Gets a student photo.
+     * The teacher ID is obtained from the session user.
+     *
+     * @param studentId The unique identifier of the student
+     * @return The photo file bytes
+     * @throws org.web.codefm.domain.exception.teachernotebook.StudentPhotoNotFoundException if photo not found
+     */
+    byte[] getStudentPhoto(Integer studentId);
+
+    /**
+     * Deletes a student photo.
+     * The teacher ID is obtained from the session user.
+     *
+     * @param studentId The unique identifier of the student
+     * @throws org.web.codefm.domain.exception.teachernotebook.StudentPhotoNotFoundException if photo not found
+     */
+    void deleteStudentPhoto(Integer studentId);
+
+    /**
      * Searches students by filters for the authenticated teacher. At least one filter must be provided.
      * The teacher ID is obtained from the session user.
      *

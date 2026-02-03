@@ -93,4 +93,16 @@ public class IndividualKarateTestRunner {
     return Karate.run("features/teacher-notebook/classes/addstudenttoclass").relativeTo(getClass());
   }
 
+  @Karate.Test
+  Karate testTeacherNotebooDEletePhoto() {
+    return Karate.run("features/teacher-notebook/students/deletephoto").relativeTo(getClass());
+  }
+
+
+  @Karate.Test
+  Karate testTeacherNotebooGetPhoto() {
+    return Karate.run("features/teacher-notebook/students/downloadphoto").relativeTo(getClass());
+  }
+
+
 }
