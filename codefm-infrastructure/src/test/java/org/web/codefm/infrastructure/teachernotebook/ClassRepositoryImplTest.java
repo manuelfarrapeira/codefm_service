@@ -2,6 +2,8 @@ package org.web.codefm.infrastructure.teachernotebook;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -181,43 +183,13 @@ class ClassRepositoryImplTest {
         verify(classMapper, times(1)).toModel(entity);
     }
 
-    @Test
-    void findByIdAndTeacherIdAndDeletionDateIsNull_shouldReturnEmpty_whenClassDoesNotExist() {
-        Integer classId = 999;
-        Integer teacherId = 1;
-
-        when(classJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
-                .thenReturn(Optional.empty());
-
-        Optional<Class> result = classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
-
-        assertNotNull(result);
-        assertFalse(result.isPresent());
-        verify(classJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
-        verify(classMapper, never()).toModel(any());
-    }
-
-    @Test
-    void findByIdAndTeacherIdAndDeletionDateIsNull_shouldReturnEmpty_whenClassNotOwnedByTeacher() {
-        Integer classId = 1;
-        Integer teacherId = 999;
-
-        when(classJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
-                .thenReturn(Optional.empty());
-
-        Optional<Class> result = classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
-
-        assertNotNull(result);
-        assertFalse(result.isPresent());
-        verify(classJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
-        verify(classMapper, never()).toModel(any());
-    }
-
-    @Test
-    void findByIdAndTeacherIdAndDeletionDateIsNull_shouldReturnEmpty_whenClassIsDeleted() {
-        Integer classId = 1;
-        Integer teacherId = 1;
-
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+            "Class does not exist, 999, 1",
+            "Class not owned by teacher, 1, 999",
+            "Class is deleted, 1, 1"
+    })
+    void findByIdAndTeacherIdAndDeletionDateIsNull_shouldReturnEmpty(String testCase, Integer classId, Integer teacherId) {
         when(classJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
                 .thenReturn(Optional.empty());
 
