@@ -9,7 +9,10 @@ import org.web.codefm.infrastructure.jpa.teachernotebook.StudentClassJPAReposito
 import org.web.codefm.infrastructure.mapper.StudentClassMapper;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -22,6 +25,21 @@ public class StudentClassRepositoryImpl implements StudentClassRepository {
     public Optional<StudentClass> findByClassIdAndStudentId(Integer classId, Integer studentId) {
         return studentClassJPARepository.findByClassIdAndStudentId(classId, studentId)
                 .map(studentClassMapper::toModel);
+    }
+
+    @Override
+    public List<Integer> findClassIdsByStudentId(Integer studentId) {
+        return studentClassJPARepository.findClassIdsByStudentIdAndDeletionDateIsNull(studentId);
+    }
+
+    @Override
+    public Map<Integer, List<Integer>> findClassIdsByTeacherId(Integer teacherId) {
+        List<StudentClassEntity> entities = studentClassJPARepository.findAllByTeacherIdAndDeletionDateIsNull(teacherId);
+        return entities.stream()
+                .collect(Collectors.groupingBy(
+                        StudentClassEntity::getStudentId,
+                        Collectors.mapping(StudentClassEntity::getClassId, Collectors.toList())
+                ));
     }
 
     @Override

@@ -217,4 +217,29 @@ class StudentUseCaseImplTest {
         verify(studentService, times(1)).getAllStudents();
     }
 
+    @Test
+    void downloadStudentPhoto_shouldCallServiceAndReturnPhotoBytes() {
+        Integer studentId = 1;
+        byte[] expectedPhotoBytes = new byte[]{1, 2, 3, 4, 5};
+
+        when(studentService.getStudentPhoto(studentId)).thenReturn(expectedPhotoBytes);
+
+        byte[] result = studentUseCase.downloadStudentPhoto(studentId);
+
+        assertNotNull(result);
+        assertEquals(expectedPhotoBytes.length, result.length);
+        verify(studentService, times(1)).getStudentPhoto(studentId);
+    }
+
+    @Test
+    void deleteStudentPhoto_shouldCallService() {
+        Integer studentId = 1;
+
+        doNothing().when(studentService).deleteStudentPhoto(studentId);
+
+        studentUseCase.deleteStudentPhoto(studentId);
+
+        verify(studentService, times(1)).deleteStudentPhoto(studentId);
+    }
+
 }

@@ -8,11 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.Student;
-import org.web.codefm.domain.exception.teachernotebook.StudentNotFoundException;
-import org.web.codefm.domain.exception.teachernotebook.StudentPhotoUploadException;
-import org.web.codefm.domain.exception.teachernotebook.StudentSearchValidationException;
-import org.web.codefm.domain.exception.teachernotebook.StudentValidationException;
+import org.web.codefm.domain.exception.teachernotebook.*;
 import org.web.codefm.domain.i18n.MessageKeys;
+import org.web.codefm.domain.repository.teachernotebook.StudentClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.StudentRepository;
 import org.web.codefm.domain.service.teachernotebook.StudentService;
 import org.web.codefm.domain.session.SessionParameter;
@@ -22,10 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +28,7 @@ import java.util.Optional;
 public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository studentRepository;
+    private final StudentClassRepository studentClassRepository;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -195,6 +191,66 @@ public class StudentServiceImpl implements StudentService {
         }
     }
 
+    @Override
+    public byte[] getStudentPhoto(Integer studentId) {
+        Integer teacherId = getTeacherId();
+        Student student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId)
+                .orElseThrow(() -> new StudentNotFoundException(
+                        messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
+                ));
+
+        if (student.getPhoto() == null || student.getPhoto().isEmpty()) {
+            throw new StudentPhotoNotFoundException(
+                    messageSource.getMessage(MessageKeys.STUDENT_PHOTO_NOT_FOUND, null, sessionUser.getLocale())
+            );
+        }
+
+        try {
+            Path photoPath = Paths.get(photosDirectory).resolve(student.getPhoto());
+            if (!Files.exists(photoPath)) {
+                throw new StudentPhotoNotFoundException(
+                        messageSource.getMessage(MessageKeys.STUDENT_PHOTO_NOT_FOUND, null, sessionUser.getLocale())
+                );
+            }
+            return Files.readAllBytes(photoPath);
+        } catch (IOException e) {
+            log.error("Error reading student photo", e);
+            throw new StudentPhotoNotFoundException(
+                    messageSource.getMessage(MessageKeys.STUDENT_PHOTO_NOT_FOUND, null, sessionUser.getLocale())
+            );
+        }
+    }
+
+    @Override
+    public void deleteStudentPhoto(Integer studentId) {
+        Integer teacherId = getTeacherId();
+        Student student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId)
+                .orElseThrow(() -> new StudentNotFoundException(
+                        messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
+                ));
+
+        if (student.getPhoto() == null || student.getPhoto().isEmpty()) {
+            throw new StudentPhotoNotFoundException(
+                    messageSource.getMessage(MessageKeys.STUDENT_PHOTO_NOT_FOUND, null, sessionUser.getLocale())
+            );
+        }
+
+        try {
+            Path photoPath = Paths.get(photosDirectory).resolve(student.getPhoto());
+            if (Files.exists(photoPath)) {
+                Files.delete(photoPath);
+            }
+            student.setPhoto(null);
+            studentRepository.update(student);
+        } catch (IOException e) {
+            log.error("Error deleting student photo", e);
+            throw new StudentPhotoDeleteException(
+                    messageSource.getMessage(MessageKeys.STUDENT_PHOTO_DELETE_ERROR, null, sessionUser.getLocale()),
+                    e
+            );
+        }
+    }
+
     private Integer getTeacherId() {
         return Integer.valueOf(
                 sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
@@ -204,6 +260,15 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public List<Student> getAllStudents() {
         Integer teacherId = getTeacherId();
-        return studentRepository.findAllByTeacherId(teacherId);
+        List<Student> students = studentRepository.findAllByTeacherId(teacherId);
+
+        Map<Integer, List<Integer>> studentClassMap = studentClassRepository.findClassIdsByTeacherId(teacherId);
+
+        students.forEach(student -> {
+            List<Integer> classIds = studentClassMap.getOrDefault(student.getId(), Collections.emptyList());
+            student.setClassIds(classIds);
+        });
+
+        return students;
     }
 }

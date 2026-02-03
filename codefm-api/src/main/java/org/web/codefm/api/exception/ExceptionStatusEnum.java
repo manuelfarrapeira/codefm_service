@@ -24,6 +24,8 @@ public enum ExceptionStatusEnum {
     CLASS_FORBIDDEN(ClassForbiddenException.class, HttpStatus.FORBIDDEN),
     STUDENT_NOT_FOUND(StudentNotFoundException.class, HttpStatus.NOT_FOUND),
     STUDENT_PHOTO_UPLOAD_ERROR(StudentPhotoUploadException.class, HttpStatus.INTERNAL_SERVER_ERROR),
+    STUDENT_PHOTO_NOT_FOUND(StudentPhotoNotFoundException.class, HttpStatus.NOT_FOUND),
+    STUDENT_PHOTO_DELETE_ERROR(StudentPhotoDeleteException.class, HttpStatus.INTERNAL_SERVER_ERROR),
     STUDENT_CLASS_VALIDATION_ERROR(StudentClassValidationException.class, HttpStatus.BAD_REQUEST),
     STUDENT_CLASS_NOT_FOUND(StudentClassNotFoundException.class, HttpStatus.NOT_FOUND);
 
