@@ -38,4 +38,9 @@ public class StudentUseCaseImpl implements StudentUseCase {
     public List<Student> searchStudents(Integer id, String name, String surnames) {
         return studentService.searchStudents(id, name, surnames);
     }
+
+    @Override
+    public List<Student> getAllStudents() {
+        return studentService.getAllStudents();
+    }
 }

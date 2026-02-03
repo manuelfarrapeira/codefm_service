@@ -53,4 +53,11 @@ public interface StudentUseCase {
      * @return List of students matching the filters
      */
     List<Student> searchStudents(Integer id, String name, String surnames);
+
+    /**
+     * Retrieves all students for the authenticated teacher.
+     *
+     * @return List of all students belonging to the teacher
+     */
+    List<Student> getAllStudents();
 }

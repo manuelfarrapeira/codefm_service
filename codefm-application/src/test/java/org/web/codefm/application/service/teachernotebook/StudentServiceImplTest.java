@@ -18,14 +18,12 @@ import org.web.codefm.domain.exception.teachernotebook.StudentSearchValidationEx
 import org.web.codefm.domain.exception.teachernotebook.StudentValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.StudentRepository;
+import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,6 +52,10 @@ class StudentServiceImplTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(studentService, "photosDirectory", tempDir.toString());
+
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), "1");
+        when(sessionUser.getParameters()).thenReturn(parameters);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         when(messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class)))
@@ -85,14 +87,23 @@ class StudentServiceImplTest {
                 .additionalInfo("Good student")
                 .build();
 
-        when(studentRepository.save(studentToCreate)).thenReturn(studentToCreate);
+        Student expectedStudent = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .teacherId(1)
+                .dateOfBirth(LocalDate.of(2010, 3, 15))
+                .additionalInfo("Good student")
+                .build();
+
+        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
 
         Student createdStudent = studentService.createStudent(studentToCreate);
 
         assertNotNull(createdStudent);
         assertEquals("Juan", createdStudent.getName());
         assertEquals("García López", createdStudent.getSurnames());
-        verify(studentRepository, times(1)).save(studentToCreate);
+        assertEquals(1, createdStudent.getTeacherId());
+        verify(studentRepository, times(1)).save(any(Student.class));
     }
 
     @Test
@@ -183,8 +194,10 @@ class StudentServiceImplTest {
     @Test
     void updateStudent_shouldUpdateStudent_whenDataIsValid() {
         Integer studentId = 1;
+        Integer teacherId = 1;
         Student existingStudent = Student.builder()
                 .id(studentId)
+                .teacherId(teacherId)
                 .name("Juan")
                 .surnames("García")
                 .build();
@@ -195,7 +208,7 @@ class StudentServiceImplTest {
                 .dateOfBirth(LocalDate.of(2010, 3, 15))
                 .build();
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.of(existingStudent));
         when(studentRepository.update(any(Student.class))).thenReturn(existingStudent);
 
@@ -210,12 +223,13 @@ class StudentServiceImplTest {
     @Test
     void updateStudent_shouldThrowNotFoundException_whenStudentDoesNotExist() {
         Integer studentId = 999;
+        Integer teacherId = 1;
         Student updatedData = Student.builder()
                 .name("Juan")
                 .surnames("García López")
                 .build();
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.empty());
 
         StudentNotFoundException exception = assertThrows(StudentNotFoundException.class, () -> {
@@ -228,20 +242,13 @@ class StudentServiceImplTest {
 
     @Test
     void updateStudent_shouldThrowValidationException_whenNameIsInvalid() {
-        Integer studentId = 1;
-        Student existingStudent = Student.builder()
-                .id(studentId)
-                .name("Juan")
-                .surnames("García")
-                .build();
-
         Student invalidData = Student.builder()
                 .name("A")
                 .surnames("García López")
                 .build();
 
         StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            studentService.updateStudent(studentId, invalidData);
+            studentService.updateStudent(1, invalidData);
         });
 
         assertNotNull(exception);
@@ -251,25 +258,28 @@ class StudentServiceImplTest {
     @Test
     void softDeleteStudent_shouldDeleteStudent_whenStudentExists() {
         Integer studentId = 1;
+        Integer teacherId = 1;
         Student existingStudent = Student.builder()
                 .id(studentId)
+                .teacherId(teacherId)
                 .name("Juan")
                 .surnames("García")
                 .build();
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.of(existingStudent));
 
         studentService.softDeleteStudent(studentId);
 
-        verify(studentRepository, times(1)).softDelete(studentId);
+        verify(studentRepository, times(1)).softDelete(studentId, teacherId);
     }
 
     @Test
     void softDeleteStudent_shouldThrowNotFoundException_whenStudentDoesNotExist() {
         Integer studentId = 999;
+        Integer teacherId = 1;
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.empty());
 
         StudentNotFoundException exception = assertThrows(StudentNotFoundException.class, () -> {
@@ -277,17 +287,19 @@ class StudentServiceImplTest {
         });
 
         assertNotNull(exception);
-        verify(studentRepository, never()).softDelete(any());
+        verify(studentRepository, never()).softDelete(any(), any());
     }
 
     @Test
     void saveStudentPhoto_shouldSavePhoto_whenStudentExists() {
         Integer studentId = 1;
+        Integer teacherId = 1;
         byte[] photoBytes = "test photo content".getBytes();
         MultipartFile file = mock(MultipartFile.class);
 
         Student existingStudent = Student.builder()
                 .id(studentId)
+                .teacherId(teacherId)
                 .name("Juan")
                 .surnames("García")
                 .build();
@@ -300,7 +312,7 @@ class StudentServiceImplTest {
             fail("Mock setup failed");
         }
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.of(existingStudent));
         when(studentRepository.update(any(Student.class))).thenReturn(existingStudent);
 
@@ -314,11 +326,13 @@ class StudentServiceImplTest {
     @Test
     void saveStudentPhoto_shouldThrowException_whenFileSizeExceeds500KB() {
         Integer studentId = 1;
+        Integer teacherId = 1;
         byte[] photoBytes = new byte[600 * 1024]; // 600KB - exceeds limit
         MultipartFile file = mock(MultipartFile.class);
 
         Student existingStudent = Student.builder()
                 .id(studentId)
+                .teacherId(teacherId)
                 .name("Juan")
                 .surnames("García")
                 .build();
@@ -331,7 +345,7 @@ class StudentServiceImplTest {
             fail("Mock setup failed");
         }
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.of(existingStudent));
 
         assertThrows(org.web.codefm.domain.exception.teachernotebook.StudentPhotoUploadException.class, () -> {
@@ -344,11 +358,13 @@ class StudentServiceImplTest {
     @Test
     void saveStudentPhoto_shouldThrowException_whenExtensionIsInvalid() {
         Integer studentId = 1;
+        Integer teacherId = 1;
         byte[] photoBytes = "test photo content".getBytes();
         MultipartFile file = mock(MultipartFile.class);
 
         Student existingStudent = Student.builder()
                 .id(studentId)
+                .teacherId(teacherId)
                 .name("Juan")
                 .surnames("García")
                 .build();
@@ -361,7 +377,7 @@ class StudentServiceImplTest {
             fail("Mock setup failed");
         }
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.of(existingStudent));
 
         assertThrows(org.web.codefm.domain.exception.teachernotebook.StudentPhotoUploadException.class, () -> {
@@ -374,11 +390,13 @@ class StudentServiceImplTest {
     @Test
     void saveStudentPhoto_shouldAcceptPngExtension() {
         Integer studentId = 2;
+        Integer teacherId = 1;
         byte[] photoBytes = "test photo content".getBytes();
         MultipartFile file = mock(MultipartFile.class);
 
         Student existingStudent = Student.builder()
                 .id(studentId)
+                .teacherId(teacherId)
                 .name("María")
                 .surnames("López")
                 .build();
@@ -391,7 +409,7 @@ class StudentServiceImplTest {
             fail("Mock setup failed");
         }
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.of(existingStudent));
         when(studentRepository.update(any(Student.class))).thenReturn(existingStudent);
 
@@ -405,11 +423,13 @@ class StudentServiceImplTest {
     @Test
     void saveStudentPhoto_shouldAcceptJpegExtension() {
         Integer studentId = 3;
+        Integer teacherId = 1;
         byte[] photoBytes = "test photo content".getBytes();
         MultipartFile file = mock(MultipartFile.class);
 
         Student existingStudent = Student.builder()
                 .id(studentId)
+                .teacherId(teacherId)
                 .name("Pedro")
                 .surnames("Martínez")
                 .build();
@@ -422,7 +442,7 @@ class StudentServiceImplTest {
             fail("Mock setup failed");
         }
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.of(existingStudent));
         when(studentRepository.update(any(Student.class))).thenReturn(existingStudent);
 
@@ -436,6 +456,7 @@ class StudentServiceImplTest {
     @Test
     void saveStudentPhoto_shouldThrowNotFoundException_whenStudentDoesNotExist() {
         Integer studentId = 999;
+        Integer teacherId = 1;
         byte[] photoBytes = "test photo content".getBytes();
         MultipartFile file = mock(MultipartFile.class);
 
@@ -447,7 +468,7 @@ class StudentServiceImplTest {
             fail("Mock setup failed");
         }
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.empty());
 
         StudentNotFoundException exception = assertThrows(StudentNotFoundException.class, () -> {
@@ -461,10 +482,12 @@ class StudentServiceImplTest {
     @Test
     void saveStudentPhoto_shouldThrowException_whenPhotoIsEmpty() {
         Integer studentId = 1;
+        Integer teacherId = 1;
         MultipartFile file = mock(MultipartFile.class);
 
         Student existingStudent = Student.builder()
                 .id(studentId)
+                .teacherId(teacherId)
                 .name("Juan")
                 .surnames("García")
                 .build();
@@ -477,7 +500,7 @@ class StudentServiceImplTest {
             fail("Mock setup failed");
         }
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.of(existingStudent));
 
         assertThrows(org.web.codefm.domain.exception.teachernotebook.StudentPhotoUploadException.class, () -> {
@@ -490,15 +513,17 @@ class StudentServiceImplTest {
     @Test
     void saveStudentPhoto_shouldThrowException_whenPhotoIsNull() {
         Integer studentId = 1;
+        Integer teacherId = 1;
         MultipartFile file = null;
 
         Student existingStudent = Student.builder()
                 .id(studentId)
+                .teacherId(teacherId)
                 .name("Juan")
                 .surnames("García")
                 .build();
 
-        when(studentRepository.findByIdAndDeletionDateIsNull(studentId))
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.of(existingStudent));
 
         assertThrows(org.web.codefm.domain.exception.teachernotebook.StudentPhotoUploadException.class, () -> {
@@ -510,14 +535,16 @@ class StudentServiceImplTest {
 
     @Test
     void searchStudents_shouldReturnStudents_whenIdProvided() {
+        Integer teacherId = 1;
         Integer id = 1;
         Student student = Student.builder()
                 .id(id)
+                .teacherId(teacherId)
                 .name("Juan")
                 .surnames("García López")
                 .build();
 
-        when(studentRepository.searchStudents(id, null, null))
+        when(studentRepository.searchStudents(teacherId, id, null, null))
                 .thenReturn(Arrays.asList(student));
 
         List<Student> result = studentService.searchStudents(id, null, null);
@@ -525,65 +552,71 @@ class StudentServiceImplTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals("Juan", result.get(0).getName());
-        verify(studentRepository, times(1)).searchStudents(id, null, null);
+        verify(studentRepository, times(1)).searchStudents(teacherId, id, null, null);
     }
 
     @Test
     void searchStudents_shouldReturnStudents_whenNameProvided() {
+        Integer teacherId = 1;
         String name = "Juan";
         Student student = Student.builder()
                 .id(1)
+                .teacherId(teacherId)
                 .name("Juan")
                 .surnames("García López")
                 .build();
 
-        when(studentRepository.searchStudents(null, name, null))
+        when(studentRepository.searchStudents(teacherId, null, name, null))
                 .thenReturn(Arrays.asList(student));
 
         List<Student> result = studentService.searchStudents(null, name, null);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(studentRepository, times(1)).searchStudents(null, name, null);
+        verify(studentRepository, times(1)).searchStudents(teacherId, null, name, null);
     }
 
     @Test
     void searchStudents_shouldReturnStudents_whenSurnamesProvided() {
+        Integer teacherId = 1;
         String surnames = "García";
         Student student = Student.builder()
                 .id(1)
+                .teacherId(teacherId)
                 .name("Juan")
                 .surnames("García López")
                 .build();
 
-        when(studentRepository.searchStudents(null, null, surnames))
+        when(studentRepository.searchStudents(teacherId, null, null, surnames))
                 .thenReturn(Arrays.asList(student));
 
         List<Student> result = studentService.searchStudents(null, null, surnames);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(studentRepository, times(1)).searchStudents(null, null, surnames);
+        verify(studentRepository, times(1)).searchStudents(teacherId, null, null, surnames);
     }
 
     @Test
     void searchStudents_shouldReturnStudents_whenMultipleFiltersProvided() {
+        Integer teacherId = 1;
         String name = "Juan";
         String surnames = "García";
         Student student = Student.builder()
                 .id(1)
+                .teacherId(teacherId)
                 .name("Juan")
                 .surnames("García López")
                 .build();
 
-        when(studentRepository.searchStudents(null, name, surnames))
+        when(studentRepository.searchStudents(teacherId, null, name, surnames))
                 .thenReturn(Arrays.asList(student));
 
         List<Student> result = studentService.searchStudents(null, name, surnames);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(studentRepository, times(1)).searchStudents(null, name, surnames);
+        verify(studentRepository, times(1)).searchStudents(teacherId, null, name, surnames);
     }
 
     @Test
@@ -598,7 +631,7 @@ class StudentServiceImplTest {
 
         assertNotNull(exception);
         verify(messageSource, times(1)).getMessage(eq(MessageKeys.STUDENT_SEARCH_NO_FILTERS), eq(null), any(Locale.class));
-        verify(studentRepository, never()).searchStudents(any(), any(), any());
+        verify(studentRepository, never()).searchStudents(any(), any(), any(), any());
     }
 
 
@@ -613,20 +646,65 @@ class StudentServiceImplTest {
         );
 
         assertNotNull(exception);
-        verify(studentRepository, never()).searchStudents(any(), any(), any());
+        verify(studentRepository, never()).searchStudents(any(), any(), any(), any());
     }
 
     @Test
     void searchStudents_shouldReturnEmptyList_whenNoMatchesFound() {
+        Integer teacherId = 1;
         String name = "NonExistent";
 
-        when(studentRepository.searchStudents(null, name, null))
+        when(studentRepository.searchStudents(teacherId, null, name, null))
                 .thenReturn(Arrays.asList());
 
         List<Student> result = studentService.searchStudents(null, name, null);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
-        verify(studentRepository, times(1)).searchStudents(null, name, null);
+        verify(studentRepository, times(1)).searchStudents(teacherId, null, name, null);
+    }
+
+    @Test
+    void getAllStudents_shouldReturnAllStudents() {
+        Integer teacherId = 1;
+        Student student1 = Student.builder()
+                .id(1)
+                .teacherId(teacherId)
+                .name("Juan")
+                .surnames("García López")
+                .build();
+
+        Student student2 = Student.builder()
+                .id(2)
+                .teacherId(teacherId)
+                .name("María")
+                .surnames("Pérez Martínez")
+                .build();
+
+        List<Student> expectedStudents = Arrays.asList(student1, student2);
+
+        when(studentRepository.findAllByTeacherId(teacherId)).thenReturn(expectedStudents);
+
+        List<Student> result = studentService.getAllStudents();
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("Juan", result.get(0).getName());
+        assertEquals("María", result.get(1).getName());
+        verify(studentRepository, times(1)).findAllByTeacherId(teacherId);
+    }
+
+    @Test
+    void getAllStudents_shouldReturnEmptyListWhenNoStudents() {
+        Integer teacherId = 1;
+        List<Student> emptyList = List.of();
+
+        when(studentRepository.findAllByTeacherId(teacherId)).thenReturn(emptyList);
+
+        List<Student> result = studentService.getAllStudents();
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(studentRepository, times(1)).findAllByTeacherId(teacherId);
     }
 }

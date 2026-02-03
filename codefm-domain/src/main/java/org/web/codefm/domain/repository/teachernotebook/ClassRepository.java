@@ -37,6 +37,15 @@ public interface ClassRepository {
     Optional<Class> findById(Integer classId);
 
     /**
+     * Finds an active class (not soft-deleted) by ID and teacher ID.
+     *
+     * @param classId   The unique identifier of the class
+     * @param teacherId The unique identifier of the teacher (to verify ownership)
+     * @return An Optional containing the Class if found and active, or empty otherwise
+     */
+    Optional<Class> findByIdAndTeacherIdAndDeletionDateIsNull(Integer classId, Integer teacherId);
+
+    /**
      * Soft-deletes a class by setting its deletion date.
      *
      * @param classId   The ID of the class to soft-delete

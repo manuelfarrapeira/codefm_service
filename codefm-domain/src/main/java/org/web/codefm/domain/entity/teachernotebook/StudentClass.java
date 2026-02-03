@@ -6,17 +6,16 @@ import lombok.Generated;
 
 import java.time.LocalDate;
 
+/**
+ * Domain entity representing the association between a student and a class.
+ */
 @Data
 @Builder
 @Generated
-public class Student {
+public class StudentClass {
     private Integer id;
-    private Integer teacherId;
-    private String name;
-    private String surnames;
-    private LocalDate dateOfBirth;
-    private String additionalInfo;
-    private String photo;
+    private Integer classId;
+    private Integer studentId;
     private LocalDate deletionDate;
 }
 

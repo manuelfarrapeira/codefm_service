@@ -1,7 +1,5 @@
 package org.web.codefm.api.controller.teacher_notebook;
 
-import java.util.List;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -14,8 +12,11 @@ import org.web.codefm.api.utils.Locale;
 import org.web.codefm.api.utils.Logged;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.usecase.teachernotebook.ClassUseCase;
+import org.web.codefm.domain.usecase.teachernotebook.StudentClassUseCase;
 import org.web.codefm.model.ClassDTO;
 import org.web.codefm.model.ClassRequestDTO;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -23,6 +24,7 @@ import org.web.codefm.model.ClassRequestDTO;
 public class PrivateClasses implements TeacherNoteBookClassesApi {
 
     private final ClassUseCase classUseCase;
+    private final StudentClassUseCase studentClassUseCase;
     private final ClassDTOMapper classDTOMapper;
 
     @Logged
@@ -60,5 +62,23 @@ public class PrivateClasses implements TeacherNoteBookClassesApi {
     Class updatedClass = classUseCase.updateClass(classId, classDTOMapper.toDomain(classRequestDTO));
     return ResponseEntity.ok(classDTOMapper.toDTO(updatedClass));
   }
+
+    @Logged
+    @Override
+    @Locale(2)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> addStudentToClass(Integer classId, Integer studentId, String acceptLanguage) {
+        studentClassUseCase.addStudentToClass(classId, studentId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Logged
+    @Override
+    @Locale(2)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> removeStudentFromClass(Integer classId, Integer studentId, String acceptLanguage) {
+        studentClassUseCase.removeStudentFromClass(classId, studentId);
+        return ResponseEntity.noContent().build();
+    }
 }
 
