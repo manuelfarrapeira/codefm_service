@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -71,6 +72,14 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public void softDeleteStudent(Integer id) {
         Integer teacherId = getTeacherId();
+
+        Optional<Student> student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(id, teacherId);
+
+        if (student.isEmpty()) {
+            throw new StudentNotFoundException(
+                    messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
+            );
+        }
 
         studentRepository.softDelete(id, teacherId);
     }

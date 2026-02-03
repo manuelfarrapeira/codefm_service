@@ -4,12 +4,18 @@ Este documento proporciona las directrices que debo seguir cada vez que trabajes
 
 ## Reglas Generales de Código
 
-**IMPORTANTE - NO INCLUIR COMENTARIOS EN EL CÓDIGO**:
+**CRÍTICO - PROHIBICIÓN ABSOLUTA DE COMENTARIOS EN EL CÓDIGO**:
 
-- **NUNCA** agregar comentarios inline en el código Java
-- **NUNCA** agregar comentarios explicativos dentro de métodos
-- El código debe ser autoexplicativo mediante nombres descriptivos
-- **ÚNICA EXCEPCIÓN**: JavaDoc obligatorio en interfaces (Repository, Service, UseCase) según se especifica más adelante
+- **NUNCA JAMÁS** agregar comentarios inline en el código Java (ni // ni /* */)
+- **NUNCA JAMÁS** agregar comentarios explicativos dentro de métodos
+- **NUNCA JAMÁS** agregar comentarios tipo "Given", "When", "Then" en tests
+- **NUNCA JAMÁS** agregar comentarios de secciones como "// Setup", "// Arrange", etc.
+- **NUNCA JAMÁS** agregar comentarios descriptivos en ninguna parte del código
+- El código DEBE ser autoexplicativo mediante nombres descriptivos de variables, métodos y clases
+- **ÚNICA EXCEPCIÓN**: JavaDoc obligatorio SOLO en interfaces públicas (Repository, Service, UseCase) según se
+  especifica más adelante
+- Si necesitas separar lógicamente bloques de código, usa líneas en blanco, NO comentarios
+- Los tests deben ser legibles por su estructura y nombres de métodos, NO por comentarios
 
 ---
 

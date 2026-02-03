@@ -61,8 +61,6 @@ class StudentClassServiceImplTest {
         Map<String, String> sessionParameters = new HashMap<>();
         sessionParameters.put(SessionParameter.TEACHER_ID.getClaimName(), teacherId.toString());
         when(sessionUser.getParameters()).thenReturn(sessionParameters);
-        lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
-        lenient().when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
     }
 
     @Test
@@ -121,6 +119,8 @@ class StudentClassServiceImplTest {
                 .thenReturn(Optional.of(Student.builder().id(studentId).build()));
         when(studentClassRepository.findByClassIdAndStudentId(classId, studentId))
                 .thenReturn(Optional.of(activeAssociation));
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
 
         assertThrows(StudentClassValidationException.class, () ->
                 studentClassService.addStudentToClass(classId, studentId));
@@ -133,6 +133,8 @@ class StudentClassServiceImplTest {
     void addStudentToClass_shouldThrowClassNotFoundException_whenClassNotFound() {
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
                 .thenReturn(Optional.empty());
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
 
         assertThrows(ClassNotFoundException.class, () ->
                 studentClassService.addStudentToClass(classId, studentId));
@@ -147,6 +149,8 @@ class StudentClassServiceImplTest {
                 .thenReturn(Optional.of(Class.builder().id(classId).build()));
         when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.empty());
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
 
         assertThrows(StudentNotFoundException.class, () ->
                 studentClassService.addStudentToClass(classId, studentId));
@@ -183,6 +187,8 @@ class StudentClassServiceImplTest {
                 .thenReturn(Optional.of(Student.builder().id(studentId).build()));
         when(studentClassRepository.findByClassIdAndStudentId(classId, studentId))
                 .thenReturn(Optional.empty());
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
 
         assertThrows(StudentClassNotFoundException.class, () ->
                 studentClassService.removeStudentFromClass(classId, studentId));
@@ -205,6 +211,8 @@ class StudentClassServiceImplTest {
                 .thenReturn(Optional.of(Student.builder().id(studentId).build()));
         when(studentClassRepository.findByClassIdAndStudentId(classId, studentId))
                 .thenReturn(Optional.of(deletedAssociation));
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
 
         assertThrows(StudentClassNotFoundException.class, () ->
                 studentClassService.removeStudentFromClass(classId, studentId));
@@ -216,6 +224,8 @@ class StudentClassServiceImplTest {
     void removeStudentFromClass_shouldThrowClassNotFoundException_whenClassNotFound() {
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
                 .thenReturn(Optional.empty());
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
 
         assertThrows(ClassNotFoundException.class, () ->
                 studentClassService.removeStudentFromClass(classId, studentId));
@@ -230,6 +240,8 @@ class StudentClassServiceImplTest {
                 .thenReturn(Optional.of(Class.builder().id(classId).build()));
         when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.empty());
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
 
         assertThrows(StudentNotFoundException.class, () ->
                 studentClassService.removeStudentFromClass(classId, studentId));
