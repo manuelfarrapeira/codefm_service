@@ -156,6 +156,80 @@ class ClassRepositoryImplTest {
     }
 
     @Test
+    void findByIdAndTeacherIdAndDeletionDateIsNull_shouldReturnClass_whenClassExists() {
+        Integer classId = 1;
+        Integer teacherId = 1;
+        ClassEntity entity = new ClassEntity(classId, 1, "Math Class", "24/25", null);
+        Class expectedClass = Class.builder()
+                .id(classId)
+                .schoolId(1)
+                .name("Math Class")
+                .schoolYear("24/25")
+                .build();
+
+        when(classJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
+                .thenReturn(Optional.of(entity));
+        when(classMapper.toModel(entity)).thenReturn(expectedClass);
+
+        Optional<Class> result = classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
+
+        assertNotNull(result);
+        assertTrue(result.isPresent());
+        assertEquals(classId, result.get().getId());
+        assertEquals(teacherId, result.get().getSchoolId());
+        verify(classJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
+        verify(classMapper, times(1)).toModel(entity);
+    }
+
+    @Test
+    void findByIdAndTeacherIdAndDeletionDateIsNull_shouldReturnEmpty_whenClassDoesNotExist() {
+        Integer classId = 999;
+        Integer teacherId = 1;
+
+        when(classJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
+                .thenReturn(Optional.empty());
+
+        Optional<Class> result = classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
+
+        assertNotNull(result);
+        assertFalse(result.isPresent());
+        verify(classJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
+        verify(classMapper, never()).toModel(any());
+    }
+
+    @Test
+    void findByIdAndTeacherIdAndDeletionDateIsNull_shouldReturnEmpty_whenClassNotOwnedByTeacher() {
+        Integer classId = 1;
+        Integer teacherId = 999;
+
+        when(classJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
+                .thenReturn(Optional.empty());
+
+        Optional<Class> result = classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
+
+        assertNotNull(result);
+        assertFalse(result.isPresent());
+        verify(classJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
+        verify(classMapper, never()).toModel(any());
+    }
+
+    @Test
+    void findByIdAndTeacherIdAndDeletionDateIsNull_shouldReturnEmpty_whenClassIsDeleted() {
+        Integer classId = 1;
+        Integer teacherId = 1;
+
+        when(classJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
+                .thenReturn(Optional.empty());
+
+        Optional<Class> result = classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
+
+        assertNotNull(result);
+        assertFalse(result.isPresent());
+        verify(classJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
+        verify(classMapper, never()).toModel(any());
+    }
+
+    @Test
     void softDeleteClass_shouldSetDeletionDateAndReturnUpdatedClass() {
         Integer classId = 1;
         Integer teacherId = 1;
