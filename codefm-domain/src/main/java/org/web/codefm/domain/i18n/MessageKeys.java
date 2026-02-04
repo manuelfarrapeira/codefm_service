@@ -29,4 +29,8 @@ public class MessageKeys {
     public static final String STUDENT_PHOTO_SIZE_EXCEEDED = "student.photo.size.exceeded";
     public static final String STUDENT_SEARCH_NO_FILTERS = "student.search.no.filters";
 
+    public static final String SUBJECT_VALIDATION_NAME_REQUIRED = "subject.validation.name.required";
+    public static final String SUBJECT_NOT_FOUND = "subject.not.found";
+    public static final String SUBJECT_FORBIDDEN = "subject.forbidden";
+
 }

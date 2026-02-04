@@ -23,7 +23,10 @@ public enum ExceptionStatusEnum {
     CLASS_NOT_FOUND(ClassNotFoundException.class, HttpStatus.NOT_FOUND),
     CLASS_FORBIDDEN(ClassForbiddenException.class, HttpStatus.FORBIDDEN),
     STUDENT_NOT_FOUND(StudentNotFoundException.class, HttpStatus.NOT_FOUND),
-    STUDENT_PHOTO_UPLOAD_ERROR(StudentPhotoUploadException.class, HttpStatus.INTERNAL_SERVER_ERROR);
+    STUDENT_PHOTO_UPLOAD_ERROR(StudentPhotoUploadException.class, HttpStatus.INTERNAL_SERVER_ERROR),
+    SUBJECT_VALIDATION_ERROR(SubjectValidationException.class, HttpStatus.BAD_REQUEST),
+    SUBJECT_NOT_FOUND(SubjectNotFoundException.class, HttpStatus.NOT_FOUND),
+    SUBJECT_FORBIDDEN(SubjectForbiddenException.class, HttpStatus.FORBIDDEN);
 
     private final Class<?> exceptionClazz;
 
