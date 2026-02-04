@@ -74,35 +74,56 @@ public class IndividualKarateTestRunner {
 
 
   @Karate.Test
-  Karate testTeacherNotebooDeleteStudent() {
+  Karate testTeacherNotebookDeleteStudent() {
     return Karate.run("features/teacher-notebook/students/deletestudent").relativeTo(getClass());
   }
 
   @Karate.Test
-  Karate testTeacherNotebooUploadPhoto() {
+  Karate testTeacherNotebookUploadPhoto() {
     return Karate.run("features/teacher-notebook/students/uploadphoto").relativeTo(getClass());
   }
 
   @Karate.Test
-  Karate testTeacherNotebooGetAllStudents() {
+  Karate testTeacherNotebookGetAllStudents() {
     return Karate.run("features/teacher-notebook/students/getallstudents").relativeTo(getClass());
   }
 
   @Karate.Test
-  Karate testTeacherNotebooAddStudentToClass() {
+  Karate testTeacherNotebookAddStudentToClass() {
     return Karate.run("features/teacher-notebook/classes/addstudenttoclass").relativeTo(getClass());
   }
 
   @Karate.Test
-  Karate testTeacherNotebooDEletePhoto() {
+  Karate testTeacherNotebookDEletePhoto() {
     return Karate.run("features/teacher-notebook/students/deletephoto").relativeTo(getClass());
   }
 
 
   @Karate.Test
-  Karate testTeacherNotebooGetPhoto() {
+  Karate testTeacherNotebookGetPhoto() {
     return Karate.run("features/teacher-notebook/students/downloadphoto").relativeTo(getClass());
   }
 
+
+  @Karate.Test
+  Karate testTeacherNotebookGetSubjects() {
+    return Karate.run("features/teacher-notebook/subjects/getsubjects").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookCreateSubjects() {
+    return Karate.run("features/teacher-notebook/subjects/createsubject").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookDeleteSubjects() {
+    return Karate.run("features/teacher-notebook/subjects/deletesubject").relativeTo(getClass());
+  }
+
+
+  @Karate.Test
+  Karate testTeacherNotebookUpdateSubjects() {
+    return Karate.run("features/teacher-notebook/subjects/updatesubject").relativeTo(getClass());
+  }
 
 }

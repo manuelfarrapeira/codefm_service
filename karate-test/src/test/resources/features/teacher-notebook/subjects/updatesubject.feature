@@ -9,7 +9,7 @@ Feature: Teacher Notebook - Update Subject
     * def requestBody =
       """
       {
-        "name": "Updated Subject Name"
+        "name": "Matemáticas"
       }
       """
     Given path '/teacher-notebook/v1/subjects/1'
@@ -17,7 +17,7 @@ Feature: Teacher Notebook - Update Subject
     When method PATCH
     Then status 200
     And match response.id == '#number'
-    And match response.name == "Updated Subject Name"
+    And match response.name == "Matemáticas"
 
   Scenario Outline: Update subject with invalid data
     * def requestBody = { name: <name> }
@@ -50,4 +50,4 @@ Feature: Teacher Notebook - Update Subject
     Examples:
       | subjectId | status | code   | description          | detail                                                         |
       | 999       | 404    | '1003' | 'RESOURCE_NOT_FOUND' | 'Asignatura no encontrada.'                                    |
-      | 100       | 403    | '1004' | 'RESOURCE_FORBIDDEN' | 'No está autorizado para realizar cambios en esta asignatura.' |
+      | 4         | 403    | '1004' | 'RESOURCE_FORBIDDEN' | 'No está autorizado para realizar cambios en esta asignatura.' |
