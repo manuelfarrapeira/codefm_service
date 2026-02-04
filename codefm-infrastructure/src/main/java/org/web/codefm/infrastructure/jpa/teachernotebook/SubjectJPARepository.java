@@ -12,7 +12,7 @@ import java.util.Optional;
 @Repository
 public interface SubjectJPARepository extends JpaRepository<SubjectEntity, Integer> {
 
-    @Query("SELECT s FROM SubjectEntity s WHERE s.teacherId = :teacherId AND s.deletionDate IS NULL")
+    @Query("SELECT s FROM SubjectEntity s WHERE s.teacherId = :teacherId AND s.deletionDate IS NULL ORDER BY s.name ASC")
     List<SubjectEntity> findByTeacherId(@Param("teacherId") Integer teacherId);
 
     @Query("SELECT s FROM SubjectEntity s WHERE s.id = :id AND s.deletionDate IS NULL")
