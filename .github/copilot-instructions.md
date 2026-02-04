@@ -2,6 +2,23 @@
 
 Este documento proporciona las directrices que debo seguir cada vez que trabajes conmigo en el proyecto CodeFM.
 
+## Reglas Generales de Código
+
+**CRÍTICO - PROHIBICIÓN ABSOLUTA DE COMENTARIOS EN EL CÓDIGO**:
+
+- **NUNCA JAMÁS** agregar comentarios inline en el código Java (ni // ni /* */)
+- **NUNCA JAMÁS** agregar comentarios explicativos dentro de métodos
+- **NUNCA JAMÁS** agregar comentarios tipo "Given", "When", "Then" en tests
+- **NUNCA JAMÁS** agregar comentarios de secciones como "// Setup", "// Arrange", etc.
+- **NUNCA JAMÁS** agregar comentarios descriptivos en ninguna parte del código
+- El código DEBE ser autoexplicativo mediante nombres descriptivos de variables, métodos y clases
+- **ÚNICA EXCEPCIÓN**: JavaDoc obligatorio SOLO en interfaces públicas (Repository, Service, UseCase) según se
+  especifica más adelante
+- Si necesitas separar lógicamente bloques de código, usa líneas en blanco, NO comentarios
+- Los tests deben ser legibles por su estructura y nombres de métodos, NO por comentarios
+
+---
+
 ## Información del Proyecto
 
 **CodeFM** es una aplicación Java con arquitectura hexagonal (Clean Architecture) que sigue un patrón multi-capa con
@@ -143,6 +160,88 @@ public interface SchoolUseCase {
 - JavaDoc en INGLÉS con descripción de clase
 - JavaDoc para cada método con `@param`, `@return`, `@throws`
 
+---
+
+## **REGLA CRÍTICA: SessionUser y Parámetros de Sesión**
+
+**OBLIGATORIO - NUNCA PASAR PARÁMETROS QUE ESTÉN EN SessionUser**:
+
+Los parámetros que se pueden obtener de `SessionUser` (como `teacherId`, `userId`, etc.) **NUNCA** deben pasarse como
+parámetros entre distintas clases o capas.
+
+### ❌ INCORRECTO - NO HACER ESTO:
+
+```java
+// UseCase pasando teacherId al Service
+public class SchoolUseCaseImpl implements SchoolUseCase {
+    @Override
+    public List<School> getSchoolsByTeacher() {
+        Integer teacherId = getTeacherId(); // ❌ Obtiene teacherId aquí
+        return schoolService.getSchoolsByTeacherId(teacherId); // ❌ Lo pasa al service
+    }
+}
+
+// Service recibiendo teacherId como parámetro
+public interface SchoolService {
+    List<School> getSchoolsByTeacherId(Integer teacherId); // ❌ Recibe teacherId
+}
+```
+
+### ✅ CORRECTO - HACER ESTO:
+
+```java
+// UseCase NO pasa teacherId
+public class SchoolUseCaseImpl implements SchoolUseCase {
+    private final SchoolService schoolService;
+    
+    @Override
+    public List<School> getSchoolsByTeacher() {
+        return schoolService.getSchoolsByTeacher(); // ✅ No pasa teacherId
+    }
+}
+
+// Service obtiene teacherId internamente desde SessionUser
+@Service
+@RequiredArgsConstructor
+public class SchoolServiceImpl implements SchoolService {
+    private final SchoolRepository schoolRepository;
+    private final SessionUser sessionUser;
+    
+    @Override
+    public List<School> getSchoolsByTeacher() {
+        Integer teacherId = getTeacherId(); // ✅ Obtiene teacherId internamente
+        return schoolRepository.findByTeacherId(teacherId);
+    }
+    
+    private Integer getTeacherId() {
+        return Integer.valueOf(
+            sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
+        );
+    }
+}
+```
+
+**Razones:**
+
+1. **Single Source of Truth**: SessionUser es la única fuente de verdad para información de sesión
+2. **Seguridad**: Evita que se pueda manipular el teacherId/userId entre capas
+3. **Cohesión**: Cada Service es responsable de obtener sus propios datos de sesión
+4. **Mantenibilidad**: Cambios en SessionUser solo afectan a los Services, no a toda la cadena
+
+**Parámetros que SÍ se pasan entre capas:**
+
+- IDs de entidades de negocio (studentId, schoolId, classId, etc.)
+- Datos de dominio (Student, School, Class objects)
+- Filtros de búsqueda (name, surnames, etc.)
+
+**Parámetros que NUNCA se pasan (se obtienen de SessionUser):**
+
+- `teacherId` (del token JWT)
+- `userId` (del token JWT)
+- Cualquier parámetro de sesión del usuario autenticado
+
+---
+
 ### 5. Implementación de UseCase (codefm-application/usecase/)
 
 ```java
@@ -150,14 +249,10 @@ public interface SchoolUseCase {
 @RequiredArgsConstructor
 public class SchoolUseCaseImpl implements SchoolUseCase {
     private final SchoolService schoolService;
-    private final SessionUser sessionUser;
     
     @Override
     public List<School> getSchoolsByTeacher() {
-        Integer teacherId = Integer.valueOf(
-            sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
-        );
-        return schoolService.getSchoolsByTeacherId(teacherId);
+        return schoolService.getSchoolsByTeacher(); // No pasa teacherId
     }
 }
 ```
@@ -166,6 +261,7 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
 
 - UseCase NUNCA llama directamente a Repository
 - UseCase SIEMPRE pasa por Service
+- UseCase NO debe obtener ni pasar parámetros de SessionUser (el Service lo hace)
 - Inyección por constructor con `@RequiredArgsConstructor`
 
 ### 6. Implementación de Service (codefm-application/service/)
@@ -175,10 +271,18 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
 @RequiredArgsConstructor
 public class SchoolServiceImpl implements SchoolService {
     private final SchoolRepository schoolRepository;
+    private final SessionUser sessionUser;
     
     @Override
-    public List<School> getSchoolsByTeacherId(Integer teacherId) {
+    public List<School> getSchoolsByTeacher() {
+        Integer teacherId = getTeacherId(); // Obtiene teacherId internamente
         return schoolRepository.findByTeacherId(teacherId);
+    }
+    
+    private Integer getTeacherId() {
+        return Integer.valueOf(
+            sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
+        );
     }
 }
 ```
@@ -188,6 +292,9 @@ public class SchoolServiceImpl implements SchoolService {
 - Service orquesta una o más operaciones de Repository
 - Service contiene lógica de negocio específica
 - Service actúa como intermediario entre UseCase y Repository
+- **Service SIEMPRE inyecta SessionUser y MessageSource**
+- **Service obtiene parámetros de sesión (teacherId, userId) internamente con método privado getTeacherId()**
+- Service NUNCA recibe teacherId/userId como parámetro de métodos públicos
 
 ### 7. Implementación de Repository (codefm-infrastructure/[module]/)
 

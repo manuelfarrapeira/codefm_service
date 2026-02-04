@@ -45,6 +45,21 @@ public interface StudentUseCase {
     String uploadStudentPhoto(Integer studentId, MultipartFile file);
 
     /**
+     * Downloads a photo for a student.
+     *
+     * @param studentId The unique identifier of the student
+     * @return The photo file bytes
+     */
+    byte[] downloadStudentPhoto(Integer studentId);
+
+    /**
+     * Deletes a photo for a student.
+     *
+     * @param studentId The unique identifier of the student
+     */
+    void deleteStudentPhoto(Integer studentId);
+
+    /**
      * Searches students by filters.
      *
      * @param id       Student ID (optional)
@@ -53,4 +68,11 @@ public interface StudentUseCase {
      * @return List of students matching the filters
      */
     List<Student> searchStudents(Integer id, String name, String surnames);
+
+    /**
+     * Retrieves all students for the authenticated teacher.
+     *
+     * @return List of all students belonging to the teacher
+     */
+    List<Student> getAllStudents();
 }

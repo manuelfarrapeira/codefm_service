@@ -27,7 +27,12 @@ public class MessageKeys {
     public static final String STUDENT_PHOTO_UPLOAD_ERROR = "student.photo.upload.error";
     public static final String STUDENT_PHOTO_INVALID_EXTENSION = "student.photo.invalid.extension";
     public static final String STUDENT_PHOTO_SIZE_EXCEEDED = "student.photo.size.exceeded";
+    public static final String STUDENT_PHOTO_NOT_FOUND = "student.photo.not.found";
+    public static final String STUDENT_PHOTO_DELETE_ERROR = "student.photo.delete.error";
     public static final String STUDENT_SEARCH_NO_FILTERS = "student.search.no.filters";
+
+    public static final String STUDENT_ALREADY_IN_CLASS = "student.already.in.class";
+    public static final String STUDENT_NOT_IN_CLASS = "student.not.in.class";
 
     public static final String SUBJECT_VALIDATION_NAME_REQUIRED = "subject.validation.name.required";
     public static final String SUBJECT_NOT_FOUND = "subject.not.found";

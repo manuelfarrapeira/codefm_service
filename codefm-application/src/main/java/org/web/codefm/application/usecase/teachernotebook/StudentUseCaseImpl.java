@@ -34,8 +34,24 @@ public class StudentUseCaseImpl implements StudentUseCase {
     public String uploadStudentPhoto(Integer studentId, MultipartFile file) {
         return studentService.saveStudentPhoto(studentId, file);
     }
+
+    @Override
+    public byte[] downloadStudentPhoto(Integer studentId) {
+        return studentService.getStudentPhoto(studentId);
+    }
+
+    @Override
+    public void deleteStudentPhoto(Integer studentId) {
+        studentService.deleteStudentPhoto(studentId);
+    }
+
     @Override
     public List<Student> searchStudents(Integer id, String name, String surnames) {
         return studentService.searchStudents(id, name, surnames);
+    }
+
+    @Override
+    public List<Student> getAllStudents() {
+        return studentService.getAllStudents();
     }
 }

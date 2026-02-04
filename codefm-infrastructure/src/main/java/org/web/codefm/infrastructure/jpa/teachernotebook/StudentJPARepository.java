@@ -12,14 +12,17 @@ import java.util.Optional;
 @Repository
 public interface StudentJPARepository extends JpaRepository<StudentEntity, Integer> {
 
-    Optional<StudentEntity> findByIdAndDeletionDateIsNull(Integer id);
+    Optional<StudentEntity> findByIdAndTeacherIdAndDeletionDateIsNull(Integer id, Integer teacherId);
 
-    @Query("SELECT s FROM StudentEntity s WHERE s.deletionDate IS NULL " +
+    @Query("SELECT s FROM StudentEntity s WHERE s.teacherId = :teacherId AND s.deletionDate IS NULL " +
             "AND (:id IS NULL OR s.id = :id) " +
             "AND (:name IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
             "AND (:surnames IS NULL OR LOWER(s.surnames) LIKE LOWER(CONCAT('%', :surnames, '%')))" +
             "ORDER BY s.name ASC")
-    List<StudentEntity> searchStudents(@Param("id") Integer id,
+    List<StudentEntity> searchStudents(@Param("teacherId") Integer teacherId,
+                                       @Param("id") Integer id,
                                        @Param("name") String name,
                                        @Param("surnames") String surnames);
+
+    List<StudentEntity> findAllByTeacherIdAndDeletionDateIsNull(Integer teacherId);
 }

@@ -10,8 +10,8 @@ Feature: Teacher Notebook - Update Student
     * def updateRequestBody =
       """
       {
-        "name": "Usuario2",
-        "surnames": "Prueba2",
+        "name": "Aarón",
+        "surnames": "Ramilo Vicente",
         "dateOfBirth": "20/05/2012",
         "additionalInfo": "Aditional info"
       }
@@ -21,8 +21,8 @@ Feature: Teacher Notebook - Update Student
     When method PATCH
     Then status 200
     And match response.id == 8
-    And match response.name == "Usuario2"
-    And match response.surnames == "Prueba2"
+    And match response.name == "Aarón"
+    And match response.surnames == "Ramilo Vicente"
     And match response.dateOfBirth == "20/05/2012"
     And match response.additionalInfo == "Aditional info"
 

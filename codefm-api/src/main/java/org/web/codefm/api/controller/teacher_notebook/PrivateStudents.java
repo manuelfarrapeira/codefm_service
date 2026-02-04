@@ -2,7 +2,10 @@ package org.web.codefm.api.controller.teacher_notebook;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
@@ -74,5 +77,36 @@ public class PrivateStudents implements TeacherNoteBookStudentsApi {
         UploadStudentPhoto200Response response = new UploadStudentPhoto200Response();
         response.setPhotoPath(photoPath);
         return ResponseEntity.ok(response);
+    }
+
+    @Logged
+    @Override
+    @Locale(0)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<StudentDTO>> getAllStudents(String acceptLanguage) {
+        List<Student> students = studentUseCase.getAllStudents();
+        return ResponseEntity.ok(studentDTOMapper.toDTOList(students));
+    }
+
+    @Logged
+    @Override
+    @Locale(1)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Resource> downloadStudentPhoto(Integer id, String acceptLanguage) {
+        byte[] photoBytes = studentUseCase.downloadStudentPhoto(id);
+        ByteArrayResource resource = new ByteArrayResource(photoBytes);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .contentLength(photoBytes.length)
+                .body(resource);
+    }
+
+    @Logged
+    @Override
+    @Locale(1)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Void> deleteStudentPhoto(Integer id, String acceptLanguage) {
+        studentUseCase.deleteStudentPhoto(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

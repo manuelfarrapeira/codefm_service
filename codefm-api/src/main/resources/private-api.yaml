@@ -656,6 +656,203 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+    get:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: downloadStudentPhoto
+      summary: Download a photo for a student
+      description: Downloads the photo file for the specified student.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Photo downloaded successfully
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Not Found - Student or photo does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: deleteStudentPhoto
+      summary: Delete a photo for a student
+      description: Deletes the photo file for the specified student.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Photo deleted successfully
+        '404':
+          description: Not Found - Student or photo does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/students/all:
+    get:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: getAllStudents
+      summary: Get all students for the authenticated teacher
+      description: Retrieves all students that belong to the authenticated teacher (excluding soft-deleted students).
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Students retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/students/{studentId}:
+    put:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: addStudentToClass
+      summary: Add a student to a class
+      description: Associates a student with a class. If the association was previously deleted, it will be reactivated.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - name: studentId
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Student successfully added to class (No Content)
+        '400':
+          description: Validation error - Student already in class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class or Student does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: removeStudentFromClass
+      summary: Remove a student from a class
+      description: Removes a student from a class (soft delete).
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - name: studentId
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Student successfully removed from class (No Content)
+        '404':
+          description: Not Found - Association does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 
   /teacher-notebook/v1/subjects:
     get:
@@ -888,6 +1085,11 @@ components:
           type: 'string'
         photo:
           type: 'string'
+        classIds:
+          type: 'array'
+          items:
+            type: 'integer'
+          description: 'List of class IDs the student belongs to'
     StudentRequestDTO:
       type: 'object'
       properties:
