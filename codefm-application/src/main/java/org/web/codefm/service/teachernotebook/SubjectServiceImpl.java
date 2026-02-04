@@ -16,10 +16,7 @@ import org.web.codefm.domain.service.teachernotebook.SubjectService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -33,7 +30,9 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     public List<Subject> getSubjectsByTeacher() {
         Integer teacherId = getTeacherId();
-        return subjectRepository.findByTeacherId(teacherId);
+        List<Subject> subjects = subjectRepository.findByTeacherId(teacherId);
+        subjects.sort(Comparator.comparing(Subject::getName, String.CASE_INSENSITIVE_ORDER));
+        return subjects;
     }
 
     @Override
