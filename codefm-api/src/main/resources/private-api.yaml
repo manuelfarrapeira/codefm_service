@@ -17,6 +17,8 @@ tags:
     description: Operations related to Teacher Notebook School Classes
   - name: TeacherNoteBookStudents
     description: Operations related to Teacher Notebook Students
+  - name: TeacherNoteBookSubjects
+    description: Operations related to Teacher Notebook Subjects
 
 paths:
   /greeting:
@@ -852,6 +854,167 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/subjects:
+    get:
+      tags:
+        - TeacherNoteBookSubjects
+      operationId: subjects
+      summary: Get all subjects for the authenticated teacher
+      description: Returns all subjects belonging to the authenticated teacher that have not been soft-deleted.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSubjects
+      operationId: createSubject
+      summary: Create a new subject
+      description: Creates a new subject for the authenticated teacher
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectRequestDTO'
+      responses:
+        '201':
+          description: Subject created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/subjects/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookSubjects
+      operationId: updateSubject
+      summary: Update an existing subject
+      description: Updates an existing subject for the authenticated teacher
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the subject to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectRequestDTO'
+      responses:
+        '200':
+          description: Subject updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this subject
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Subject with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSubjects
+      operationId: deleteSubject
+      summary: Soft-delete a subject
+      description: Marks a subject as deleted by setting its deletion_date. Only the owning teacher can delete a subject.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the subject to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Subject successfully soft-deleted (No Content)
+        '403':
+          description: Forbidden - Teacher does not own this subject
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Subject with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
 components:
   schemas:
     ErrorResponseDTO:
@@ -943,3 +1106,16 @@ components:
         additionalInfo:
           type: 'string'
           example: 'Additional information about the student'
+    SubjectDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        name:
+          type: 'string'
+    SubjectRequestDTO:
+      type: 'object'
+      properties:
+        name:
+          type: 'string'
+          example: 'Mathematics'
