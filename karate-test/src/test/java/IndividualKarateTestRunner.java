@@ -126,4 +126,9 @@ public class IndividualKarateTestRunner {
     return Karate.run("features/teacher-notebook/subjects/updatesubject").relativeTo(getClass());
   }
 
+  @Karate.Test
+  Karate testTeacherNotebookSchedules() {
+    return Karate.run("features/teacher-notebook/schedules/schedules").relativeTo(getClass());
+  }
+
 }

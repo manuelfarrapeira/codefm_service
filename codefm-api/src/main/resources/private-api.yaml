@@ -1335,8 +1335,6 @@ components:
           type: 'integer'
         day:
           type: 'integer'
-          minimum: 1
-          maximum: 5
           description: 'Day of week (1=Monday, 5=Friday)'
         start:
           type: 'string'
@@ -1354,8 +1352,6 @@ components:
       properties:
         day:
           type: 'integer'
-          minimum: 1
-          maximum: 5
           description: 'Day of week (1=Monday, 5=Friday)'
           example: 1
         items:
@@ -1389,8 +1385,6 @@ components:
       properties:
         day:
           type: 'integer'
-          minimum: 1
-          maximum: 5
           description: 'Day of week (1=Monday, 5=Friday)'
           example: 1
         start:

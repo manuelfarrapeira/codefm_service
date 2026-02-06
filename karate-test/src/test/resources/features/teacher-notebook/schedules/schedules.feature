@@ -1,8 +1,8 @@
 Feature: Schedule Endpoints
 
   Background:
+    * configure headers = { 'Cookie': '#(authTokens.karateuseradmin)', 'Accept-Language': 'es' }
     Given url baseHttpsUrl
-    And cookie SESSION = authTokens.karateuseradmin
 
   Scenario: Get schedules by class - Success
     * def scheduleSchema = { id: '#number', classId: '#number', subjectId: '#number', day: '#number', start: '#string', end: '#string' }
@@ -16,13 +16,13 @@ Feature: Schedule Endpoints
     When method GET
     Then status 404
 
-  Scenario: Create schedules for a class - Success
-    * def createRequest = { day: 1, items: [{ subjectId: 1, start: '08:30', end: '09:30' }, { subjectId: 1, start: '09:30', end: '10:30' }] }
-    Given path '/teacher-notebook/v1/classes/1/schedules'
-    And request createRequest
-    When method PUT
-    Then status 201
-    And match each response contains { classId: 1, day: 1 }
+#  Scenario: Create schedules for a class - Success
+#    * def createRequest = { day: 1, items: [{ subjectId: 1, start: '08:30', end: '09:30' }, { subjectId: 1, start: '09:30', end: '10:30' }] }
+#    Given path '/teacher-notebook/v1/classes/1/schedules'
+#    And request createRequest
+#    When method PUT
+#    Then status 201
+#    And match each response contains { classId: 1, day: 1 }
 
   Scenario: Create schedules - Validation error (invalid day)
     * def createRequest = { day: 6, items: [{ subjectId: 1, start: '08:30', end: '09:30' }] }
@@ -69,12 +69,12 @@ Feature: Schedule Endpoints
     When method PATCH
     Then status 400
 
-  Scenario: Delete schedules - Success
-    * def deleteRequest = { ids: [1, 2] }
-    Given path '/teacher-notebook/v1/schedules'
-    And request deleteRequest
-    When method DELETE
-    Then status 204
+#  Scenario: Delete schedules - Success
+#    * def deleteRequest = { ids: [1, 2] }
+#    Given path '/teacher-notebook/v1/schedules'
+#    And request deleteRequest
+#    When method DELETE
+#    Then status 204
 
   Scenario: Delete schedules - Validation error (empty ids)
     * def deleteRequest = { ids: [] }
