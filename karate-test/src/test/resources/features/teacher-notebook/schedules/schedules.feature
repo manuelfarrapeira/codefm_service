@@ -1,3 +1,4 @@
+@Regresion
 Feature: Schedule Endpoints
 
   Background:
