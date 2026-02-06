@@ -19,6 +19,8 @@ tags:
     description: Operations related to Teacher Notebook Students
   - name: TeacherNoteBookSubjects
     description: Operations related to Teacher Notebook Subjects
+  - name: TeacherNoteBookSchedules
+    description: Operations related to Teacher Notebook Class Schedules
 
 paths:
   /greeting:
@@ -1015,6 +1017,209 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/classes/{classId}/schedules:
+    get:
+      tags:
+        - TeacherNoteBookSchedules
+      operationId: getSchedulesByClass
+      summary: Get all schedules for a class
+      description: Returns all schedules for the specified class that have not been soft-deleted.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSchedules
+      operationId: createSchedules
+      summary: Create schedules for a class
+      description: Creates multiple schedules for a class on a specific day.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleCreateRequestDTO'
+      responses:
+        '201':
+          description: Schedules created successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class or Subject does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/schedules/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookSchedules
+      operationId: updateSchedule
+      summary: Update an existing schedule
+      description: Updates an existing schedule (day, start time, end time).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the schedule to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleUpdateRequestDTO'
+      responses:
+        '200':
+          description: Schedule updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Schedule with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/schedules:
+    delete:
+      tags:
+        - TeacherNoteBookSchedules
+      operationId: deleteSchedules
+      summary: Soft-delete multiple schedules
+      description: Marks multiple schedules as deleted by setting their deletion_date. All IDs must belong to the teacher, otherwise no deletion occurs.
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleDeleteRequestDTO'
+      responses:
+        '204':
+          description: Schedules successfully soft-deleted (No Content)
+        '400':
+          description: Validation error - One or more IDs do not belong to the teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
 components:
   schemas:
     ErrorResponseDTO:
@@ -1119,3 +1324,85 @@ components:
         name:
           type: 'string'
           example: 'Mathematics'
+    ScheduleDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classId:
+          type: 'integer'
+        subjectId:
+          type: 'integer'
+        day:
+          type: 'integer'
+          description: 'Day of week (1=Monday, 5=Friday)'
+        start:
+          type: 'string'
+          description: 'Time in format HH:mm'
+          example: '08:30'
+        end:
+          type: 'string'
+          description: 'Time in format HH:mm'
+          example: '09:30'
+    ScheduleCreateRequestDTO:
+      type: 'object'
+      required:
+        - day
+        - items
+      properties:
+        day:
+          type: 'integer'
+          description: 'Day of week (1=Monday, 5=Friday)'
+          example: 1
+        items:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ScheduleItemDTO'
+    ScheduleItemDTO:
+      type: 'object'
+      required:
+        - subjectId
+        - start
+        - end
+      properties:
+        subjectId:
+          type: 'integer'
+          example: 1
+        start:
+          type: 'string'
+          description: 'Start time in format HH:mm'
+          example: '08:30'
+        end:
+          type: 'string'
+          description: 'End time in format HH:mm'
+          example: '09:30'
+    ScheduleUpdateRequestDTO:
+      type: 'object'
+      required:
+        - day
+        - start
+        - end
+      properties:
+        day:
+          type: 'integer'
+          description: 'Day of week (1=Monday, 5=Friday)'
+          example: 1
+        start:
+          type: 'string'
+          description: 'Start time in format HH:mm'
+          example: '08:30'
+        end:
+          type: 'string'
+          description: 'End time in format HH:mm'
+          example: '09:30'
+    ScheduleDeleteRequestDTO:
+      type: 'object'
+      required:
+        - ids
+      properties:
+        ids:
+          type: 'array'
+          items:
+            type: 'integer'
+          description: 'List of schedule IDs to delete'
+          example: [ 1, 2, 3 ]

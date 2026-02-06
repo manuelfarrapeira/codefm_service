@@ -38,4 +38,17 @@ public class MessageKeys {
     public static final String SUBJECT_NOT_FOUND = "subject.not.found";
     public static final String SUBJECT_FORBIDDEN = "subject.forbidden";
 
+    public static final String SCHEDULE_NOT_FOUND = "schedule.not.found";
+    public static final String SCHEDULE_VALIDATION_DAY_REQUIRED = "schedule.validation.day.required";
+    public static final String SCHEDULE_VALIDATION_DAY_INVALID = "schedule.validation.day.invalid";
+    public static final String SCHEDULE_VALIDATION_START_REQUIRED = "schedule.validation.start.required";
+    public static final String SCHEDULE_VALIDATION_END_REQUIRED = "schedule.validation.end.required";
+    public static final String SCHEDULE_VALIDATION_END_BEFORE_START = "schedule.validation.end.before.start";
+    public static final String SCHEDULE_VALIDATION_SUBJECT_NOT_FOUND = "schedule.validation.subject.not.found";
+    public static final String SCHEDULE_VALIDATION_CLASS_NOT_FOUND = "schedule.validation.class.not.found";
+    public static final String SCHEDULE_VALIDATION_IDS_REQUIRED = "schedule.validation.ids.required";
+    public static final String SCHEDULE_VALIDATION_IDS_NOT_OWNED = "schedule.validation.ids.not.owned";
+    public static final String SCHEDULE_VALIDATION_ITEMS_REQUIRED = "schedule.validation.items.required";
+    public static final String SCHEDULE_VALIDATION_TIME_OVERLAP = "schedule.validation.time.overlap";
+
 }
