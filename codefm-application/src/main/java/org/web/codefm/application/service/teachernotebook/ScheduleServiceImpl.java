@@ -5,11 +5,13 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.Schedule;
+import org.web.codefm.domain.entity.teachernotebook.Subject;
 import org.web.codefm.domain.exception.teachernotebook.ScheduleNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.ScheduleValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.ScheduleRepository;
+import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
 import org.web.codefm.domain.service.teachernotebook.ScheduleService;
 import org.web.codefm.domain.session.SessionParameter;
@@ -22,9 +24,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ScheduleServiceImpl implements ScheduleService {
 
+    private static final String FIELD_SUBJECT_ID = "subjectId";
+
     private final ScheduleRepository scheduleRepository;
     private final ClassRepository classRepository;
     private final SubjectRepository subjectRepository;
+    private final SubjectClassRepository subjectClassRepository;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -64,7 +69,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
         for (int i = 0; i < schedules.size(); i++) {
             Schedule schedule = schedules.get(i);
-            validateScheduleItem(schedule, i, teacherId, errors);
+            validateScheduleItem(schedule, i, classId, teacherId, errors);
             validateTimeOverlapForCreate(classId, day, schedule, i, errors);
         }
 
@@ -160,15 +165,22 @@ public class ScheduleServiceImpl implements ScheduleService {
         }
     }
 
-    private void validateScheduleItem(Schedule schedule, int index, Integer teacherId, List<ErrorMessage> errors) {
+    private void validateScheduleItem(Schedule schedule, int index, Integer classId, Integer teacherId, List<ErrorMessage> errors) {
         String prefix = "items[" + index + "].";
 
         if (schedule.getSubjectId() == null) {
             String message = messageSource.getMessage(MessageKeys.SCHEDULE_VALIDATION_SUBJECT_NOT_FOUND, null, sessionUser.getLocale());
-            errors.add(new ErrorMessage(prefix + "subjectId", message));
-        } else if (subjectRepository.findByIdAndTeacherId(schedule.getSubjectId(), teacherId).isEmpty()) {
-            String message = messageSource.getMessage(MessageKeys.SCHEDULE_VALIDATION_SUBJECT_NOT_FOUND, null, sessionUser.getLocale());
-            errors.add(new ErrorMessage(prefix + "subjectId", message));
+            errors.add(new ErrorMessage(prefix + FIELD_SUBJECT_ID, message));
+        } else {
+            var subjectOpt = subjectRepository.findByIdAndTeacherId(schedule.getSubjectId(), teacherId);
+            if (subjectOpt.isEmpty()) {
+                String message = messageSource.getMessage(MessageKeys.SCHEDULE_VALIDATION_SUBJECT_NOT_FOUND, null, sessionUser.getLocale());
+                errors.add(new ErrorMessage(prefix + FIELD_SUBJECT_ID, message));
+            } else if (!subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(schedule.getSubjectId(), classId)) {
+                String subjectName = subjectOpt.map(Subject::getName).orElse(String.valueOf(schedule.getSubjectId()));
+                String message = messageSource.getMessage(MessageKeys.SCHEDULE_VALIDATION_SUBJECT_NOT_IN_CLASS, new Object[]{subjectName}, sessionUser.getLocale());
+                errors.add(new ErrorMessage(prefix + FIELD_SUBJECT_ID, message));
+            }
         }
 
         if (schedule.getStart() == null) {

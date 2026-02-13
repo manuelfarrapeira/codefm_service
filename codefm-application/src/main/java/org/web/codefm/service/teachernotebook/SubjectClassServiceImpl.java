@@ -99,6 +99,11 @@ public class SubjectClassServiceImpl implements SubjectClassService {
 
         validateClassOwnership(classId, teacherId, locale);
 
+        validateSubjectClassAssociationsExist(classId, subjectIds, errors, locale);
+        if (!errors.isEmpty()) {
+            throw new SubjectClassValidationException(errors);
+        }
+
         subjectClassRepository.softDeleteAll(classId, subjectIds);
     }
 
@@ -123,9 +128,11 @@ public class SubjectClassServiceImpl implements SubjectClassService {
 
     private void validateSubjectsOwnership(List<Integer> subjectIds, Integer teacherId, List<ErrorMessage> errors, Locale locale) {
         for (Integer subjectId : subjectIds) {
-            boolean owned = subjectRepository.findByIdAndTeacherId(subjectId, teacherId).isPresent();
-            if (!owned) {
-                String message = messageSource.getMessage(MessageKeys.SUBJECT_CLASS_SUBJECT_NOT_OWNED, new Object[]{subjectId}, locale);
+            var subjectOpt = subjectRepository.findByIdAndTeacherId(subjectId, teacherId);
+            if (subjectOpt.isEmpty()) {
+                var subject = subjectRepository.findById(subjectId);
+                String subjectName = subject.map(Subject::getName).orElse(String.valueOf(subjectId));
+                String message = messageSource.getMessage(MessageKeys.SUBJECT_CLASS_SUBJECT_NOT_OWNED, new Object[]{subjectName}, locale);
                 errors.add(new ErrorMessage(FIELD_SUBJECT_IDS, message));
             }
         }
@@ -135,7 +142,21 @@ public class SubjectClassServiceImpl implements SubjectClassService {
         for (Integer subjectId : subjectIds) {
             boolean exists = subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(subjectId, classId);
             if (exists) {
-                String message = messageSource.getMessage(MessageKeys.SUBJECT_CLASS_ALREADY_EXISTS, new Object[]{subjectId}, locale);
+                var subject = subjectRepository.findById(subjectId);
+                String subjectName = subject.map(Subject::getName).orElse(String.valueOf(subjectId));
+                String message = messageSource.getMessage(MessageKeys.SUBJECT_CLASS_ALREADY_EXISTS, new Object[]{subjectName}, locale);
+                errors.add(new ErrorMessage(FIELD_SUBJECT_IDS, message));
+            }
+        }
+    }
+
+    private void validateSubjectClassAssociationsExist(Integer classId, List<Integer> subjectIds, List<ErrorMessage> errors, Locale locale) {
+        for (Integer subjectId : subjectIds) {
+            boolean exists = subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(subjectId, classId);
+            if (!exists) {
+                var subject = subjectRepository.findById(subjectId);
+                String subjectName = subject.map(Subject::getName).orElse(String.valueOf(subjectId));
+                String message = messageSource.getMessage(MessageKeys.SUBJECT_CLASS_NOT_FOUND, new Object[]{subjectName}, locale);
                 errors.add(new ErrorMessage(FIELD_SUBJECT_IDS, message));
             }
         }

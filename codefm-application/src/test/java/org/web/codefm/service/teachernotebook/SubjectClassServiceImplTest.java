@@ -202,6 +202,10 @@ class SubjectClassServiceImplTest {
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
                 .thenReturn(Optional.of(clazz));
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID_1, CLASS_ID))
+                .thenReturn(true);
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID_2, CLASS_ID))
+                .thenReturn(true);
         doNothing().when(subjectClassRepository).softDeleteAll(CLASS_ID, subjectIds);
 
         assertDoesNotThrow(() -> subjectClassService.removeSubjectsFromClass(CLASS_ID, subjectIds));
@@ -231,6 +235,24 @@ class SubjectClassServiceImplTest {
 
         assertThrows(SubjectClassValidationException.class,
                 () -> subjectClassService.removeSubjectsFromClass(CLASS_ID, new ArrayList<>()));
+
+        verify(subjectClassRepository, never()).softDeleteAll(any(), any());
+    }
+
+    @Test
+    void removeSubjectsFromClass_shouldThrowValidationException_whenAssociationDoesNotExist() {
+        Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").build();
+        List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1);
+
+        when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                .thenReturn(Optional.of(clazz));
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID_1, CLASS_ID))
+                .thenReturn(false);
+        when(messageSource.getMessage(eq(MessageKeys.SUBJECT_CLASS_NOT_FOUND), any(), any(Locale.class)))
+                .thenReturn("Subject not assigned to class");
+
+        assertThrows(SubjectClassValidationException.class,
+                () -> subjectClassService.removeSubjectsFromClass(CLASS_ID, subjectIds));
 
         verify(subjectClassRepository, never()).softDeleteAll(any(), any());
     }

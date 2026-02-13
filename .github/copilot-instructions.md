@@ -818,6 +818,88 @@ mvn clean install
 10. **@Locale**: OBLIGATORIO cuando endpoint recibe header `Accept-Language`
 11. **Anotaciones de Seguridad**: Usar `UserRole` enum en `@PreAuthorize` para mejor mantenibilidad
 12. **Soft Delete en Queries**: Filtrar por `DeletionDateIsNull` en todas las queries de lectura
+13. **Validación de Asociaciones Subject-Class**: Para crear horarios (schedules), la asignatura DEBE estar previamente
+    asignada a la clase en la tabla `subject_classes`
+
+---
+
+## Validaciones de Asociaciones (SubjectClass)
+
+La tabla `subject_classes` gestiona la relación muchos-a-muchos entre asignaturas y clases. Las siguientes reglas
+aplican:
+
+### Reglas de Negocio
+
+1. **Una asignatura solo puede asignarse una vez a una clase** (sin fecha de baja activa)
+2. **Solo se puede operar sobre clases que pertenezcan al profesor** (validar ownership via `ClassRepository`)
+3. **Solo se pueden asignar asignaturas que pertenezcan al profesor** (validar ownership via `SubjectRepository`)
+4. **Para crear un horario (schedule), la asignatura DEBE estar asignada a la clase**
+
+### Endpoints de SubjectClass
+
+| Método | Endpoint                                          | Descripción                                              |
+|--------|---------------------------------------------------|----------------------------------------------------------|
+| GET    | `/teacher-notebook/v1/classes/{classId}/subjects` | Obtener asignaturas de una clase                         |
+| GET    | `/teacher-notebook/v1/classes-subjects`           | Obtener todas las clases con sus asignaturas             |
+| PUT    | `/teacher-notebook/v1/classes/{classId}/subjects` | Asignar asignaturas a una clase (body: `subjectIds[]`)   |
+| DELETE | `/teacher-notebook/v1/classes/{classId}/subjects` | Eliminar asignaturas de una clase (body: `subjectIds[]`) |
+
+### Mensajes de Error con Nombres
+
+Los mensajes de error de validación de asignaturas deben mostrar el **nombre de la asignatura** en lugar del ID:
+
+```java
+var subject = subjectRepository.findById(subjectId);
+String subjectName = subject.map(Subject::getName).orElse(String.valueOf(subjectId));
+String message = messageSource.getMessage(MessageKeys.SUBJECT_CLASS_ALREADY_EXISTS, new Object[]{subjectName}, locale);
+```
+
+### Tests de Karate para SubjectClass
+
+Ubicación: `karate-test/src/test/resources/features/teacher-notebook/subject-classes/`
+
+- `getsubjectsbyclass.feature` - Obtener asignaturas de una clase
+- `getclasseswithsubjects.feature` - Obtener todas las clases con asignaturas
+- `assignsubjectstoclass.feature` - Asignar asignaturas a una clase
+- `removesubjectsfromclass.feature` - Eliminar asignaturas de una clase
+
+---
+
+## Registro de Tests de Karate en IndividualKarateTestRunner
+
+**OBLIGATORIO**: Cada vez que se cree un nuevo archivo `.feature` de Karate, se DEBE registrar en la clase
+`IndividualKarateTestRunner` ubicada en `karate-test/src/test/java/IndividualKarateTestRunner.java`.
+
+### Formato del método
+
+```java
+
+@Karate.Test
+Karate testNombreDescriptivo() {
+    return Karate.run("features/ruta/al/archivo").relativeTo(getClass());
+}
+```
+
+### Ejemplo
+
+Si creas un nuevo archivo `karate-test/src/test/resources/features/teacher-notebook/grades/creategrades.feature`,
+debes añadir el siguiente método a `IndividualKarateTestRunner`:
+
+```java
+
+@Karate.Test
+Karate testTeacherNotebookCreateGrades() {
+    return Karate.run("features/teacher-notebook/grades/creategrades").relativeTo(getClass());
+}
+```
+
+### Convención de nombres
+
+- El nombre del método debe seguir el patrón: `test` + `Módulo` + `Acción`
+- Ejemplos:
+    - `testTeacherNotebookGetSubjects`
+    - `testTeacherNotebookCreateSchedules`
+    - `testTeacherNotebookAssignSubjectsToClass`
 
 ---
 
