@@ -1,0 +1,151 @@
+{
+  "info": {
+    "_postman_id": "schools-collection",
+    "name": "Teacher Notebook - Schools",
+    "description": "Colección para gestionar colegios del profesor",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Schools",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/schools",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "schools"
+          ]
+        },
+        "description": "Obtiene todos los colegios del profesor autenticado."
+      },
+      "response": []
+    },
+    {
+      "name": "Create School",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"Colegio Nuevo\",\n    \"town\": \"Madrid\",\n    \"tlf\": 912345678\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/schools",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "schools"
+          ]
+        },
+        "description": "Crea un nuevo colegio para el profesor autenticado."
+      },
+      "response": []
+    },
+    {
+      "name": "Update School",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"Colegio Actualizado\",\n    \"town\": \"Barcelona\",\n    \"tlf\": 934567890\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/schools/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "schools",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID del colegio"
+            }
+          ]
+        },
+        "description": "Actualiza un colegio existente del profesor."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete School",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/schools/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "schools",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID del colegio"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) un colegio del profesor."
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
+}
+

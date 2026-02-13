@@ -17,6 +17,7 @@ import org.web.codefm.domain.exception.teachernotebook.ScheduleValidationExcepti
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.ScheduleRepository;
+import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
@@ -42,6 +43,9 @@ class ScheduleServiceImplTest {
     private SubjectRepository subjectRepository;
 
     @Mock
+    private SubjectClassRepository subjectClassRepository;
+
+    @Mock
     private MessageSource messageSource;
 
     @Mock
@@ -62,30 +66,32 @@ class ScheduleServiceImplTest {
         when(sessionUser.getParameters()).thenReturn(parameters);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_CLASS_NOT_FOUND), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_CLASS_NOT_FOUND), isNull(), any(Locale.class)))
                 .thenReturn("Class not found.");
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_DAY_REQUIRED), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_DAY_REQUIRED), isNull(), any(Locale.class)))
                 .thenReturn("Day is required.");
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_DAY_INVALID), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_DAY_INVALID), isNull(), any(Locale.class)))
                 .thenReturn("Day must be between 1 and 5.");
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_ITEMS_REQUIRED), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_ITEMS_REQUIRED), isNull(), any(Locale.class)))
                 .thenReturn("At least one schedule item is required.");
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_SUBJECT_NOT_FOUND), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_SUBJECT_NOT_FOUND), isNull(), any(Locale.class)))
                 .thenReturn("Subject not found.");
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_START_REQUIRED), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_START_REQUIRED), isNull(), any(Locale.class)))
                 .thenReturn("Start time is required.");
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_END_REQUIRED), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_END_REQUIRED), isNull(), any(Locale.class)))
                 .thenReturn("End time is required.");
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_END_BEFORE_START), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_END_BEFORE_START), isNull(), any(Locale.class)))
                 .thenReturn("End time must be after start time.");
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_NOT_FOUND), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_NOT_FOUND), isNull(), any(Locale.class)))
                 .thenReturn("Schedule not found.");
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_IDS_REQUIRED), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_IDS_REQUIRED), isNull(), any(Locale.class)))
                 .thenReturn("At least one ID is required.");
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_IDS_NOT_OWNED), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_IDS_NOT_OWNED), isNull(), any(Locale.class)))
                 .thenReturn("Some schedules do not belong to the teacher.");
-        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_TIME_OVERLAP), eq(null), any(Locale.class)))
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_TIME_OVERLAP), isNull(), any(Locale.class)))
                 .thenReturn("Schedule overlaps with an existing schedule for the same class and day.");
+        when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_SUBJECT_NOT_IN_CLASS), any(), any(Locale.class)))
+                .thenReturn("Subject is not assigned to this class.");
     }
 
     @Test
@@ -141,6 +147,7 @@ class ScheduleServiceImplTest {
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
         when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID)).thenReturn(Optional.of(subject));
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID)).thenReturn(true);
         when(scheduleRepository.saveAll(anyList())).thenAnswer(invocation -> {
             List<Schedule> schedules = invocation.getArgument(0);
             return schedules.stream().map(s -> Schedule.builder()
@@ -264,6 +271,24 @@ class ScheduleServiceImplTest {
                 () -> scheduleService.createSchedules(CLASS_ID, 1, schedulesToCreate));
 
         assertTrue(exception.getErrors().stream().anyMatch(e -> e.getParam().contains("subjectId")));
+    }
+
+    @Test
+    void createSchedules_shouldThrowException_whenSubjectNotAssignedToClass() {
+        Class classEntity = Class.builder().id(CLASS_ID).build();
+        Subject subject = Subject.builder().id(SUBJECT_ID).teacherId(TEACHER_ID).build();
+        List<Schedule> schedulesToCreate = List.of(
+                Schedule.builder().subjectId(SUBJECT_ID).start(LocalTime.of(8, 0)).end(LocalTime.of(9, 0)).build()
+        );
+        when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
+        when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID)).thenReturn(Optional.of(subject));
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID)).thenReturn(false);
+
+        ScheduleValidationException exception = assertThrows(ScheduleValidationException.class,
+                () -> scheduleService.createSchedules(CLASS_ID, 1, schedulesToCreate));
+
+        assertTrue(exception.getErrors().stream().anyMatch(e -> e.getParam().contains("subjectId")));
+        assertTrue(exception.getErrors().stream().anyMatch(e -> e.getMessage().contains("not assigned to this class")));
     }
 
     @Test
@@ -562,6 +587,7 @@ class ScheduleServiceImplTest {
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
         when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID)).thenReturn(Optional.of(subject));
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID)).thenReturn(true);
         when(scheduleRepository.saveAll(anyList())).thenAnswer(invocation -> {
             List<Schedule> schedules = invocation.getArgument(0);
             int id = 1;
@@ -596,6 +622,7 @@ class ScheduleServiceImplTest {
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
         when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID)).thenReturn(Optional.of(subject));
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID)).thenReturn(true);
         when(scheduleRepository.saveAll(anyList())).thenAnswer(invocation -> {
             List<Schedule> schedules = invocation.getArgument(0);
             assertEquals(CLASS_ID, schedules.get(0).getClassId());
@@ -617,6 +644,7 @@ class ScheduleServiceImplTest {
         );
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
         when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID)).thenReturn(Optional.of(subject));
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID)).thenReturn(true);
         when(scheduleRepository.existsOverlappingSchedule(eq(CLASS_ID), eq(1), any(LocalTime.class), any(LocalTime.class), isNull())).thenReturn(true);
 
         ScheduleValidationException exception = assertThrows(ScheduleValidationException.class,
@@ -635,6 +663,7 @@ class ScheduleServiceImplTest {
         );
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
         when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID)).thenReturn(Optional.of(subject));
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID)).thenReturn(true);
         when(scheduleRepository.existsOverlappingSchedule(eq(CLASS_ID), eq(1), eq(LocalTime.of(8, 30)), eq(LocalTime.of(9, 30)), isNull())).thenReturn(true);
 
         ScheduleValidationException exception = assertThrows(ScheduleValidationException.class,
@@ -652,6 +681,7 @@ class ScheduleServiceImplTest {
         );
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
         when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID)).thenReturn(Optional.of(subject));
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID)).thenReturn(true);
         when(scheduleRepository.existsOverlappingSchedule(eq(CLASS_ID), eq(1), eq(LocalTime.of(7, 30)), eq(LocalTime.of(8, 30)), isNull())).thenReturn(true);
 
         ScheduleValidationException exception = assertThrows(ScheduleValidationException.class,
@@ -669,6 +699,7 @@ class ScheduleServiceImplTest {
         );
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
         when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID)).thenReturn(Optional.of(subject));
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID)).thenReturn(true);
         when(scheduleRepository.existsOverlappingSchedule(eq(CLASS_ID), eq(1), any(LocalTime.class), any(LocalTime.class), isNull())).thenReturn(false);
         when(scheduleRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -694,7 +725,7 @@ class ScheduleServiceImplTest {
                 .end(LocalTime.of(11, 0))
                 .build();
         when(scheduleRepository.findByIdAndTeacherId(SCHEDULE_ID, TEACHER_ID)).thenReturn(Optional.of(existingSchedule));
-        when(scheduleRepository.existsOverlappingSchedule(eq(CLASS_ID), eq(1), eq(LocalTime.of(10, 0)), eq(LocalTime.of(11, 0)), eq(SCHEDULE_ID))).thenReturn(true);
+        when(scheduleRepository.existsOverlappingSchedule(CLASS_ID, 1, LocalTime.of(10, 0), LocalTime.of(11, 0), SCHEDULE_ID)).thenReturn(true);
 
         ScheduleValidationException exception = assertThrows(ScheduleValidationException.class,
                 () -> scheduleService.updateSchedule(SCHEDULE_ID, updateData));
@@ -719,7 +750,7 @@ class ScheduleServiceImplTest {
                 .end(LocalTime.of(11, 0))
                 .build();
         when(scheduleRepository.findByIdAndTeacherId(SCHEDULE_ID, TEACHER_ID)).thenReturn(Optional.of(existingSchedule));
-        when(scheduleRepository.existsOverlappingSchedule(eq(CLASS_ID), eq(2), eq(LocalTime.of(10, 0)), eq(LocalTime.of(11, 0)), eq(SCHEDULE_ID))).thenReturn(false);
+        when(scheduleRepository.existsOverlappingSchedule(CLASS_ID, 2, LocalTime.of(10, 0), LocalTime.of(11, 0), SCHEDULE_ID)).thenReturn(false);
         when(scheduleRepository.update(any(Schedule.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Schedule result = scheduleService.updateSchedule(SCHEDULE_ID, updateData);

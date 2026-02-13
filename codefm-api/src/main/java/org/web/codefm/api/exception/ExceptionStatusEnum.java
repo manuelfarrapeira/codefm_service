@@ -32,7 +32,9 @@ public enum ExceptionStatusEnum {
     SUBJECT_NOT_FOUND(SubjectNotFoundException.class, HttpStatus.NOT_FOUND),
     SUBJECT_FORBIDDEN(SubjectForbiddenException.class, HttpStatus.FORBIDDEN),
     SCHEDULE_NOT_FOUND(ScheduleNotFoundException.class, HttpStatus.NOT_FOUND),
-    SCHEDULE_VALIDATION_ERROR(ScheduleValidationException.class, HttpStatus.BAD_REQUEST);
+    SCHEDULE_VALIDATION_ERROR(ScheduleValidationException.class, HttpStatus.BAD_REQUEST),
+    SUBJECT_CLASS_VALIDATION_ERROR(SubjectClassValidationException.class, HttpStatus.BAD_REQUEST),
+    SUBJECT_CLASS_DUPLICATE(SubjectClassDuplicateException.class, HttpStatus.CONFLICT);
 
     private final Class<?> exceptionClazz;
 

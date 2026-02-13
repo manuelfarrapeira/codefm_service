@@ -131,4 +131,24 @@ public class IndividualKarateTestRunner {
     return Karate.run("features/teacher-notebook/schedules/schedules").relativeTo(getClass());
   }
 
+  @Karate.Test
+  Karate testTeacherNotebookGetSubjectsByClass() {
+    return Karate.run("features/teacher-notebook/subject-classes/getsubjectsbyclass").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookGetClassesWithSubjects() {
+    return Karate.run("features/teacher-notebook/subject-classes/getclasseswithsubjects").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookAssignSubjectsToClass() {
+    return Karate.run("features/teacher-notebook/subject-classes/assignsubjectstoclass").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookRemoveSubjectsFromClass() {
+    return Karate.run("features/teacher-notebook/subject-classes/removesubjectsfromclass").relativeTo(getClass());
+  }
+
 }
