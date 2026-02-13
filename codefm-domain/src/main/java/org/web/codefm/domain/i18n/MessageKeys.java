@@ -51,4 +51,9 @@ public class MessageKeys {
     public static final String SCHEDULE_VALIDATION_ITEMS_REQUIRED = "schedule.validation.items.required";
     public static final String SCHEDULE_VALIDATION_TIME_OVERLAP = "schedule.validation.time.overlap";
 
+    public static final String SUBJECT_CLASS_ALREADY_EXISTS = "subjectclass.already.exists";
+    public static final String SUBJECT_CLASS_SUBJECT_IDS_REQUIRED = "subjectclass.validation.subjectIds.required";
+    public static final String SUBJECT_CLASS_SUBJECT_NOT_OWNED = "subjectclass.validation.subject.not.owned";
+    public static final String SUBJECT_CLASS_NOT_FOUND = "subjectclass.not.found";
+
 }

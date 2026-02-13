@@ -1,0 +1,151 @@
+{
+  "info": {
+    "_postman_id": "subjects-collection",
+    "name": "Teacher Notebook - Subjects",
+    "description": "Colección para gestionar asignaturas del profesor",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Subjects",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/subjects",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "subjects"
+          ]
+        },
+        "description": "Obtiene todas las asignaturas del profesor autenticado."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Subject",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"Matemáticas\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/subjects",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "subjects"
+          ]
+        },
+        "description": "Crea una nueva asignatura para el profesor."
+      },
+      "response": []
+    },
+    {
+      "name": "Update Subject",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"Matemáticas Avanzadas\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/subjects/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "subjects",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID de la asignatura"
+            }
+          ]
+        },
+        "description": "Actualiza una asignatura existente."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Subject",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/subjects/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "subjects",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID de la asignatura"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) una asignatura."
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
+}
+

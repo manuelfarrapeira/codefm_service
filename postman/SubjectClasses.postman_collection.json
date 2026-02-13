@@ -1,0 +1,182 @@
+{
+  "info": {
+    "_postman_id": "subject-classes-collection",
+    "name": "Teacher Notebook - Subject Classes",
+    "description": "Colección para gestionar la asociación entre asignaturas y clases",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Subjects by Class",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/subjects",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "subjects"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID de la clase"
+            }
+          ]
+        },
+        "description": "Obtiene todas las asignaturas asociadas a una clase específica. La clase debe pertenecer al profesor autenticado."
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Classes With Subjects",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes-subjects",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes-subjects"
+          ]
+        },
+        "description": "Obtiene todas las clases del profesor con sus asignaturas asociadas."
+      },
+      "response": []
+    },
+    {
+      "name": "Assign Subjects to Class",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"subjectIds\": [1, 2, 3]\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/subjects",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "subjects"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID de la clase"
+            }
+          ]
+        },
+        "description": "Asigna múltiples asignaturas a una clase. Valida que:\n- La clase pertenezca al profesor\n- Cada asignatura pertenezca al profesor\n- No existan asignaciones duplicadas"
+      },
+      "response": []
+    },
+    {
+      "name": "Remove Subjects from Class",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"subjectIds\": [1, 2]\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/subjects",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "subjects"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID de la clase"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) múltiples asignaturas de una clase. La clase debe pertenecer al profesor autenticado."
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}
+

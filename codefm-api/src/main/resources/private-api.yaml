@@ -21,6 +21,8 @@ tags:
     description: Operations related to Teacher Notebook Subjects
   - name: TeacherNoteBookSchedules
     description: Operations related to Teacher Notebook Class Schedules
+  - name: TeacherNoteBookSubjectClasses
+    description: Operations related to Teacher Notebook Subject-Class associations
 
 paths:
   /greeting:
@@ -1220,6 +1222,184 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/classes/{classId}/subjects:
+    get:
+      tags:
+        - TeacherNoteBookSubjectClasses
+      operationId: getSubjectsByClass
+      summary: Get all subjects for a class
+      description: Returns all subjects associated with the specified class.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSubjectClasses
+      operationId: assignSubjectsToClass
+      summary: Assign subjects to a class
+      description: Associates multiple subjects with a class. Validates that all subjects belong to the teacher.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectClassAssignRequestDTO'
+      responses:
+        '201':
+          description: Subjects assigned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '409':
+          description: Conflict - Subject is already assigned to this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSubjectClasses
+      operationId: removeSubjectsFromClass
+      summary: Remove subjects from a class
+      description: Soft-deletes the associations between subjects and a class.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectClassRemoveRequestDTO'
+      responses:
+        '204':
+          description: Subjects successfully removed from class (No Content)
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes-subjects:
+    get:
+      tags:
+        - TeacherNoteBookSubjectClasses
+      operationId: getAllClassesWithSubjects
+      summary: Get all classes with their subjects
+      description: Returns all classes belonging to the teacher with their associated subjects.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassWithSubjectsDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
 components:
   schemas:
     ErrorResponseDTO:
@@ -1405,4 +1585,35 @@ components:
           items:
             type: 'integer'
           description: 'List of schedule IDs to delete'
+          example: [ 1, 2, 3 ]
+    ClassWithSubjectsDTO:
+      type: 'object'
+      properties:
+        classData:
+          $ref: '#/components/schemas/ClassDTO'
+        subjects:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/SubjectDTO'
+    SubjectClassAssignRequestDTO:
+      type: 'object'
+      required:
+        - subjectIds
+      properties:
+        subjectIds:
+          type: 'array'
+          items:
+            type: 'integer'
+          description: 'List of subject IDs to assign to the class'
+          example: [ 1, 2, 3 ]
+    SubjectClassRemoveRequestDTO:
+      type: 'object'
+      required:
+        - subjectIds
+      properties:
+        subjectIds:
+          type: 'array'
+          items:
+            type: 'integer'
+          description: 'List of subject IDs to remove from the class'
           example: [ 1, 2, 3 ]

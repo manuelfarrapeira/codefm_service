@@ -1,0 +1,175 @@
+{
+  "info": {
+    "_postman_id": "schedules-collection",
+    "name": "Teacher Notebook - Schedules",
+    "description": "Colección para gestionar horarios de clases",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Schedules by Class",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/schedules",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "schedules"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID de la clase"
+            }
+          ]
+        },
+        "description": "Obtiene todos los horarios de una clase específica."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Schedules",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"day\": 1,\n    \"items\": [\n        {\n            \"subjectId\": 1,\n            \"start\": \"08:30\",\n            \"end\": \"09:30\"\n        },\n        {\n            \"subjectId\": 2,\n            \"start\": \"09:30\",\n            \"end\": \"10:30\"\n        }\n    ]\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/schedules",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "schedules"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID de la clase"
+            }
+          ]
+        },
+        "description": "Crea múltiples horarios para una clase en un día específico.\n\nDía: 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes\n\nFormato de hora: HH:mm"
+      },
+      "response": []
+    },
+    {
+      "name": "Update Schedule",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"day\": 2,\n    \"start\": \"09:00\",\n    \"end\": \"10:00\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/schedules/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "schedules",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID del horario"
+            }
+          ]
+        },
+        "description": "Actualiza un horario existente (día, hora inicio, hora fin).\n\nDía: 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes"
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Schedules",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"ids\": [1, 2, 3]\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/schedules",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "schedules"
+          ]
+        },
+        "description": "Elimina (soft delete) múltiples horarios por sus IDs."
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
+}
+

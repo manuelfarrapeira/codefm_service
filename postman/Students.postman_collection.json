@@ -1,0 +1,318 @@
+{
+  "info": {
+    "_postman_id": "students-collection",
+    "name": "Teacher Notebook - Students",
+    "description": "Colección para gestionar estudiantes",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Students",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/students/all",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "students",
+            "all"
+          ]
+        },
+        "description": "Obtiene todos los estudiantes del profesor."
+      },
+      "response": []
+    },
+    {
+      "name": "Search Students",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/students?name=Juan&surnames=García",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "students"
+          ],
+          "query": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID del estudiante (opcional)",
+              "disabled": true
+            },
+            {
+              "key": "name",
+              "value": "Juan",
+              "description": "Nombre del estudiante (búsqueda parcial)"
+            },
+            {
+              "key": "surnames",
+              "value": "García",
+              "description": "Apellidos del estudiante (búsqueda parcial)"
+            }
+          ]
+        },
+        "description": "Busca estudiantes por ID, nombre o apellidos. Al menos un filtro es requerido."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Student",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"Juan\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"additionalInfo\": \"Información adicional del estudiante\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/students",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "students"
+          ]
+        },
+        "description": "Crea un nuevo estudiante."
+      },
+      "response": []
+    },
+    {
+      "name": "Update Student",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"Juan Carlos\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"additionalInfo\": \"Información actualizada\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/students/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "students",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID del estudiante"
+            }
+          ]
+        },
+        "description": "Actualiza un estudiante existente."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Student",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/students/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "students",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID del estudiante"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) un estudiante."
+      },
+      "response": []
+    },
+    {
+      "name": "Upload Student Photo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "",
+              "description": "Archivo de imagen (JPG, JPEG, PNG). Máx 500KB"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/students/:id/photo",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "students",
+            ":id",
+            "photo"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID del estudiante"
+            }
+          ]
+        },
+        "description": "Sube una foto para el estudiante. Formato: JPG, JPEG o PNG. Tamaño máximo: 500KB."
+      },
+      "response": []
+    },
+    {
+      "name": "Download Student Photo",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/students/:id/photo",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "students",
+            ":id",
+            "photo"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID del estudiante"
+            }
+          ]
+        },
+        "description": "Descarga la foto del estudiante."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Student Photo",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/students/:id/photo",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "students",
+            ":id",
+            "photo"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID del estudiante"
+            }
+          ]
+        },
+        "description": "Elimina la foto del estudiante."
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
+}
+
