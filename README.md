@@ -133,6 +133,30 @@ Tests automatizados de API que incluyen:
 - Tests de integración
 - Ejecución en CI/CD
 
+### Gatling Stress Tests
+
+Tests de estrés y rendimiento que incluyen:
+
+- Tests de carga sobre endpoints críticos
+- Medición de tiempos de respuesta (max, percentiles, media)
+- Validación de throughput y tasa de errores
+- Ejecución secuencial por endpoint para análisis individual
+- Generación de informes HTML detallados
+
+**Ejecución local:**
+
+```bash
+cd gatling-test
+mvn gatling:test -DbaseUrl=http://localhost:8081 -Dusername=user -Dpassword=pass
+```
+
+**Assertions configurados:**
+
+- Tiempo de respuesta máximo < 5000ms
+- Percentil 95 < 2000ms
+- Peticiones exitosas > 95%
+- Peticiones fallidas < 5%
+
 ## ⚙️ CI/CD Workflows
 
 ### 🚀 Deploy PRE
@@ -165,6 +189,24 @@ deploy-pro nombre-rama
 
 - Workflow dispatch con selección de rama
 - Comentarios automáticos en PR con resultados
+
+### 🔥 Ejecutar Tests de Estrés (Gatling)
+
+**Ejecución manual desde Actions:**
+
+1. Ir a Actions → "Gatling Stress Test"
+2. Click en "Run workflow"
+3. Introducir parámetros:
+   - `baseUrl`: URL de la API (ej: `https://codefm.synology.me:5553`)
+   - `username`: Usuario para autenticación
+   - `password`: Contraseña
+4. Al finalizar, descargar el informe HTML desde Artifacts
+
+**Resultado en Step Summary:**
+
+- Estadísticas globales (request count, tiempos de respuesta)
+- Distribución de tiempos de respuesta
+- Estado de assertions (OK/KO)
 
 ### 🔍 Detección de Secretos
 
@@ -202,4 +244,10 @@ deploy-pro nombre-rama
 └─────────────────┘  └─────────────────┘  └─────────────────┘
          │
     Apache Kafka
+
+Testing Modules:
+┌─────────────────┐  ┌─────────────────┐
+│   karate-test   │  │  gatling-test   │
+│ (Integration)   │  │ (Stress Tests)  │
+└─────────────────┘  └─────────────────┘
 ```

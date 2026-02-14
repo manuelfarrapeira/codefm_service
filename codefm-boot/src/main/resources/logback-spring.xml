@@ -17,6 +17,12 @@
           <fieldName>thread</fieldName>
         </threadName>
 
+        <!-- MDC: correlationId y sessionId para rastrear peticiones -->
+        <mdc>
+          <includeMdcKeyName>correlationId</includeMdcKeyName>
+          <includeMdcKeyName>sessionId</includeMdcKeyName>
+        </mdc>
+
         <!-- Clase, método y línea -->
         <callerData>
           <classFieldName>caller_class</classFieldName>
