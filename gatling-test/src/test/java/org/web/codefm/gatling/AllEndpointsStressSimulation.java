@@ -13,7 +13,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.http;
@@ -24,6 +27,8 @@ public class AllEndpointsStressSimulation extends Simulation {
     private static final String BASE_URL = System.getProperty("baseUrl");
     private static final String USERNAME = System.getProperty("username");
     private static final String PASSWORD = System.getProperty("password");
+    private static final String ENDPOINTS = System.getProperty("endpoints", "all");
+    private static final int MAX_USERS = Integer.parseInt(System.getProperty("maxUsers", "30"));
 
     private static final String accessToken = obtainAccessToken();
 
@@ -57,6 +62,13 @@ public class AllEndpointsStressSimulation extends Simulation {
         } catch (Exception e) {
             throw new RuntimeException("Failed to obtain access token", e);
         }
+    }
+
+    private static List<String> getSelectedEndpoints() {
+        if ("all".equalsIgnoreCase(ENDPOINTS)) {
+            return Arrays.asList("classes", "students", "schools", "subjects", "subjectsByClass", "schedules");
+        }
+        return Arrays.asList(ENDPOINTS.split(","));
     }
 
     HttpProtocolBuilder httpProtocol = http
@@ -114,66 +126,55 @@ public class AllEndpointsStressSimulation extends Simulation {
         );
     }
 
-    ScenarioBuilder classesScenario = scenario("Classes Stress Test")
-            .repeat(10).on(
-                    exec(getClassesBySchool())
-                            .pause(Duration.ofMillis(50), Duration.ofMillis(200))
-            );
-
-    ScenarioBuilder studentsScenario = scenario("Students Stress Test")
-            .repeat(10).on(
-                    exec(getAllStudents())
-                            .pause(Duration.ofMillis(50), Duration.ofMillis(200))
-            );
-
-    ScenarioBuilder schoolsScenario = scenario("Schools Stress Test")
-            .repeat(10).on(
-                    exec(getAllSchools())
-                            .pause(Duration.ofMillis(50), Duration.ofMillis(200))
-            );
-
-    ScenarioBuilder subjectsScenario = scenario("Subjects Stress Test")
-            .repeat(10).on(
-                    exec(getAllSubjects())
-                            .pause(Duration.ofMillis(50), Duration.ofMillis(200))
-            );
-
-    ScenarioBuilder subjectsByClassScenario = scenario("Subjects By Class Stress Test")
-            .repeat(10).on(
-                    exec(getSubjectsByClass())
-                            .pause(Duration.ofMillis(50), Duration.ofMillis(200))
-            );
-
-    ScenarioBuilder schedulesScenario = scenario("Schedules Stress Test")
-            .repeat(10).on(
-                    exec(getSchedulesByClass())
-                            .pause(Duration.ofMillis(50), Duration.ofMillis(200))
-            );
+    private ScenarioBuilder createScenario(String name, ChainBuilder chain) {
+        return scenario(name + " Stress Test")
+                .repeat(10).on(
+                        exec(chain)
+                                .pause(Duration.ofMillis(50), Duration.ofMillis(200))
+                );
+    }
 
     private PopulationBuilder injectUsers(ScenarioBuilder scenario) {
+        int rampUpUsers = (int) (MAX_USERS * 1.3);
+        int lowUsersPerSec = (int) Math.max(1, MAX_USERS * 0.25);
+
         return scenario.injectOpen(
                 nothingFor(Duration.ofSeconds(2)),
-                rampUsers(40).during(Duration.ofSeconds(10)),
-                constantUsersPerSec(8).during(Duration.ofSeconds(15)),
-                rampUsersPerSec(8).to(22).during(Duration.ofSeconds(15)),
-                constantUsersPerSec(22).during(Duration.ofSeconds(15))
+                rampUsers(rampUpUsers).during(Duration.ofSeconds(10)),
+                constantUsersPerSec(lowUsersPerSec).during(Duration.ofSeconds(15)),
+                rampUsersPerSec(lowUsersPerSec).to(MAX_USERS).during(Duration.ofSeconds(15)),
+                constantUsersPerSec(MAX_USERS).during(Duration.ofSeconds(15))
         );
     }
 
+    private PopulationBuilder getPopulationForEndpoint(String endpoint) {
+        return switch (endpoint.trim().toLowerCase()) {
+            case "classes" -> injectUsers(createScenario("Classes", getClassesBySchool()));
+            case "students" -> injectUsers(createScenario("Students", getAllStudents()));
+            case "schools" -> injectUsers(createScenario("Schools", getAllSchools()));
+            case "subjects" -> injectUsers(createScenario("Subjects", getAllSubjects()));
+            case "subjectsbyclass" -> injectUsers(createScenario("SubjectsByClass", getSubjectsByClass()));
+            case "schedules" -> injectUsers(createScenario("Schedules", getSchedulesByClass()));
+            default -> throw new IllegalArgumentException("Unknown endpoint: " + endpoint);
+        };
+    }
+
     {
-        setUp(
-                injectUsers(classesScenario).andThen(
-                        injectUsers(studentsScenario).andThen(
-                                injectUsers(schoolsScenario).andThen(
-                                        injectUsers(subjectsScenario).andThen(
-                                                injectUsers(subjectsByClassScenario).andThen(
-                                                        injectUsers(schedulesScenario)
-                                                )
-                                        )
-                                )
-                        )
-                )
-        ).protocols(httpProtocol)
+        List<String> selectedEndpoints = getSelectedEndpoints();
+        System.out.println("Running stress tests for endpoints: " + selectedEndpoints);
+
+        List<PopulationBuilder> populations = new ArrayList<>();
+        for (String endpoint : selectedEndpoints) {
+            populations.add(getPopulationForEndpoint(endpoint));
+        }
+
+        PopulationBuilder chainedPopulation = populations.get(0);
+        for (int i = 1; i < populations.size(); i++) {
+            chainedPopulation = chainedPopulation.andThen(populations.get(i));
+        }
+
+        setUp(chainedPopulation)
+                .protocols(httpProtocol)
                 .assertions(
                         global().responseTime().max().lt(5000),
                         global().responseTime().percentile(95).lt(2000),
