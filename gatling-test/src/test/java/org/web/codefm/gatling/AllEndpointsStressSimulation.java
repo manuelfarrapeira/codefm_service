@@ -153,10 +153,10 @@ public class AllEndpointsStressSimulation extends Simulation {
     private PopulationBuilder injectUsers(ScenarioBuilder scenario) {
         return scenario.injectOpen(
                 nothingFor(Duration.ofSeconds(2)),
-                rampUsers(30).during(Duration.ofSeconds(10)),
-                constantUsersPerSec(20).during(Duration.ofSeconds(10)),
-                rampUsersPerSec(20).to(40).during(Duration.ofSeconds(10)),
-                constantUsersPerSec(30).during(Duration.ofSeconds(10))
+                rampUsers(25).during(Duration.ofSeconds(15)),
+                constantUsersPerSec(5).during(Duration.ofSeconds(20)),
+                rampUsersPerSec(5).to(15).during(Duration.ofSeconds(15)),
+                constantUsersPerSec(15).during(Duration.ofSeconds(20))
         );
     }
 
