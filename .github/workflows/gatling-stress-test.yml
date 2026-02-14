@@ -1,0 +1,152 @@
+name: Gatling Stress Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      baseUrl:
+        description: 'Base URL of the API (e.g., https://codefm.synology.me:5553)'
+        required: true
+        type: string
+      username:
+        description: 'Username for authentication'
+        required: true
+        type: string
+      password:
+        description: 'Password for authentication'
+        required: true
+        type: string
+      endpoints:
+        description: 'Endpoint to test'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - classes
+          - students
+          - schools
+          - subjects
+          - subjectsByClass
+          - schedules
+      maxConcurrentUsers:
+        description: 'Maximum concurrent requests (simultaneous users)'
+        required: true
+        default: '50'
+        type: string
+
+jobs:
+  gatling-stress-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run Gatling Stress Tests
+        id: gatling
+        working-directory: gatling-test
+        run: |
+          echo "Testing endpoints: ${{ inputs.endpoints }}"
+          echo "Max concurrent users: ${{ inputs.maxConcurrentUsers }}"
+          mvn gatling:test \
+            -DbaseUrl=${{ inputs.baseUrl }} \
+            -Dusername=${{ inputs.username }} \
+            -Dpassword=${{ inputs.password }} \
+            -Dendpoints=${{ inputs.endpoints }} \
+            -DmaxConcurrentUsers=${{ inputs.maxConcurrentUsers }} \
+            2>&1 | tee gatling-output.log
+          
+          # Capturar el código de salida de Maven
+          MAVEN_EXIT_CODE=${PIPESTATUS[0]}
+          
+          # Extraer estadísticas del log
+          echo "## 📊 Gatling Stress Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Extraer Global Information
+          echo "### 📈 Global Information" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          sed -n '/---- Global Information/,/================/p' gatling-output.log | head -15 >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Extraer Response Time Distribution
+          echo "### ⏱️ Response Time Distribution" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          sed -n '/---- Response Time Distribution/,/================/p' gatling-output.log | head -10 >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Extraer Assertions
+          echo "### ✅ Assertions" >> $GITHUB_STEP_SUMMARY
+          echo "| Assertion | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          grep -E "^Global:" gatling-output.log | while read line; do
+            if echo "$line" | grep -q ": true"; then
+              echo "| $line | ✅ OK |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $line | ❌ KO |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Encontrar el directorio del reporte
+          REPORT_DIR=$(find target/gatling -maxdepth 1 -type d -name "*simulation*" | sort -r | head -1)
+          echo "report_dir=$REPORT_DIR" >> $GITHUB_OUTPUT
+          
+          # Mostrar enlace al reporte
+          echo "### 📁 Report" >> $GITHUB_STEP_SUMMARY
+          echo "Download the report artifact to view the full HTML report." >> $GITHUB_STEP_SUMMARY
+          
+          # Salir con el código original de Maven
+          exit $MAVEN_EXIT_CODE
+        continue-on-error: true
+
+      - name: Find Gatling Report Directory
+        id: find-report
+        working-directory: gatling-test
+        run: |
+          REPORT_DIR=$(find target/gatling -maxdepth 1 -type d -name "*simulation*" 2>/dev/null | sort -r | head -1)
+          if [ -n "$REPORT_DIR" ]; then
+            echo "report_dir=$REPORT_DIR" >> $GITHUB_OUTPUT
+            echo "report_found=true" >> $GITHUB_OUTPUT
+          else
+            echo "report_found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Gatling Report
+        if: steps.find-report.outputs.report_found == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: gatling-report-${{ github.run_number }}
+          path: gatling-test/${{ steps.find-report.outputs.report_dir }}
+          retention-days: 30
+
+      - name: Add Report Download Link
+        if: steps.find-report.outputs.report_found == 'true'
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "### 📥 Download Report" >> $GITHUB_STEP_SUMMARY
+          echo "The Gatling HTML report has been uploaded as an artifact: **gatling-report-${{ github.run_number }}**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "To view the report:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Go to the **Artifacts** section below" >> $GITHUB_STEP_SUMMARY
+          echo "2. Download **gatling-report-${{ github.run_number }}**" >> $GITHUB_STEP_SUMMARY
+          echo "3. Extract and open **index.html** in your browser" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check Test Result
+        if: steps.gatling.outcome == 'failure'
+        run: |
+          echo "❌ Gatling stress tests failed! Check the assertions above." >> $GITHUB_STEP_SUMMARY
+          exit 1
+
+
+

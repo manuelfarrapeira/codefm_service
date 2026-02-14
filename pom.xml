@@ -53,6 +53,7 @@
         <module>codefm-kafka</module>
         <module>codefm-boot</module>
         <module>jacoco-report-aggregate</module>
+        <module>gatling-test</module>
     </modules>
 
     <dependencyManagement>
