@@ -28,10 +28,10 @@ on:
           - subjects
           - subjectsByClass
           - schedules
-      maxUsers:
-        description: 'Maximum concurrent users per second'
+      maxConcurrentUsers:
+        description: 'Maximum concurrent requests (simultaneous users)'
         required: true
-        default: '30'
+        default: '50'
         type: string
 
 jobs:
@@ -54,13 +54,13 @@ jobs:
         working-directory: gatling-test
         run: |
           echo "Testing endpoints: ${{ inputs.endpoints }}"
-          echo "Max users per second: ${{ inputs.maxUsers }}"
+          echo "Max concurrent users: ${{ inputs.maxConcurrentUsers }}"
           mvn gatling:test \
             -DbaseUrl=${{ inputs.baseUrl }} \
             -Dusername=${{ inputs.username }} \
             -Dpassword=${{ inputs.password }} \
             -Dendpoints=${{ inputs.endpoints }} \
-            -DmaxUsers=${{ inputs.maxUsers }} \
+            -DmaxConcurrentUsers=${{ inputs.maxConcurrentUsers }} \
             2>&1 | tee gatling-output.log
           
           # Capturar el código de salida de Maven

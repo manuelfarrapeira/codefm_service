@@ -28,7 +28,7 @@ public class AllEndpointsStressSimulation extends Simulation {
     private static final String USERNAME = System.getProperty("username");
     private static final String PASSWORD = System.getProperty("password");
     private static final String ENDPOINTS = System.getProperty("endpoints", "all");
-    private static final int MAX_USERS = Integer.parseInt(System.getProperty("maxUsers", "30"));
+    private static final int MAX_CONCURRENT_USERS = Integer.parseInt(System.getProperty("maxConcurrentUsers", "50"));
 
     private static final String accessToken = obtainAccessToken();
 
@@ -135,15 +135,16 @@ public class AllEndpointsStressSimulation extends Simulation {
     }
 
     private PopulationBuilder injectUsers(ScenarioBuilder scenario) {
-        int rampUpUsers = (int) (MAX_USERS * 1.3);
-        int lowUsersPerSec = (int) Math.max(1, MAX_USERS * 0.25);
+        int lowConcurrent = (int) Math.max(1, MAX_CONCURRENT_USERS * 0.2);
+        int midConcurrent = (int) Math.max(2, MAX_CONCURRENT_USERS * 0.5);
 
-        return scenario.injectOpen(
-                nothingFor(Duration.ofSeconds(2)),
-                rampUsers(rampUpUsers).during(Duration.ofSeconds(10)),
-                constantUsersPerSec(lowUsersPerSec).during(Duration.ofSeconds(15)),
-                rampUsersPerSec(lowUsersPerSec).to(MAX_USERS).during(Duration.ofSeconds(15)),
-                constantUsersPerSec(MAX_USERS).during(Duration.ofSeconds(15))
+        return scenario.injectClosed(
+                rampConcurrentUsers(0).to(lowConcurrent).during(Duration.ofSeconds(10)),
+                constantConcurrentUsers(lowConcurrent).during(Duration.ofSeconds(15)),
+                rampConcurrentUsers(lowConcurrent).to(midConcurrent).during(Duration.ofSeconds(10)),
+                constantConcurrentUsers(midConcurrent).during(Duration.ofSeconds(15)),
+                rampConcurrentUsers(midConcurrent).to(MAX_CONCURRENT_USERS).during(Duration.ofSeconds(10)),
+                constantConcurrentUsers(MAX_CONCURRENT_USERS).during(Duration.ofSeconds(20))
         );
     }
 
