@@ -775,8 +775,9 @@ Scenario: Get schools by teacher
 18. [ ] Crear claves i18n en MessageKeys
 19. [ ] Agregar mensajes en messages_en.properties y messages_es.properties
 20. [ ] Crear Test de Karate
-21. [ ] Ejecutar `mvn clean compile`
-22. [ ] Ejecutar `mvn test`
+21. [ ] Crear o actualizar colección de Postman en `postman/`
+22. [ ] Ejecutar `mvn clean compile`
+23. [ ] Ejecutar `mvn test`
 
 ---
 
@@ -820,6 +821,8 @@ mvn clean install
 12. **Soft Delete en Queries**: Filtrar por `DeletionDateIsNull` en todas las queries de lectura
 13. **Validación de Asociaciones Subject-Class**: Para crear horarios (schedules), la asignatura DEBE estar previamente
     asignada a la clase en la tabla `subject_classes`
+14. **Colecciones Postman**: SIEMPRE actualizar la colección de Postman correspondiente en `postman/` al crear o
+    modificar endpoints
 
 ---
 
@@ -900,6 +903,76 @@ Karate testTeacherNotebookCreateGrades() {
     - `testTeacherNotebookGetSubjects`
     - `testTeacherNotebookCreateSchedules`
     - `testTeacherNotebookAssignSubjectsToClass`
+
+---
+
+## Colecciones de Postman
+
+**OBLIGATORIO**: Cada vez que se cree o modifique un endpoint, se DEBE crear o actualizar la colección de Postman
+correspondiente ubicada en el directorio `postman/`.
+
+### Ubicación
+
+Las colecciones de Postman se encuentran en el directorio `postman/` del proyecto:
+
+- `Classes.postman_collection.json` - Endpoints de clases
+- `Schools.postman_collection.json` - Endpoints de colegios
+- `Students.postman_collection.json` - Endpoints de estudiantes
+- `Subjects.postman_collection.json` - Endpoints de asignaturas
+- `SubjectClasses.postman_collection.json` - Endpoints de asignación asignaturas-clases
+- `Schedules.postman_collection.json` - Endpoints de horarios
+
+### Reglas para Colecciones de Postman
+
+1. **Variable de entorno**: Usar `{{host}}` para la URL base
+2. **Headers obligatorios**: Incluir `Accept-Language` con valor `es` o `en`
+3. **Cuerpos de ejemplo**: Incluir TODOS los campos obligatorios en el body de ejemplo
+4. **Descripción**: Añadir descripción explicativa para cada request
+5. **Variables de path**: Usar la sintaxis `:id` para parámetros de ruta
+
+### Cuándo Actualizar las Colecciones
+
+- **Nuevo endpoint**: Añadir nuevo request a la colección correspondiente
+- **Campo nuevo obligatorio**: Actualizar TODOS los bodies de ejemplo que usen ese DTO
+- **Campo eliminado**: Remover el campo de los bodies de ejemplo
+- **Cambio en validaciones**: Actualizar la descripción del request
+
+### Ejemplo de Request
+
+```json
+{
+  "name": "Create Student",
+  "request": {
+    "method": "PUT",
+    "header": [
+      {
+        "key": "Content-Type",
+        "value": "application/json"
+      },
+      {
+        "key": "Accept-Language",
+        "value": "es"
+      }
+    ],
+    "body": {
+      "mode": "raw",
+      "raw": "{\n    \"name\": \"Juan\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"gender\": \"M\",\n    \"additionalInfo\": \"Información adicional\"\n}"
+    },
+    "url": {
+      "raw": "{{host}}/teacher-notebook/v1/students",
+      "host": [
+        "{{host}}"
+      ],
+      "path": [
+        "teacher-notebook",
+        "v1",
+        "students"
+      ]
+    },
+    "description": "Crea un nuevo estudiante. El campo gender es obligatorio (M=Masculino, F=Femenino)."
+  }
+}
+```
 
 ---
 
