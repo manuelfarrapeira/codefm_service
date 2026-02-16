@@ -16,6 +16,7 @@ public class Student {
     private String name;
     private String surnames;
     private LocalDate dateOfBirth;
+    private String gender;
     private String additionalInfo;
     private String photo;
     private LocalDate deletionDate;

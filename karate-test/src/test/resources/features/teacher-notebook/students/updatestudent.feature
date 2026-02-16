@@ -13,6 +13,7 @@ Feature: Teacher Notebook - Update Student
         "name": "Aarón",
         "surnames": "Ramilo Vicente",
         "dateOfBirth": "20/05/2012",
+        "gender": "M",
         "additionalInfo": "Aditional info"
       }
       """
@@ -24,6 +25,7 @@ Feature: Teacher Notebook - Update Student
     And match response.name == "Aarón"
     And match response.surnames == "Ramilo Vicente"
     And match response.dateOfBirth == "20/05/2012"
+    And match response.gender == "M"
     And match response.additionalInfo == "Aditional info"
 
   Scenario: Fail to update a non-existent student
@@ -32,7 +34,8 @@ Feature: Teacher Notebook - Update Student
       {
         "name": "Juan",
         "surnames": "García López",
-        "dateOfBirth": "15/03/2010"
+        "dateOfBirth": "15/03/2010",
+        "gender": "M"
       }
       """
     Given path '/teacher-notebook/v1/students/99999'
@@ -44,11 +47,11 @@ Feature: Teacher Notebook - Update Student
 
   Scenario Outline: Fail to update a student with invalid data
 
-    # Try to update with invalid data
-    * def updateRequestBody = { name: <name>, surnames: <surnames>, dateOfBirth: <dateOfBirth> }
+    * def updateRequestBody = { name: <name>, surnames: <surnames>, dateOfBirth: <dateOfBirth>, gender: <gender> }
     * if (updateRequestBody.name == null) karate.remove('updateRequestBody', 'name')
     * if (updateRequestBody.surnames == null) karate.remove('updateRequestBody', 'surnames')
     * if (updateRequestBody.dateOfBirth == null) karate.remove('updateRequestBody', 'dateOfBirth')
+    * if (updateRequestBody.gender == null) karate.remove('updateRequestBody', 'gender')
 
     Given path '/teacher-notebook/v1/students/' + 8
     And request updateRequestBody
@@ -59,9 +62,11 @@ Feature: Teacher Notebook - Update Student
     And match response.details contains deep <details>
 
     Examples:
-      | name     | surnames        | dateOfBirth  | details                                                                                     |
-      | null     | "García López"  | "15/03/2010" | [{ field: 'name', reason: 'El nombre del estudiante es obligatorio.' }]                     |
-      | "A"      | "García López"  | "15/03/2010" | [{ field: 'name', reason: 'El nombre del estudiante debe tener al menos 3 caracteres.' }]   |
-      | "Juan"   | null            | "15/03/2010" | [{ field: 'surnames', reason: 'Los apellidos del estudiante son obligatorios.' }]           |
-      | "Juan"   | "AB"            | "15/03/2010" | [{ field: 'surnames', reason: 'Los apellidos del estudiante deben tener al menos 3 caracteres.' }] |
+      | name     | surnames        | dateOfBirth  | gender | details                                                                                             |
+      | null     | "García López"  | "15/03/2010" | "M"    | [{ field: 'name', reason: 'El nombre del estudiante es obligatorio.' }]                             |
+      | "A"      | "García López"  | "15/03/2010" | "M"    | [{ field: 'name', reason: 'El nombre del estudiante debe tener al menos 3 caracteres.' }]           |
+      | "Juan"   | null            | "15/03/2010" | "M"    | [{ field: 'surnames', reason: 'Los apellidos del estudiante son obligatorios.' }]                   |
+      | "Juan"   | "AB"            | "15/03/2010" | "M"    | [{ field: 'surnames', reason: 'Los apellidos del estudiante deben tener al menos 3 caracteres.' }]  |
+      | "Juan"   | "García López"  | "15/03/2010" | null   | [{ field: 'gender', reason: 'El género del estudiante es obligatorio.' }]                           |
+      | "Juan"   | "García López"  | "15/03/2010" | "X"    | [{ field: 'gender', reason: 'El género debe ser M (masculino) o F (femenino).' }]                   |
 

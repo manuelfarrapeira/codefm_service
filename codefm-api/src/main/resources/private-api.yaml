@@ -1466,6 +1466,9 @@ components:
           type: 'string'
           description: 'Date in format dd/MM/yyyy'
           example: '15/03/2010'
+        gender:
+          type: 'string'
+          description: 'Gender (M=Male, F=Female)'
         additionalInfo:
           type: 'string'
         photo:
@@ -1488,6 +1491,10 @@ components:
           type: 'string'
           description: 'Date in format dd/MM/yyyy'
           example: '15/03/2010'
+        gender:
+          type: 'string'
+          description: 'Gender (M=Male, F=Female)'
+          example: 'M'
         additionalInfo:
           type: 'string'
           example: 'Additional information about the student'

@@ -69,6 +69,10 @@ class StudentServiceImplTest {
                 .thenReturn("Student surnames are required.");
         when(messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_SURNAMES_MIN_LENGTH), eq(null), any(Locale.class)))
                 .thenReturn("Student surnames must be at least 3 characters.");
+        when(messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_GENDER_REQUIRED), eq(null), any(Locale.class)))
+                .thenReturn("Student gender is required.");
+        when(messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_GENDER_INVALID), eq(null), any(Locale.class)))
+                .thenReturn("Gender must be M (Male) or F (Female).");
         when(messageSource.getMessage(eq(MessageKeys.STUDENT_NOT_FOUND), eq(null), any(Locale.class)))
                 .thenReturn("Student not found.");
         when(messageSource.getMessage(eq(MessageKeys.STUDENT_PHOTO_SIZE_EXCEEDED), eq(null), any(Locale.class)))
@@ -90,6 +94,7 @@ class StudentServiceImplTest {
         Student studentToCreate = Student.builder()
                 .name("Juan")
                 .surnames("García López")
+                .gender("M")
                 .dateOfBirth(LocalDate.of(2010, 3, 15))
                 .additionalInfo("Good student")
                 .build();
@@ -97,6 +102,7 @@ class StudentServiceImplTest {
         Student expectedStudent = Student.builder()
                 .name("Juan")
                 .surnames("García López")
+                .gender("M")
                 .teacherId(1)
                 .dateOfBirth(LocalDate.of(2010, 3, 15))
                 .additionalInfo("Good student")
@@ -324,12 +330,14 @@ class StudentServiceImplTest {
                 .id(studentId)
                 .teacherId(teacherId)
                 .name("Juan")
+                .gender("F")
                 .surnames("García")
                 .build();
 
         Student updatedData = Student.builder()
                 .name("Juan Carlos")
                 .surnames("García López")
+                .gender("F")
                 .dateOfBirth(LocalDate.of(2010, 3, 15))
                 .build();
 
@@ -352,6 +360,7 @@ class StudentServiceImplTest {
         Student updatedData = Student.builder()
                 .name("Juan")
                 .surnames("García López")
+                .gender("M")
                 .build();
 
         when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
@@ -370,6 +379,7 @@ class StudentServiceImplTest {
         Student invalidData = Student.builder()
                 .name("A")
                 .surnames("García López")
+                .gender("M")
                 .build();
 
         StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
@@ -847,5 +857,104 @@ class StudentServiceImplTest {
         assertNotNull(exception);
         assertEquals("[Code: 1000, CodeDescription: GENERIC_ERROR, ErrorDescription: Photo file is required.]", exception.getMessage());
         verify(studentRepository, never()).update(any());
+    }
+
+    @Test
+    void createStudent_shouldSaveStudent_whenGenderIsM() {
+        Student studentToCreate = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender("M")
+                .build();
+
+        Student expectedStudent = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender("M")
+                .teacherId(1)
+                .build();
+
+        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
+
+        Student createdStudent = studentService.createStudent(studentToCreate);
+
+        assertNotNull(createdStudent);
+        assertEquals("M", createdStudent.getGender());
+        verify(studentRepository, times(1)).save(any(Student.class));
+    }
+
+    @Test
+    void createStudent_shouldSaveStudent_whenGenderIsF() {
+        Student studentToCreate = Student.builder()
+                .name("María")
+                .surnames("López García")
+                .gender("F")
+                .build();
+
+        Student expectedStudent = Student.builder()
+                .name("María")
+                .surnames("López García")
+                .gender("F")
+                .teacherId(1)
+                .build();
+
+        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
+
+        Student createdStudent = studentService.createStudent(studentToCreate);
+
+        assertNotNull(createdStudent);
+        assertEquals("F", createdStudent.getGender());
+        verify(studentRepository, times(1)).save(any(Student.class));
+    }
+
+    @Test
+    void createStudent_shouldThrowValidationException_whenGenderIsNull() {
+        Student studentWithoutGender = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender(null)
+                .build();
+
+        StudentValidationException exception = assertThrows(StudentValidationException.class, () ->
+                studentService.createStudent(studentWithoutGender));
+
+        assertNotNull(exception);
+        assertTrue(exception.getErrors().stream()
+                .anyMatch(e -> e.getParam().equals("gender")));
+        verify(studentRepository, never()).save(any());
+    }
+
+    @Test
+    void createStudent_shouldThrowValidationException_whenGenderIsEmpty() {
+        Student studentWithEmptyGender = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender("")
+                .build();
+
+        StudentValidationException exception = assertThrows(StudentValidationException.class, () ->
+                studentService.createStudent(studentWithEmptyGender));
+
+        assertNotNull(exception);
+        assertTrue(exception.getErrors().stream()
+                .anyMatch(e -> e.getParam().equals("gender")));
+        verify(studentRepository, never()).save(any());
+    }
+
+    @Test
+    void createStudent_shouldThrowValidationException_whenGenderIsInvalid() {
+        Student studentWithInvalidGender = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender("X")
+                .build();
+
+        StudentValidationException exception = assertThrows(StudentValidationException.class, () ->
+                studentService.createStudent(studentWithInvalidGender));
+
+        assertNotNull(exception);
+        assertTrue(exception.getErrors().stream()
+                .anyMatch(e -> e.getParam().equals("gender")));
+        verify(studentRepository, never()).save(any());
     }
 }
