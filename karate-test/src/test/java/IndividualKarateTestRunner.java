@@ -151,4 +151,24 @@ public class IndividualKarateTestRunner {
     return Karate.run("features/teacher-notebook/subject-classes/removesubjectsfromclass").relativeTo(getClass());
   }
 
+  @Karate.Test
+  Karate testTeacherNotebookGetExercises() {
+    return Karate.run("features/teacher-notebook/exercises/getexercises").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookCreateExercise() {
+    return Karate.run("features/teacher-notebook/exercises/createexercise").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookUpdateExercise() {
+    return Karate.run("features/teacher-notebook/exercises/updateexercise").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookDeleteExercise() {
+    return Karate.run("features/teacher-notebook/exercises/deleteexercise").relativeTo(getClass());
+  }
+
 }
