@@ -57,4 +57,14 @@ public class MessageKeys {
     public static final String SUBJECT_CLASS_SUBJECT_NOT_OWNED = "subjectclass.validation.subject.not.owned";
     public static final String SUBJECT_CLASS_NOT_FOUND = "subjectclass.not.found";
 
+    public static final String EXERCISE_NOT_FOUND = "exercise.not.found";
+    public static final String EXERCISE_VALIDATION_TITLE_REQUIRED = "exercise.validation.title.required";
+    public static final String EXERCISE_VALIDATION_QUARTER_REQUIRED = "exercise.validation.quarter.required";
+    public static final String EXERCISE_VALIDATION_QUARTER_INVALID = "exercise.validation.quarter.invalid";
+    public static final String EXERCISE_VALIDATION_SUBJECT_CLASS_NOT_FOUND = "exercise.validation.subjectClass.not.found";
+    public static final String EXERCISE_VALIDATION_PERCENTAGE_GRADE_REQUIRED = "exercise.validation.percentageGrade.required";
+    public static final String EXERCISE_VALIDATION_PERCENTAGE_GRADE_INVALID = "exercise.validation.percentageGrade.invalid";
+    public static final String EXERCISE_VALIDATION_MAX_GRADE_REQUIRED = "exercise.validation.maxGrade.required";
+    public static final String EXERCISE_VALIDATION_MAX_GRADE_INVALID = "exercise.validation.maxGrade.invalid";
+
 }
