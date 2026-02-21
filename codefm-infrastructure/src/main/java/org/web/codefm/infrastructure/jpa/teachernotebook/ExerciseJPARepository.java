@@ -34,5 +34,9 @@ public interface ExerciseJPARepository extends JpaRepository<ExerciseEntity, Int
     @Transactional
     @Query("UPDATE ExerciseEntity e SET e.deletionDate = CURRENT_DATE WHERE e.id = :id")
     void softDeleteById(@Param("id") Integer id);
-}
 
+    @Modifying
+    @Transactional
+    @Query("UPDATE ExerciseEntity e SET e.deletionDate = CURRENT_DATE WHERE e.subjectClassId IN :subjectClassIds AND e.deletionDate IS NULL")
+    void softDeleteBySubjectClassIds(@Param("subjectClassIds") List<Integer> subjectClassIds);
+}

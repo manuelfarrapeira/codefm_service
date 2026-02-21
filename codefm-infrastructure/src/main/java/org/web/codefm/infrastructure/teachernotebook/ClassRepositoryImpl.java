@@ -55,5 +55,14 @@ public class ClassRepositoryImpl implements ClassRepository {
         ClassEntity updatedEntity = classJPARepository.save(classEntity);
         return classMapper.toModel(updatedEntity);
     }
-}
 
+    @Override
+    public List<Integer> findActiveIdsBySchoolId(Integer schoolId) {
+        return classJPARepository.findIdsBySchoolIdAndDeletionDateIsNull(schoolId);
+    }
+
+    @Override
+    public void softDeleteBySchoolId(Integer schoolId) {
+        classJPARepository.softDeleteBySchoolId(schoolId);
+    }
+}

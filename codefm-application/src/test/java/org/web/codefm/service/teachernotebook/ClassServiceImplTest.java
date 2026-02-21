@@ -1,20 +1,5 @@
 package org.web.codefm.service.teachernotebook;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,15 +8,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.School;
-import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
+import org.web.codefm.domain.exception.teachernotebook.*;
 import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
-import org.web.codefm.domain.exception.teachernotebook.ClassValidationException;
-import org.web.codefm.domain.exception.teachernotebook.SchoolForbiddenException;
-import org.web.codefm.domain.exception.teachernotebook.SchoolNotFoundException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
+import org.web.codefm.domain.repository.teachernotebook.*;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionUser;
+
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ClassServiceImplTest {
@@ -41,6 +28,18 @@ class ClassServiceImplTest {
 
     @Mock
     private SchoolService schoolService;
+
+    @Mock
+    private SubjectClassRepository subjectClassRepository;
+
+    @Mock
+    private ScheduleRepository scheduleRepository;
+
+    @Mock
+    private StudentClassRepository studentClassRepository;
+
+    @Mock
+    private ExerciseRepository exerciseRepository;
 
     @Mock
     private MessageSource messageSource;
@@ -315,7 +314,6 @@ class ClassServiceImplTest {
 
     @Test
     void softDeleteClass_shouldCallRepository_whenClassExistsAndSchoolOwnedByTeacher() {
-        // Given
         Integer classId = 1;
         Integer teacherId = 1;
         Integer schoolId = 10;
@@ -336,14 +334,40 @@ class ClassServiceImplTest {
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(classId)).thenReturn(Optional.of(clazz));
         when(schoolService.getSchoolById(schoolId)).thenReturn(Optional.of(school));
+        when(subjectClassRepository.findActiveIdsByClassId(classId)).thenReturn(Collections.emptyList());
         when(classRepository.softDeleteClass(classId, teacherId)).thenReturn(clazz);
 
-        // When
         classService.softDeleteClass(classId, teacherId);
 
-        // Then
         verify(classRepository, times(1)).findById(classId);
         verify(schoolService, times(1)).getSchoolById(schoolId);
+        verify(studentClassRepository, times(1)).softDeleteByClassId(classId);
+        verify(subjectClassRepository, times(1)).softDeleteByClassId(classId);
+        verify(scheduleRepository, times(1)).softDeleteByClassId(classId);
+        verify(classRepository, times(1)).softDeleteClass(classId, teacherId);
+    }
+
+    @Test
+    void softDeleteClass_shouldCascadeDeleteAllDependencies() {
+        Integer classId = 1;
+        Integer teacherId = 1;
+        Integer schoolId = 10;
+
+        Class clazz = Class.builder().id(classId).schoolId(schoolId).name("Test Class").schoolYear("24/25").build();
+        School school = School.builder().id(schoolId).teacherId(teacherId).name("Test School").build();
+
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(classRepository.findById(classId)).thenReturn(Optional.of(clazz));
+        when(schoolService.getSchoolById(schoolId)).thenReturn(Optional.of(school));
+        when(subjectClassRepository.findActiveIdsByClassId(classId)).thenReturn(Arrays.asList(100, 101));
+        when(classRepository.softDeleteClass(classId, teacherId)).thenReturn(clazz);
+
+        classService.softDeleteClass(classId, teacherId);
+
+        verify(exerciseRepository, times(1)).softDeleteBySubjectClassIds(Arrays.asList(100, 101));
+        verify(studentClassRepository, times(1)).softDeleteByClassId(classId);
+        verify(subjectClassRepository, times(1)).softDeleteByClassId(classId);
+        verify(scheduleRepository, times(1)).softDeleteByClassId(classId);
         verify(classRepository, times(1)).softDeleteClass(classId, teacherId);
     }
 

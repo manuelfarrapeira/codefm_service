@@ -96,6 +96,13 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
         return exerciseJPARepository.subjectClassBelongsToTeacher(subjectClassId, teacherId);
     }
 
+    @Override
+    public void softDeleteBySubjectClassIds(List<Integer> subjectClassIds) {
+        if (subjectClassIds != null && !subjectClassIds.isEmpty()) {
+            exerciseJPARepository.softDeleteBySubjectClassIds(subjectClassIds);
+        }
+    }
+
     private void enrichWithSubjectData(Exercise exercise) {
         var scOpt = subjectClassJPARepository.findById(exercise.getSubjectClassId());
         scOpt.ifPresent(sc -> {
@@ -105,4 +112,3 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
         });
     }
 }
-

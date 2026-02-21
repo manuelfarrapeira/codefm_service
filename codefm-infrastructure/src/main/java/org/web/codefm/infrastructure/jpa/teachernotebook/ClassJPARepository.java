@@ -48,5 +48,12 @@ public interface ClassJPARepository extends JpaRepository<ClassEntity, Integer> 
     @Transactional
     @Query("UPDATE ClassEntity c SET c.deletionDate = CURRENT_DATE WHERE c.id = :classId AND c.schoolId IN (SELECT s.id FROM SchoolEntity s WHERE s.teacherId = :teacherId AND s.deletionDate IS NULL)")
     int softDeleteClass(@Param("classId") Integer classId, @Param("teacherId") Integer teacherId);
-}
 
+    @Query("SELECT c.id FROM ClassEntity c WHERE c.schoolId = :schoolId AND c.deletionDate IS NULL")
+    List<Integer> findIdsBySchoolIdAndDeletionDateIsNull(@Param("schoolId") Integer schoolId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE ClassEntity c SET c.deletionDate = CURRENT_DATE WHERE c.schoolId = :schoolId AND c.deletionDate IS NULL")
+    void softDeleteBySchoolId(@Param("schoolId") Integer schoolId);
+}

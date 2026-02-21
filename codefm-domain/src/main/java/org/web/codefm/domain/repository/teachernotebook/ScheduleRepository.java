@@ -88,4 +88,18 @@ public interface ScheduleRepository {
      * @return true if there is an overlapping schedule, false otherwise
      */
     boolean existsOverlappingSchedule(Integer classId, Integer day, java.time.LocalTime start, java.time.LocalTime end, Integer excludeScheduleId);
+
+    /**
+     * Soft-deletes all schedules for a specific class.
+     *
+     * @param classId The unique identifier of the class
+     */
+    void softDeleteByClassId(Integer classId);
+
+    /**
+     * Soft-deletes all schedules for a specific subject.
+     *
+     * @param subjectId The unique identifier of the subject
+     */
+    void softDeleteBySubjectId(Integer subjectId);
 }

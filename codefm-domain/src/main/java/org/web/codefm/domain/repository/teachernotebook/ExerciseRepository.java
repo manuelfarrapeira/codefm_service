@@ -59,5 +59,11 @@ public interface ExerciseRepository {
      * @return true if the subject-class association exists, is active, and belongs to the teacher
      */
     boolean subjectClassBelongsToTeacher(Integer subjectClassId, Integer teacherId);
-}
 
+    /**
+     * Soft-deletes all exercises for the given subject-class association IDs.
+     *
+     * @param subjectClassIds The list of subject-class association IDs
+     */
+    void softDeleteBySubjectClassIds(List<Integer> subjectClassIds);
+}

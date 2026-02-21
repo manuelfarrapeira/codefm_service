@@ -13,7 +13,7 @@ import org.web.codefm.domain.exception.teachernotebook.SchoolForbiddenException;
 import org.web.codefm.domain.exception.teachernotebook.SchoolNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SchoolValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.SchoolRepository;
+import org.web.codefm.domain.repository.teachernotebook.*;
 import org.web.codefm.domain.session.SessionUser;
 
 import java.util.*;
@@ -29,6 +29,16 @@ class SchoolServiceImplTest {
     @Mock
     private SchoolRepository schoolRepository;
     @Mock
+    private ClassRepository classRepository;
+    @Mock
+    private SubjectClassRepository subjectClassRepository;
+    @Mock
+    private ScheduleRepository scheduleRepository;
+    @Mock
+    private StudentClassRepository studentClassRepository;
+    @Mock
+    private ExerciseRepository exerciseRepository;
+    @Mock
     private MessageSource messageSource;
     @Mock
     private SessionUser sessionUser;
@@ -40,7 +50,8 @@ class SchoolServiceImplTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        schoolService = new SchoolServiceImpl(schoolRepository, messageSource, sessionUser);
+        schoolService = new SchoolServiceImpl(schoolRepository, classRepository, subjectClassRepository,
+                scheduleRepository, studentClassRepository, exerciseRepository, messageSource, sessionUser);
     }
 
     @Test
@@ -146,11 +157,41 @@ class SchoolServiceImplTest {
         School school = School.builder().id(schoolId).teacherId(teacherId).name("School A").build();
 
         when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
+        when(classRepository.findActiveIdsBySchoolId(schoolId)).thenReturn(Collections.emptyList());
         when(schoolRepository.softDeleteSchool(schoolId, teacherId)).thenReturn(school);
 
         schoolService.softDeleteSchool(schoolId, teacherId);
 
         verify(schoolRepository, times(1)).findById(schoolId);
+        verify(classRepository, times(1)).findActiveIdsBySchoolId(schoolId);
+        verify(classRepository, times(1)).softDeleteBySchoolId(schoolId);
+        verify(schoolRepository, times(1)).softDeleteSchool(schoolId, teacherId);
+    }
+
+    @Test
+    void softDeleteSchool_shouldCascadeDeleteAllDependencies() {
+        Integer schoolId = 1;
+        Integer teacherId = 101;
+        Integer classId1 = 10;
+        Integer classId2 = 20;
+        School school = School.builder().id(schoolId).teacherId(teacherId).name("School A").build();
+
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
+        when(classRepository.findActiveIdsBySchoolId(schoolId)).thenReturn(Arrays.asList(classId1, classId2));
+        when(subjectClassRepository.findActiveIdsByClassId(classId1)).thenReturn(Arrays.asList(100, 101));
+        when(subjectClassRepository.findActiveIdsByClassId(classId2)).thenReturn(Collections.emptyList());
+        when(schoolRepository.softDeleteSchool(schoolId, teacherId)).thenReturn(school);
+
+        schoolService.softDeleteSchool(schoolId, teacherId);
+
+        verify(exerciseRepository, times(1)).softDeleteBySubjectClassIds(Arrays.asList(100, 101));
+        verify(studentClassRepository, times(1)).softDeleteByClassId(classId1);
+        verify(subjectClassRepository, times(1)).softDeleteByClassId(classId1);
+        verify(scheduleRepository, times(1)).softDeleteByClassId(classId1);
+        verify(studentClassRepository, times(1)).softDeleteByClassId(classId2);
+        verify(subjectClassRepository, times(1)).softDeleteByClassId(classId2);
+        verify(scheduleRepository, times(1)).softDeleteByClassId(classId2);
+        verify(classRepository, times(1)).softDeleteBySchoolId(schoolId);
         verify(schoolRepository, times(1)).softDeleteSchool(schoolId, teacherId);
     }
 

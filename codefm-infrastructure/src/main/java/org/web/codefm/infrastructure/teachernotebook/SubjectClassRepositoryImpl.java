@@ -22,6 +22,7 @@ import org.web.codefm.infrastructure.mapper.SubjectMapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Repository
@@ -101,5 +102,30 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
                 })
                 .toList();
     }
-}
 
+    @Override
+    public void softDeleteByClassId(Integer classId) {
+        subjectClassJPARepository.softDeleteByClassId(classId);
+    }
+
+    @Override
+    public void softDeleteBySubjectId(Integer subjectId) {
+        subjectClassJPARepository.softDeleteBySubjectId(subjectId);
+    }
+
+    @Override
+    public List<Integer> findActiveIdsByClassId(Integer classId) {
+        return subjectClassJPARepository.findIdsByClassIdAndDeletionDateIsNull(classId);
+    }
+
+    @Override
+    public List<Integer> findActiveIdsBySubjectId(Integer subjectId) {
+        return subjectClassJPARepository.findIdsBySubjectIdAndDeletionDateIsNull(subjectId);
+    }
+
+    @Override
+    public Optional<Integer> findIdBySubjectIdAndClassId(Integer subjectId, Integer classId) {
+        return subjectClassJPARepository.findBySubjectIdAndClassIdAndDeletionDateIsNull(subjectId, classId)
+                .map(SubjectClassEntity::getId);
+    }
+}

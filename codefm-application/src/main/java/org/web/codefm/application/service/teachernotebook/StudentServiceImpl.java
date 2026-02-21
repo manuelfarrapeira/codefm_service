@@ -77,6 +77,8 @@ public class StudentServiceImpl implements StudentService {
             );
         }
 
+        studentClassRepository.softDeleteByStudentId(id);
+
         studentRepository.softDelete(id, teacherId);
     }
 

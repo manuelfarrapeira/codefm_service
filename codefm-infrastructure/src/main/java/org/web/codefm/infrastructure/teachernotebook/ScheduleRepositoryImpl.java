@@ -78,4 +78,14 @@ public class ScheduleRepositoryImpl implements ScheduleRepository {
         }
         return scheduleJPARepository.existsOverlappingSchedule(classId, day, start, end);
     }
+
+    @Override
+    public void softDeleteByClassId(Integer classId) {
+        scheduleJPARepository.softDeleteByClassId(classId);
+    }
+
+    @Override
+    public void softDeleteBySubjectId(Integer subjectId) {
+        scheduleJPARepository.softDeleteBySubjectId(subjectId);
+    }
 }
