@@ -53,5 +53,19 @@ public interface ClassRepository {
      * @return The soft-deleted Class object
      */
     Class softDeleteClass(Integer classId, Integer teacherId);
-}
 
+    /**
+     * Finds all active (not soft-deleted) class IDs for a specific school.
+     *
+     * @param schoolId The unique identifier of the school
+     * @return List of active class IDs
+     */
+    List<Integer> findActiveIdsBySchoolId(Integer schoolId);
+
+    /**
+     * Soft-deletes all classes for a specific school.
+     *
+     * @param schoolId The unique identifier of the school
+     */
+    void softDeleteBySchoolId(Integer schoolId);
+}

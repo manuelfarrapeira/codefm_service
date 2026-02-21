@@ -36,6 +36,16 @@ public interface ScheduleJPARepository extends JpaRepository<ScheduleEntity, Int
     @Query("UPDATE ScheduleEntity s SET s.deletionDate = CURRENT_DATE WHERE s.id IN :ids")
     void softDeleteByIds(@Param("ids") List<Integer> ids);
 
+    @Modifying
+    @Transactional
+    @Query("UPDATE ScheduleEntity s SET s.deletionDate = CURRENT_DATE WHERE s.classId = :classId AND s.deletionDate IS NULL")
+    void softDeleteByClassId(@Param("classId") Integer classId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE ScheduleEntity s SET s.deletionDate = CURRENT_DATE WHERE s.subjectId = :subjectId AND s.deletionDate IS NULL")
+    void softDeleteBySubjectId(@Param("subjectId") Integer subjectId);
+
     @Query("SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END FROM ScheduleEntity s " +
             "WHERE s.classId = :classId AND s.day = :day AND s.deletionDate IS NULL " +
             "AND ((s.start < :endTime AND s.end > :startTime))")

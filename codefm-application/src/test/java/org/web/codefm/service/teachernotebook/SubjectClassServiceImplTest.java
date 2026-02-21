@@ -15,6 +15,7 @@ import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectClassValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
+import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
 import org.web.codefm.domain.session.SessionParameter;
@@ -36,6 +37,8 @@ class SubjectClassServiceImplTest {
     @Mock
     private SubjectRepository subjectRepository;
     @Mock
+    private ExerciseRepository exerciseRepository;
+    @Mock
     private MessageSource messageSource;
     @Mock
     private SessionUser sessionUser;
@@ -52,7 +55,7 @@ class SubjectClassServiceImplTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         subjectClassService = new SubjectClassServiceImpl(
-                subjectClassRepository, classRepository, subjectRepository, messageSource, sessionUser);
+                subjectClassRepository, classRepository, subjectRepository, exerciseRepository, messageSource, sessionUser);
         lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
     }
@@ -196,7 +199,7 @@ class SubjectClassServiceImplTest {
     }
 
     @Test
-    void removeSubjectsFromClass_shouldRemoveSubjects_whenClassBelongsToTeacher() {
+    void removeSubjectsFromClass_shouldRemoveSubjectsAndCascadeDeleteExercises_whenClassBelongsToTeacher() {
         Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").build();
         List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2);
 
@@ -206,10 +209,15 @@ class SubjectClassServiceImplTest {
                 .thenReturn(true);
         when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID_2, CLASS_ID))
                 .thenReturn(true);
+        when(subjectClassRepository.findIdBySubjectIdAndClassId(SUBJECT_ID_1, CLASS_ID))
+                .thenReturn(Optional.of(200));
+        when(subjectClassRepository.findIdBySubjectIdAndClassId(SUBJECT_ID_2, CLASS_ID))
+                .thenReturn(Optional.of(201));
         doNothing().when(subjectClassRepository).softDeleteAll(CLASS_ID, subjectIds);
 
         assertDoesNotThrow(() -> subjectClassService.removeSubjectsFromClass(CLASS_ID, subjectIds));
 
+        verify(exerciseRepository).softDeleteBySubjectClassIds(Arrays.asList(200, 201));
         verify(subjectClassRepository).softDeleteAll(CLASS_ID, subjectIds);
     }
 

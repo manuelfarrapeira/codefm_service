@@ -1,0 +1,175 @@
+{
+  "info": {
+    "_postman_id": "exercises-collection",
+    "name": "Teacher Notebook - Exercises",
+    "description": "Colección para gestionar ejercicios de asignaturas-clases",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Exercises by Class",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/exercises",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "exercises"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID de la clase"
+            }
+          ]
+        },
+        "description": "Obtiene todos los ejercicios activos de una clase específica."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Exercise",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Examen Unidad 1\",\n    \"description\": \"Examen que cubre los capítulos 1-3\",\n    \"quarter\": 1,\n    \"percentageGrade\": 30,\n    \"maxGrade\": 10\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/subject-classes/:subjectClassId/exercises",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "subject-classes",
+            ":subjectClassId",
+            "exercises"
+          ],
+          "variable": [
+            {
+              "key": "subjectClassId",
+              "value": "1",
+              "description": "ID de la asociación asignatura-clase"
+            }
+          ]
+        },
+        "description": "Crea un nuevo ejercicio para una asociación asignatura-clase.\n\nQuarter: 1, 2 o 3\npercentageGrade: 1-100\nmaxGrade: 1-15"
+      },
+      "response": []
+    },
+    {
+      "name": "Update Exercise",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Examen Actualizado\",\n    \"description\": \"Descripción actualizada\",\n    \"quarter\": 2,\n    \"percentageGrade\": 50,\n    \"maxGrade\": 12\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/exercises/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "exercises",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID del ejercicio"
+            }
+          ]
+        },
+        "description": "Actualiza un ejercicio existente (título, descripción, trimestre, porcentaje y nota máxima)."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Exercise",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/exercises/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "exercises",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID del ejercicio"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) un ejercicio por su ID."
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
+}
+

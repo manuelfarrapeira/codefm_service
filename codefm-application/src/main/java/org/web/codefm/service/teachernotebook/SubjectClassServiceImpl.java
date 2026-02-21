@@ -13,6 +13,7 @@ import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectClassValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
+import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
 import org.web.codefm.domain.service.teachernotebook.SubjectClassService;
@@ -33,6 +34,7 @@ public class SubjectClassServiceImpl implements SubjectClassService {
     private final SubjectClassRepository subjectClassRepository;
     private final ClassRepository classRepository;
     private final SubjectRepository subjectRepository;
+    private final ExerciseRepository exerciseRepository;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -102,6 +104,16 @@ public class SubjectClassServiceImpl implements SubjectClassService {
         validateSubjectClassAssociationsExist(classId, subjectIds, errors, locale);
         if (!errors.isEmpty()) {
             throw new SubjectClassValidationException(errors);
+        }
+
+        List<Integer> subjectClassIdsToDelete = new ArrayList<>();
+        for (Integer subjectId : subjectIds) {
+            subjectClassRepository.findIdBySubjectIdAndClassId(subjectId, classId)
+                    .ifPresent(subjectClassIdsToDelete::add);
+        }
+
+        if (!subjectClassIdsToDelete.isEmpty()) {
+            exerciseRepository.softDeleteBySubjectClassIds(subjectClassIdsToDelete);
         }
 
         subjectClassRepository.softDeleteAll(classId, subjectIds);

@@ -61,5 +61,18 @@ public interface StudentClassRepository {
      * @param studentId The unique identifier of the student
      */
     void softDelete(Integer classId, Integer studentId);
-}
 
+    /**
+     * Soft-deletes all student-class associations for a specific class.
+     *
+     * @param classId The unique identifier of the class
+     */
+    void softDeleteByClassId(Integer classId);
+
+    /**
+     * Soft-deletes all student-class associations for a specific student.
+     *
+     * @param studentId The unique identifier of the student
+     */
+    void softDeleteByStudentId(Integer studentId);
+}

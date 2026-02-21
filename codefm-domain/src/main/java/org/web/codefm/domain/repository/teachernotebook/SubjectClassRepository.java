@@ -5,6 +5,7 @@ import org.web.codefm.domain.entity.teachernotebook.Subject;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClass;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository interface for subject-class association data access operations.
@@ -52,5 +53,43 @@ public interface SubjectClassRepository {
      * @return List of classes with their subjects belonging to the specified teacher
      */
     List<ClassWithSubjects> findAllClassesWithSubjectsByTeacherId(Integer teacherId);
-}
 
+    /**
+     * Soft-deletes all subject-class associations for a specific class.
+     *
+     * @param classId The unique identifier of the class
+     */
+    void softDeleteByClassId(Integer classId);
+
+    /**
+     * Soft-deletes all subject-class associations for a specific subject.
+     *
+     * @param subjectId The unique identifier of the subject
+     */
+    void softDeleteBySubjectId(Integer subjectId);
+
+    /**
+     * Finds all active subject-class association IDs for a specific class.
+     *
+     * @param classId The unique identifier of the class
+     * @return List of active subject-class association IDs
+     */
+    List<Integer> findActiveIdsByClassId(Integer classId);
+
+    /**
+     * Finds all active subject-class association IDs for a specific subject.
+     *
+     * @param subjectId The unique identifier of the subject
+     * @return List of active subject-class association IDs
+     */
+    List<Integer> findActiveIdsBySubjectId(Integer subjectId);
+
+    /**
+     * Finds the ID of an active subject-class association.
+     *
+     * @param subjectId The unique identifier of the subject
+     * @param classId   The unique identifier of the class
+     * @return Optional with the subject-class association ID if found and active
+     */
+    Optional<Integer> findIdBySubjectIdAndClassId(Integer subjectId, Integer classId);
+}

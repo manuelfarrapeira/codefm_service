@@ -13,6 +13,9 @@ import org.web.codefm.domain.exception.teachernotebook.SubjectForbiddenException
 import org.web.codefm.domain.exception.teachernotebook.SubjectNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
+import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
+import org.web.codefm.domain.repository.teachernotebook.ScheduleRepository;
+import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
@@ -30,6 +33,12 @@ class SubjectServiceImplTest {
     @Mock
     private SubjectRepository subjectRepository;
     @Mock
+    private SubjectClassRepository subjectClassRepository;
+    @Mock
+    private ScheduleRepository scheduleRepository;
+    @Mock
+    private ExerciseRepository exerciseRepository;
+    @Mock
     private MessageSource messageSource;
     @Mock
     private SessionUser sessionUser;
@@ -42,7 +51,8 @@ class SubjectServiceImplTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        subjectService = new SubjectServiceImpl(subjectRepository, messageSource, sessionUser);
+        subjectService = new SubjectServiceImpl(subjectRepository, subjectClassRepository,
+                scheduleRepository, exerciseRepository, messageSource, sessionUser);
         lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
     }
 
@@ -176,11 +186,31 @@ class SubjectServiceImplTest {
         Subject subject = Subject.builder().id(subjectId).teacherId(TEACHER_ID).name("Subject A").build();
 
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(subject));
+        when(subjectClassRepository.findActiveIdsBySubjectId(subjectId)).thenReturn(Collections.emptyList());
         when(subjectRepository.softDeleteSubject(subjectId, TEACHER_ID)).thenReturn(subject);
 
         subjectService.softDeleteSubject(subjectId);
 
         verify(subjectRepository, times(1)).findById(subjectId);
+        verify(subjectClassRepository, times(1)).softDeleteBySubjectId(subjectId);
+        verify(scheduleRepository, times(1)).softDeleteBySubjectId(subjectId);
+        verify(subjectRepository, times(1)).softDeleteSubject(subjectId, TEACHER_ID);
+    }
+
+    @Test
+    void softDeleteSubject_shouldCascadeDeleteAllDependencies() {
+        Integer subjectId = 1;
+        Subject subject = Subject.builder().id(subjectId).teacherId(TEACHER_ID).name("Subject A").build();
+
+        when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(subject));
+        when(subjectClassRepository.findActiveIdsBySubjectId(subjectId)).thenReturn(Arrays.asList(100, 101));
+        when(subjectRepository.softDeleteSubject(subjectId, TEACHER_ID)).thenReturn(subject);
+
+        subjectService.softDeleteSubject(subjectId);
+
+        verify(exerciseRepository, times(1)).softDeleteBySubjectClassIds(Arrays.asList(100, 101));
+        verify(subjectClassRepository, times(1)).softDeleteBySubjectId(subjectId);
+        verify(scheduleRepository, times(1)).softDeleteBySubjectId(subjectId);
         verify(subjectRepository, times(1)).softDeleteSubject(subjectId, TEACHER_ID);
     }
 

@@ -30,5 +30,20 @@ public interface SubjectClassJPARepository extends JpaRepository<SubjectClassEnt
             "JOIN SchoolEntity s ON c.schoolId = s.id " +
             "WHERE s.teacherId = :teacherId AND sc.deletionDate IS NULL AND c.deletionDate IS NULL AND s.deletionDate IS NULL")
     List<Integer> findClassIdsByTeacherId(@Param("teacherId") Integer teacherId);
-}
 
+    @Modifying
+    @Transactional
+    @Query("UPDATE SubjectClassEntity sc SET sc.deletionDate = CURRENT_DATE WHERE sc.classId = :classId AND sc.deletionDate IS NULL")
+    void softDeleteByClassId(@Param("classId") Integer classId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE SubjectClassEntity sc SET sc.deletionDate = CURRENT_DATE WHERE sc.subjectId = :subjectId AND sc.deletionDate IS NULL")
+    void softDeleteBySubjectId(@Param("subjectId") Integer subjectId);
+
+    @Query("SELECT sc.id FROM SubjectClassEntity sc WHERE sc.classId = :classId AND sc.deletionDate IS NULL")
+    List<Integer> findIdsByClassIdAndDeletionDateIsNull(@Param("classId") Integer classId);
+
+    @Query("SELECT sc.id FROM SubjectClassEntity sc WHERE sc.subjectId = :subjectId AND sc.deletionDate IS NULL")
+    List<Integer> findIdsBySubjectIdAndDeletionDateIsNull(@Param("subjectId") Integer subjectId);
+}

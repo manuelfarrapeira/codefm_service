@@ -63,5 +63,14 @@ public class StudentClassRepositoryImpl implements StudentClassRepository {
         entity.setDeletionDate(LocalDate.now());
         studentClassJPARepository.save(entity);
     }
-}
 
+    @Override
+    public void softDeleteByClassId(Integer classId) {
+        studentClassJPARepository.softDeleteByClassId(classId);
+    }
+
+    @Override
+    public void softDeleteByStudentId(Integer studentId) {
+        studentClassJPARepository.softDeleteByStudentId(studentId);
+    }
+}

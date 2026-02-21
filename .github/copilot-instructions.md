@@ -652,7 +652,7 @@ public class MessageKeys {
 
 ## Patrón de Soft Delete
 
-**Ubicación**: Implementación de Repository
+**Ubicación**: Implementación de Repository (para la operación unitaria)
 
 ```java
 @Override
@@ -673,6 +673,113 @@ public School softDeleteSchool(Integer schoolId, Integer teacherId) {
 - Lanzar `IllegalArgumentException` si no se encuentra
 - Establecer `deletionDate` a `LocalDate.now()`
 - Guardar y retornar entidad mapeada al dominio
+
+### Soft Delete en Cascada (CRÍTICO)
+
+**OBLIGATORIO**: Cada vez que se realice un soft delete de una entidad, se DEBEN dar de baja en cascada **todas las
+entidades dependientes** y las dependientes de estas, recursivamente, hasta el final de la cadena.
+
+**La cascada se gestiona SIEMPRE desde Java (ServiceImpl), NUNCA con triggers de base de datos.**
+
+#### Cadena de dependencias actual
+
+```
+School
+  └── Classes (school_id)
+        ├── StudentClasses (id_class)
+        ├── SubjectClasses (id_class)
+        │     └── Exercises (id_subject_class)
+        └── Schedules (class_id)
+
+Subject
+  ├── SubjectClasses (id_subject)
+  │     └── Exercises (id_subject_class)
+  └── Schedules (subject_id)
+
+Student
+  └── StudentClasses (student_id)
+```
+
+#### Implementación obligatoria
+
+La cascada se implementa en el método `softDelete` del **ServiceImpl** con `@Transactional`:
+
+```java
+
+@Override
+@Transactional
+public void softDeleteSchool(Integer schoolId, Integer teacherId) {
+    Locale locale = sessionUser.getLocale();
+    SchoolValidationUtil.validateSchoolOwnership(schoolId, teacherId, this, messageSource, locale);
+
+    List<Integer> classIds = classRepository.findActiveIdsBySchoolId(schoolId);
+
+    for (Integer classId : classIds) {
+        cascadeDeleteClass(classId);
+    }
+
+    classRepository.softDeleteBySchoolId(schoolId);
+    schoolRepository.softDeleteSchool(schoolId, teacherId);
+}
+
+private void cascadeDeleteClass(Integer classId) {
+    List<Integer> subjectClassIds = subjectClassRepository.findActiveIdsByClassId(classId);
+
+    if (!subjectClassIds.isEmpty()) {
+        exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);
+    }
+
+    studentClassRepository.softDeleteByClassId(classId);
+    subjectClassRepository.softDeleteByClassId(classId);
+    scheduleRepository.softDeleteByClassId(classId);
+}
+```
+
+#### Reglas de la cascada
+
+1. **El Service que hace el soft delete** inyecta los repositories de las entidades dependientes
+2. **Primero** se dan de baja las entidades más profundas de la cadena (exercises), **después** las intermedias
+   (subjectClasses, schedules, studentClasses), y **por último** la entidad principal
+3. **`@Transactional`** en el método del Service garantiza que toda la cascada es atómica
+4. **Los RepositoryImpl de cascada NO necesitan `@Transactional`** porque participan de la transacción del Service
+5. **Cada Repository** debe exponer métodos de soft delete masivo (`softDeleteByClassId`, `softDeleteBySubjectId`, etc.)
+   implementados con queries `@Modifying` en el JPA Repository
+6. **Siempre que se añada una nueva entidad dependiente**, actualizar la cascada de la entidad padre
+
+#### Métodos necesarios en cada capa
+
+| Capa              | Método                                                                      | Ejemplo                                                  |
+|-------------------|-----------------------------------------------------------------------------|----------------------------------------------------------|
+| JPA Repository    | `@Modifying @Query("UPDATE ... SET deletionDate = CURRENT_DATE WHERE ...")` | `softDeleteByClassId(Integer classId)`                   |
+| Domain Repository | Interfaz con JavaDoc                                                        | `void softDeleteByClassId(Integer classId)`              |
+| RepositoryImpl    | Delegación al JPA                                                           | `subjectClassJPARepository.softDeleteByClassId(classId)` |
+| Domain Repository | Método para obtener IDs activos                                             | `List<Integer> findActiveIdsByClassId(Integer classId)`  |
+
+#### Tests de cascada
+
+Cada test de soft delete DEBE verificar que se llama a los métodos de cascada de todas las dependencias:
+
+```java
+
+@Test
+void softDeleteSchool_shouldCascadeDeleteAllDependencies() {
+    when(classRepository.findActiveIdsBySchoolId(schoolId)).thenReturn(Arrays.asList(classId1, classId2));
+    when(subjectClassRepository.findActiveIdsByClassId(classId1)).thenReturn(Arrays.asList(100, 101));
+    when(subjectClassRepository.findActiveIdsByClassId(classId2)).thenReturn(Collections.emptyList());
+
+    schoolService.softDeleteSchool(schoolId, teacherId);
+
+    verify(exerciseRepository).softDeleteBySubjectClassIds(Arrays.asList(100, 101));
+    verify(studentClassRepository).softDeleteByClassId(classId1);
+    verify(subjectClassRepository).softDeleteByClassId(classId1);
+    verify(scheduleRepository).softDeleteByClassId(classId1);
+    verify(studentClassRepository).softDeleteByClassId(classId2);
+    verify(subjectClassRepository).softDeleteByClassId(classId2);
+    verify(scheduleRepository).softDeleteByClassId(classId2);
+    verify(classRepository).softDeleteBySchoolId(schoolId);
+    verify(schoolRepository).softDeleteSchool(schoolId, teacherId);
+}
+```
 
 ---
 
