@@ -32,6 +32,9 @@ public class StudentEntity {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
+    @Column(length = 1)
+    private String gender;
+
     @Column(name = "aditional_info", columnDefinition = "TEXT")
     private String additionalInfo;
 

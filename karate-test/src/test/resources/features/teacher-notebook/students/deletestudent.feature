@@ -12,7 +12,8 @@ Feature: Teacher Notebook - Delete Student
 #      {
 #        "name": "Ana",
 #        "surnames": "Sánchez Fernández",
-#        "dateOfBirth": "25/11/2013"
+#        "dateOfBirth": "25/11/2013",
+#        "gender": "F"
 #      }
 #      """
 #    Given path '/teacher-notebook/v1/students'

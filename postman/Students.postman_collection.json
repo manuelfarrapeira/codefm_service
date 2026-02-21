@@ -94,7 +94,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"name\": \"Juan\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"additionalInfo\": \"Información adicional del estudiante\"\n}"
+          "raw": "{\n    \"name\": \"Juan\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"gender\": \"M\",\n    \"additionalInfo\": \"Información adicional del estudiante\"\n}"
         },
         "url": {
           "raw": "{{host}}/teacher-notebook/v1/students",
@@ -107,7 +107,7 @@
             "students"
           ]
         },
-        "description": "Crea un nuevo estudiante."
+        "description": "Crea un nuevo estudiante. El campo gender es obligatorio (M=Masculino, F=Femenino)."
       },
       "response": []
     },
@@ -128,7 +128,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"name\": \"Juan Carlos\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"additionalInfo\": \"Información actualizada\"\n}"
+          "raw": "{\n    \"name\": \"Juan Carlos\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"gender\": \"M\",\n    \"additionalInfo\": \"Información actualizada\"\n}"
         },
         "url": {
           "raw": "{{host}}/teacher-notebook/v1/students/:id",
@@ -149,7 +149,7 @@
             }
           ]
         },
-        "description": "Actualiza un estudiante existente."
+        "description": "Actualiza un estudiante existente. El campo gender es obligatorio (M=Masculino, F=Femenino)."
       },
       "response": []
     },

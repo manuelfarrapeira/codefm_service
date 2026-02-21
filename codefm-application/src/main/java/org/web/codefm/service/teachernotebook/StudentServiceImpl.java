@@ -60,6 +60,7 @@ public class StudentServiceImpl implements StudentService {
         existingStudent.setName(student.getName());
         existingStudent.setSurnames(student.getSurnames());
         existingStudent.setDateOfBirth(student.getDateOfBirth());
+        existingStudent.setGender(student.getGender());
         existingStudent.setAdditionalInfo(student.getAdditionalInfo());
 
         return studentRepository.update(existingStudent);
@@ -184,6 +185,16 @@ public class StudentServiceImpl implements StudentService {
         } else if (student.getSurnames().trim().length() < MIN_NAME_LENGTH) {
             errors.add(new ErrorMessage("surnames",
                     messageSource.getMessage(MessageKeys.STUDENT_VALIDATION_SURNAMES_MIN_LENGTH, null, sessionUser.getLocale())
+            ));
+        }
+
+        if (student.getGender() == null || student.getGender().trim().isEmpty()) {
+            errors.add(new ErrorMessage("gender",
+                    messageSource.getMessage(MessageKeys.STUDENT_VALIDATION_GENDER_REQUIRED, null, sessionUser.getLocale())
+            ));
+        } else if (!student.getGender().equals("M") && !student.getGender().equals("F")) {
+            errors.add(new ErrorMessage("gender",
+                    messageSource.getMessage(MessageKeys.STUDENT_VALIDATION_GENDER_INVALID, null, sessionUser.getLocale())
             ));
         }
 
