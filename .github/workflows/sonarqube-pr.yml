@@ -35,22 +35,17 @@ jobs:
         id: tests
         run: mvn -B clean verify jacoco:report
 
-      - name: Set Quality Gate details if tests failed
-        if: failure() && steps.tests.outcome == 'failure'
-        run: |
-          echo "## ❌ Test execution failed" > qualitygate-details.txt
-          echo "" >> qualitygate-details.txt
-          echo "The test execution failed. Please check the logs for more details." >> qualitygate-details.txt
-
       - name: SonarQube Scan (multi-module)
-        if: success() && steps.tests.outcome == 'success'
+        id: sonar-scan
+        if: steps.tests.outcome == 'success'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: mvn sonar:sonar -Dsonar.login=$SONAR_TOKEN -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.projectKey=org.web:codeFm
 
       - name: SonarQube Quality Gate Check
-        if: success() && steps.tests.outcome == 'success'
+        id: quality-gate
+        if: steps.sonar-scan.outcome == 'success'
         uses: sonarsource/sonarqube-quality-gate-action@v1
         with:
           scanMetadataReportFile: ./target/sonar/report-task.txt
@@ -58,25 +53,21 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Get Quality Gate Details
-        if: success() && steps.tests.outcome == 'success'
+        if: always() && steps.sonar-scan.outcome == 'success'
         env:
           SONAR_USER: ${{ secrets.SONAR_USER }}
           SONAR_PASSWORD: ${{ secrets.SONAR_PASSWORD }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          # Get metrics and status
           METRICS_JSON=$(curl -s -u "${SONAR_USER}:${SONAR_PASSWORD}" "${SONAR_HOST_URL}/api/measures/component?component=org.web:codeFm&metricKeys=new_bugs,new_vulnerabilities,new_security_hotspots,new_code_smells,new_coverage,new_duplicated_lines_density")
           STATUS_JSON=$(curl -s -u "${SONAR_USER}:${SONAR_PASSWORD}" "${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=org.web:codeFm")
 
-          # Create the report
           {
             echo "## 🔍 Quality Gate Report"
             echo
 
-            # Section 1: Metrics
             echo "### 📊 Metrics"
 
-            # Process metrics
             echo "$METRICS_JSON" | jq -r '.component.measures[] |
             (if .metric == "new_coverage" or .metric == "new_duplicated_lines_density" then
               .period.value + "%"
@@ -94,10 +85,8 @@ jobs:
             end)](\($ENV.SONAR_HOST_URL)/component_measures?id=org.web:codeFm&metric=\(.metric)&view=list) → \($value)"'
             echo
 
-            # Section 2: Quality Gate Status
             echo "### 🎯 Quality Gate Status"
 
-            # Overall status
             STATUS=$(echo "$STATUS_JSON" | jq -r '.projectStatus.status')
             if [ "$STATUS" = "OK" ]; then
               echo "#### ✅ Overall Status: PASSED"
@@ -106,7 +95,6 @@ jobs:
             fi
             echo
 
-            # Individual statuses
             echo "$STATUS_JSON" | jq -r '.projectStatus.conditions[] |
             (if .metricKey | endswith("_rating") then
               .actualValue + " / " + .errorThreshold
@@ -126,6 +114,20 @@ jobs:
             echo "🔎 <a href=\"${SONAR_HOST_URL}/dashboard?id=org.web:codeFm&selected=new_code\" target=\"_blank\">View analysis in SonarQube</a>"
           } > qualitygate-details.txt
         shell: bash
+
+      - name: Set details if tests failed
+        if: always() && steps.tests.outcome == 'failure'
+        run: |
+          echo "## ❌ Test execution failed" > qualitygate-details.txt
+          echo "" >> qualitygate-details.txt
+          echo "The test execution failed. Please check the logs for more details." >> qualitygate-details.txt
+
+      - name: Set details if scan failed
+        if: always() && steps.tests.outcome == 'success' && steps.sonar-scan.outcome == 'failure'
+        run: |
+          echo "## ❌ SonarQube Scan failed" > qualitygate-details.txt
+          echo "" >> qualitygate-details.txt
+          echo "The SonarQube scan failed. Please check the logs for more details." >> qualitygate-details.txt
 
       - name: Comment Quality Gate details on PR
         if: always()

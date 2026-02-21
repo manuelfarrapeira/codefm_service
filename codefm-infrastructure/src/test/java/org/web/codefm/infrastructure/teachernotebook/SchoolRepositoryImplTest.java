@@ -5,7 +5,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.School;
+import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SchoolEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.ClassJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SchoolJPARepository;
@@ -13,6 +15,9 @@ import org.web.codefm.infrastructure.mapper.ClassMapper;
 import org.web.codefm.infrastructure.mapper.SchoolMapper;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,6 +40,48 @@ class SchoolRepositoryImplTest {
 
     @InjectMocks
     private SchoolRepositoryImpl schoolRepository;
+
+    @Test
+    void findByTeacherId_shouldReturnSchoolsWithClasses() {
+        Integer teacherId = 101;
+        SchoolEntity schoolEntity1 = new SchoolEntity(1, teacherId, "School A", "Town A", 123456789, null);
+        SchoolEntity schoolEntity2 = new SchoolEntity(2, teacherId, "School B", "Town B", 987654321, null);
+        School school1 = School.builder().id(1).teacherId(teacherId).name("School A").build();
+        School school2 = School.builder().id(2).teacherId(teacherId).name("School B").build();
+
+        ClassEntity classEntity = new ClassEntity(10, 1, "1A", "24/25", null);
+        Class clazz = Class.builder().id(10).schoolId(1).name("1A").schoolYear("24/25").build();
+
+        when(schoolJPARepository.findByTeacherId(teacherId)).thenReturn(Arrays.asList(schoolEntity1, schoolEntity2));
+        when(schoolMapper.toModelList(Arrays.asList(schoolEntity1, schoolEntity2))).thenReturn(Arrays.asList(school1, school2));
+        when(classJPARepository.findActiveClassesBySchoolIdAndTeacherId(1, teacherId)).thenReturn(List.of(classEntity));
+        when(classJPARepository.findActiveClassesBySchoolIdAndTeacherId(2, teacherId)).thenReturn(Collections.emptyList());
+        when(classMapper.toModelList(List.of(classEntity))).thenReturn(List.of(clazz));
+        when(classMapper.toModelList(Collections.emptyList())).thenReturn(Collections.emptyList());
+
+        List<School> result = schoolRepository.findByTeacherId(teacherId);
+
+        assertEquals(2, result.size());
+        assertEquals(1, result.get(0).getClasses().size());
+        assertEquals("1A", result.get(0).getClasses().get(0).getName());
+        assertTrue(result.get(1).getClasses().isEmpty());
+        verify(classJPARepository).findActiveClassesBySchoolIdAndTeacherId(1, teacherId);
+        verify(classJPARepository).findActiveClassesBySchoolIdAndTeacherId(2, teacherId);
+    }
+
+    @Test
+    void findByTeacherId_shouldReturnEmptyList_whenNoSchoolsExist() {
+        Integer teacherId = 101;
+
+        when(schoolJPARepository.findByTeacherId(teacherId)).thenReturn(Collections.emptyList());
+        when(schoolMapper.toModelList(Collections.emptyList())).thenReturn(Collections.emptyList());
+
+        List<School> result = schoolRepository.findByTeacherId(teacherId);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(classJPARepository, never()).findActiveClassesBySchoolIdAndTeacherId(any(), any());
+    }
 
     @Test
     void save_shouldMapToEntityAndSaveAndMapBackToModel() {
