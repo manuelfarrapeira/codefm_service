@@ -7,7 +7,6 @@ import lombok.Generated;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Entity
 @Table(name = "schools")
@@ -35,8 +34,4 @@ public class SchoolEntity {
 
     @Column(name = "deletion_date")
     private LocalDate deletionDate;
-
-    @OneToMany
-    @JoinColumn(name = "school_id")
-    private List<ClassEntity> classes;
 }
