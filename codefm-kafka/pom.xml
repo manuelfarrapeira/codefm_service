@@ -5,11 +5,11 @@
     <parent>
         <groupId>org.web</groupId>
         <artifactId>codeFm</artifactId>
-        <version>1.9.0</version>
+        <version>1.10.0-SNAPSHOT</version>
     </parent>
     <groupId>org.web.codefm</groupId>
     <artifactId>codefm-kafka</artifactId>
-    <version>1.9.0</version>
+    <version>1.10.0-SNAPSHOT</version>
     <name>codefm-kafka</name>
     <description>codefm-kafka</description>
 
