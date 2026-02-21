@@ -14,6 +14,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.web.codefm.domain.exception.ErrorCodeEnum;
 import org.web.codefm.domain.exception.UserNotFound;
 import org.web.codefm.domain.service.RestTemplateService;
+import org.web.codefm.domain.session.LoginResponse;
 import org.web.codefm.domain.session.TokenResponse;
 import org.web.codefm.domain.usecase.AutenticationUseCase;
 
@@ -48,7 +49,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
 
     @Override
-    public void login(String authHeader, HttpServletResponse response) {
+    public LoginResponse login(String authHeader, HttpServletResponse response) {
 
         try {
             String base64Credentials = authHeader.substring("Basic".length()).trim();
@@ -65,7 +66,11 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
             map.add("username", username);
             map.add("password", password);
 
-            getToken(response, map, tokenEndpoint);
+            TokenResponse tokens = getToken(response, map, tokenEndpoint);
+          String accessToken = tokens.getAccessToken();
+          String userName = extractGivenName(accessToken);
+
+          return new LoginResponse(accessToken, userName);
 
         } catch (HttpClientErrorException e) {
             log.error("Authentication error: {}", e.getMessage());
@@ -119,7 +124,7 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
     }
 
-    private void getToken(HttpServletResponse response, MultiValueMap<String, String> map, String tokenEndpoint) {
+    private TokenResponse getToken(HttpServletResponse response, MultiValueMap<String, String> map, String tokenEndpoint) {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -137,5 +142,27 @@ public class AutenticationUseCaseImpl implements AutenticationUseCase {
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
+        return tokens;
+    }
+
+    private String extractGivenName(String accessToken) {
+        String[] parts = accessToken.split("\\.");
+        String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+
+        String givenName = extractField(payload, "given_name");
+        String familyName = extractField(payload, "family_name");
+
+        return givenName + " " + familyName;
+    }
+
+    private String extractField(String payload, String fieldName) {
+        int fieldIndex = payload.indexOf("\"" + fieldName + "\":");
+        if (fieldIndex == -1) return "";
+
+        int start = payload.indexOf("\"", fieldIndex + fieldName.length() + 3) + 1;
+        int end = payload.indexOf("\"", start);
+
+        return payload.substring(start, end);
     }
 }

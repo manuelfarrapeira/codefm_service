@@ -2,6 +2,7 @@ package org.web.codefm.domain.usecase;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.web.codefm.domain.session.LoginResponse;
 
 /**
  * Interface that defines authentication operations for the application.
@@ -14,8 +15,9 @@ public interface AutenticationUseCase {
      *
      * @param authHeader Authorization header containing credentials in Basic Auth format
      * @param response   HttpServletResponse object to set authentication cookies
+     * @return LoginResponse containing JWT access token and user name
      */
-    void login(String authHeader, HttpServletResponse response);
+    LoginResponse login(String authHeader, HttpServletResponse response);
 
     /**
      * Refreshes the access token using the refresh token.

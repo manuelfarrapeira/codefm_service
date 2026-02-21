@@ -19,9 +19,10 @@ services:
     labels:
       app_name: codefm-pre
       prometheus_job: 'codefm-pre'
-      prometheus_target: 'codefm.synology.me:8081'
+      prometheus_target: 'codefm.synology.me:8083'
     volumes:
       - ./logs:/app/logs
+      - ./data/student-photos:/app/data/student-photos
     networks:
       - logging
       - infisical_external
@@ -40,3 +41,5 @@ networks:
     external: true
   kafka-network:
     external: true
+
+

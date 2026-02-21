@@ -1,5 +1,7 @@
 package org.web.codefm.api.controller;
 
+import java.util.Objects;
+
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,7 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.web.codefm.api.AuthApi;
+import org.web.codefm.api.mapper.LoginResponseMapper;
+import org.web.codefm.domain.session.LoginResponse;
 import org.web.codefm.domain.usecase.AutenticationUseCase;
+import org.web.codefm.model.LoginResponseDTO;
 
 @Slf4j
 @RestController
@@ -21,20 +26,23 @@ public class AuthController implements AuthApi {
 
     private final AutenticationUseCase autenticationUseCase;
 
+  private final LoginResponseMapper loginResponseMapper;
+
     @Override
-    public ResponseEntity<String> login(@RequestHeader("Authorization") String authorization) {
+    public ResponseEntity<LoginResponseDTO> login(@RequestHeader("Authorization") String authorization) {
 
-        HttpServletResponse response = ((ServletRequestAttributes) RequestContextHolder
-                .getRequestAttributes()).getResponse();
+      HttpServletResponse response = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder
+          .getRequestAttributes())).getResponse();
 
-        autenticationUseCase.login(authorization, response);
-        return ResponseEntity.ok().body("Autenticated successful");
+      LoginResponse loginResponse = autenticationUseCase.login(authorization, response);
+      LoginResponseDTO dto = loginResponseMapper.toDTO(loginResponse);
+      return ResponseEntity.ok().body(dto);
     }
 
     @Override
     public ResponseEntity<String> refreshToken() {
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder
-                .getRequestAttributes()).getRequest();
+      HttpServletRequest request = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder
+          .getRequestAttributes())).getRequest();
         HttpServletResponse response = ((ServletRequestAttributes) RequestContextHolder
                 .getRequestAttributes()).getResponse();
         autenticationUseCase.refreshToken(request, response);
@@ -45,8 +53,8 @@ public class AuthController implements AuthApi {
     @Override
     public ResponseEntity<String> logout() {
 
-        HttpServletResponse response = ((ServletRequestAttributes) RequestContextHolder
-                .getRequestAttributes()).getResponse();
+      HttpServletResponse response = ((ServletRequestAttributes) Objects.requireNonNull(RequestContextHolder
+          .getRequestAttributes())).getResponse();
 
         autenticationUseCase.logout(response);
 

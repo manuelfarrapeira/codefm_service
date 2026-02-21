@@ -11,6 +11,20 @@ servers:
 tags:
   - name: PrivateHelloWorld
     description: Private operations related to greeting
+  - name: TeacherNoteBookSchools
+    description: Operations related to Teacher Notebook Schools
+  - name: TeacherNoteBookClasses
+    description: Operations related to Teacher Notebook School Classes
+  - name: TeacherNoteBookStudents
+    description: Operations related to Teacher Notebook Students
+  - name: TeacherNoteBookSubjects
+    description: Operations related to Teacher Notebook Subjects
+  - name: TeacherNoteBookSchedules
+    description: Operations related to Teacher Notebook Class Schedules
+  - name: TeacherNoteBookSubjectClasses
+    description: Operations related to Teacher Notebook Subject-Class associations
+  - name: TeacherNoteBookExercises
+    description: Operations related to Teacher Notebook Exercises
 
 paths:
   /greeting:
@@ -48,6 +62,1553 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/schools:
+    get:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: schools
+      summary: Endpoint to get school information
+      description: Returns school information
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SchoolDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: createSchool
+      summary: Create a new school
+      description: Creates a new school for the authenticated teacher
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchoolRequestDTO'
+      responses:
+        '201':
+          description: School created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchoolDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/schools/{id}:
+    delete:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: deleteSchool
+      summary: Soft-delete a school
+      description: Marks a school as deleted by setting its deletion_date. Only the owning teacher can delete a school.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the school to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: School successfully soft-deleted (No Content)
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    patch:
+      tags:
+        - TeacherNoteBookSchools
+      operationId: updateSchool
+      summary: Update an existing school
+      description: Updates an existing school for the authenticated teacher
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the school to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SchoolRequestDTO'
+      responses:
+        '200':
+          description: School updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchoolDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/school/{schoolId}/classes:
+    get:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: classes
+      summary: Retrieve active classes for a school
+      description: Returns classes for the specified school that have not been soft-deleted.
+      parameters:
+        - name: schoolId
+          in: path
+          required: true
+          description: The ID of the school whose classes are requested.
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassDTO'
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: createClass
+      summary: Create a new class for a school
+      description: Creates a new class for the specified school owned by the authenticated teacher.
+      parameters:
+        - name: schoolId
+          in: path
+          required: true
+          description: The ID of the school to create the class for.
+          schema:
+            type: integer
+            format: int32
+        - name: Accept-Language
+          in: header
+          required: false
+          description: Preferred language for response messages
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassRequestDTO'
+      responses:
+        '201':
+          description: Class created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassDTO'
+        '400':
+          description: Bad Request - Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this school
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - School with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/classes/{classId}:
+    delete:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: deleteClass
+      summary: Soft-delete a class
+      description: Marks a class as deleted by setting its deletion_date. Only the teacher who owns the school can delete its classes.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Class successfully soft-deleted (No Content)
+        '403':
+          description: Forbidden - Teacher does not own the school of this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    patch:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: updateClass
+      summary: Update an existing class
+      description: Updates an existing class for the authenticated teacher. Only name and schoolYear can be updated.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassRequestDTO'
+      responses:
+        '200':
+          description: Class updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own the school of this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/students:
+    get:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: searchStudents
+      summary: Search students by filters
+      description: Search students by id, name or surnames. At least one filter must be provided.
+      parameters:
+        - name: id
+          in: query
+          required: false
+          description: Student ID
+          schema:
+            type: integer
+            format: int32
+        - name: name
+          in: query
+          required: false
+          description: Student name (partial match)
+          schema:
+            type: string
+        - name: surnames
+          in: query
+          required: false
+          description: Student surnames (partial match)
+          schema:
+            type: string
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Students found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentDTO'
+        '400':
+          description: Validation error - At least one filter is required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: createStudent
+      summary: Create a new student
+      description: Creates a new student
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRequestDTO'
+      responses:
+        '201':
+          description: Student created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/students/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: updateStudent
+      summary: Update an existing student
+      description: Updates an existing student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRequestDTO'
+      responses:
+        '200':
+          description: Student updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Student with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: deleteStudent
+      summary: Soft-delete a student
+      description: Marks a student as deleted by setting its deletion_date
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Student successfully soft-deleted (No Content)
+        '404':
+          description: Not Found - Student with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/students/{id}/photo:
+    post:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: uploadStudentPhoto
+      summary: Upload a photo for a student
+      description: Uploads a photo file for the specified student. The file will be saved with the student's ID as the filename.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The photo file to upload
+      responses:
+        '200':
+          description: Photo uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photoPath:
+                    type: string
+                    description: The path where the photo was saved
+        '404':
+          description: Not Found - Student with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    get:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: downloadStudentPhoto
+      summary: Download a photo for a student
+      description: Downloads the photo file for the specified student.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Photo downloaded successfully
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Not Found - Student or photo does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: deleteStudentPhoto
+      summary: Delete a photo for a student
+      description: Deletes the photo file for the specified student.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Photo deleted successfully
+        '404':
+          description: Not Found - Student or photo does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/students/all:
+    get:
+      tags:
+        - TeacherNoteBookStudents
+      operationId: getAllStudents
+      summary: Get all students for the authenticated teacher
+      description: Retrieves all students that belong to the authenticated teacher (excluding soft-deleted students).
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Students retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/students/{studentId}:
+    put:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: addStudentToClass
+      summary: Add a student to a class
+      description: Associates a student with a class. If the association was previously deleted, it will be reactivated.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - name: studentId
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Student successfully added to class (No Content)
+        '400':
+          description: Validation error - Student already in class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class or Student does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookClasses
+      operationId: removeStudentFromClass
+      summary: Remove a student from a class
+      description: Removes a student from a class (soft delete).
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - name: studentId
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Student successfully removed from class (No Content)
+        '404':
+          description: Not Found - Association does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/subjects:
+    get:
+      tags:
+        - TeacherNoteBookSubjects
+      operationId: subjects
+      summary: Get all subjects for the authenticated teacher
+      description: Returns all subjects belonging to the authenticated teacher that have not been soft-deleted.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSubjects
+      operationId: createSubject
+      summary: Create a new subject
+      description: Creates a new subject for the authenticated teacher
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectRequestDTO'
+      responses:
+        '201':
+          description: Subject created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/subjects/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookSubjects
+      operationId: updateSubject
+      summary: Update an existing subject
+      description: Updates an existing subject for the authenticated teacher
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the subject to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectRequestDTO'
+      responses:
+        '200':
+          description: Subject updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubjectDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this subject
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Subject with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSubjects
+      operationId: deleteSubject
+      summary: Soft-delete a subject
+      description: Marks a subject as deleted by setting its deletion_date. Only the owning teacher can delete a subject.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the subject to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Subject successfully soft-deleted (No Content)
+        '403':
+          description: Forbidden - Teacher does not own this subject
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Subject with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/schedules:
+    get:
+      tags:
+        - TeacherNoteBookSchedules
+      operationId: getSchedulesByClass
+      summary: Get all schedules for a class
+      description: Returns all schedules for the specified class that have not been soft-deleted.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSchedules
+      operationId: createSchedules
+      summary: Create schedules for a class
+      description: Creates multiple schedules for a class on a specific day.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleCreateRequestDTO'
+      responses:
+        '201':
+          description: Schedules created successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ScheduleDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class or Subject does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/schedules/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookSchedules
+      operationId: updateSchedule
+      summary: Update an existing schedule
+      description: Updates an existing schedule (day, start time, end time).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the schedule to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleUpdateRequestDTO'
+      responses:
+        '200':
+          description: Schedule updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScheduleDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Schedule with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/schedules:
+    delete:
+      tags:
+        - TeacherNoteBookSchedules
+      operationId: deleteSchedules
+      summary: Soft-delete multiple schedules
+      description: Marks multiple schedules as deleted by setting their deletion_date. All IDs must belong to the teacher, otherwise no deletion occurs.
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleDeleteRequestDTO'
+      responses:
+        '204':
+          description: Schedules successfully soft-deleted (No Content)
+        '400':
+          description: Validation error - One or more IDs do not belong to the teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/subjects:
+    get:
+      tags:
+        - TeacherNoteBookSubjectClasses
+      operationId: getSubjectsByClass
+      summary: Get all subjects for a class
+      description: Returns all subjects associated with the specified class.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSubjectClasses
+      operationId: assignSubjectsToClass
+      summary: Assign subjects to a class
+      description: Associates multiple subjects with a class. Validates that all subjects belong to the teacher.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectClassAssignRequestDTO'
+      responses:
+        '201':
+          description: Subjects assigned successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '409':
+          description: Conflict - Subject is already assigned to this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSubjectClasses
+      operationId: removeSubjectsFromClass
+      summary: Remove subjects from a class
+      description: Soft-deletes the associations between subjects and a class.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectClassRemoveRequestDTO'
+      responses:
+        '204':
+          description: Subjects successfully removed from class (No Content)
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes-subjects:
+    get:
+      tags:
+        - TeacherNoteBookSubjectClasses
+      operationId: getAllClassesWithSubjects
+      summary: Get all classes with their subjects
+      description: Returns all classes belonging to the teacher with their associated subjects.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassWithSubjectsDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/exercises:
+    get:
+      tags:
+        - TeacherNoteBookExercises
+      operationId: getExercisesByClass
+      summary: Get all exercises for a class
+      description: Returns all active exercises for the specified class across all subject-class associations.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuarterExercisesDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/subject-classes/{subjectClassId}/exercises:
+    put:
+      tags:
+        - TeacherNoteBookExercises
+      operationId: createExercise
+      summary: Create an exercise for a subject-class association
+      description: Creates a new exercise linked to the specified subject-class association.
+      parameters:
+        - name: subjectClassId
+          in: path
+          required: true
+          description: The ID of the subject-class association
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseRequestDTO'
+      responses:
+        '201':
+          description: Exercise created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this subject-class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Subject-class association does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/exercises/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookExercises
+      operationId: updateExercise
+      summary: Update an existing exercise
+      description: Updates an existing exercise (title, description, quarter).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the exercise to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseUpdateRequestDTO'
+      responses:
+        '200':
+          description: Exercise updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this exercise
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Exercise with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookExercises
+      operationId: deleteExercise
+      summary: Soft-delete an exercise
+      description: Marks an exercise as deleted by setting its deletion_date.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the exercise to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Exercise successfully soft-deleted (No Content)
+        '403':
+          description: Forbidden - Teacher does not own this exercise
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Exercise with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 
 components:
   schemas:
@@ -55,3 +1616,292 @@ components:
       $ref: './common-schemas.yaml#/ErrorResponseDTO'
     DetailDTO:
       $ref: './common-schemas.yaml#/DetailDTO'
+    SchoolDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        name:
+          type: 'string'
+        town:
+          type: 'string'
+        tlf:
+          type: 'integer'
+        classes:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ClassDTO'
+    ClassDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        schoolId:
+          type: 'integer'
+        name:
+          type: 'string'
+        schoolYear:
+          type: 'string'
+    ClassRequestDTO:
+      type: 'object'
+      properties:
+        name:
+          type: 'string'
+          example: '1º A'
+        schoolYear:
+          type: 'string'
+          example: '24/25'
+    SchoolRequestDTO:
+      type: 'object'
+      properties:
+        name:
+          type: 'string'
+          example: 'New School Name'
+        town:
+          type: 'string'
+          example: 'New Town'
+        tlf:
+          type: 'integer'
+          example: 123456789
+    StudentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        name:
+          type: 'string'
+        surnames:
+          type: 'string'
+        dateOfBirth:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2010'
+        gender:
+          type: 'string'
+          description: 'Gender (M=Male, F=Female)'
+        additionalInfo:
+          type: 'string'
+        photo:
+          type: 'string'
+        classIds:
+          type: 'array'
+          items:
+            type: 'integer'
+          description: 'List of class IDs the student belongs to'
+    StudentRequestDTO:
+      type: 'object'
+      properties:
+        name:
+          type: 'string'
+          example: 'Juan'
+        surnames:
+          type: 'string'
+          example: 'García López'
+        dateOfBirth:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2010'
+        gender:
+          type: 'string'
+          description: 'Gender (M=Male, F=Female)'
+          example: 'M'
+        additionalInfo:
+          type: 'string'
+          example: 'Additional information about the student'
+    SubjectDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        name:
+          type: 'string'
+    SubjectRequestDTO:
+      type: 'object'
+      properties:
+        name:
+          type: 'string'
+          example: 'Mathematics'
+    ScheduleDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classId:
+          type: 'integer'
+        subjectId:
+          type: 'integer'
+        day:
+          type: 'integer'
+          description: 'Day of week (1=Monday, 5=Friday)'
+        start:
+          type: 'string'
+          description: 'Time in format HH:mm'
+          example: '08:30'
+        end:
+          type: 'string'
+          description: 'Time in format HH:mm'
+          example: '09:30'
+    ScheduleCreateRequestDTO:
+      type: 'object'
+      required:
+        - day
+        - items
+      properties:
+        day:
+          type: 'integer'
+          description: 'Day of week (1=Monday, 5=Friday)'
+          example: 1
+        items:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ScheduleItemDTO'
+    ScheduleItemDTO:
+      type: 'object'
+      required:
+        - subjectId
+        - start
+        - end
+      properties:
+        subjectId:
+          type: 'integer'
+          example: 1
+        start:
+          type: 'string'
+          description: 'Start time in format HH:mm'
+          example: '08:30'
+        end:
+          type: 'string'
+          description: 'End time in format HH:mm'
+          example: '09:30'
+    ScheduleUpdateRequestDTO:
+      type: 'object'
+      required:
+        - day
+        - start
+        - end
+      properties:
+        day:
+          type: 'integer'
+          description: 'Day of week (1=Monday, 5=Friday)'
+          example: 1
+        start:
+          type: 'string'
+          description: 'Start time in format HH:mm'
+          example: '08:30'
+        end:
+          type: 'string'
+          description: 'End time in format HH:mm'
+          example: '09:30'
+    ScheduleDeleteRequestDTO:
+      type: 'object'
+      required:
+        - ids
+      properties:
+        ids:
+          type: 'array'
+          items:
+            type: 'integer'
+          description: 'List of schedule IDs to delete'
+          example: [ 1, 2, 3 ]
+    ClassWithSubjectsDTO:
+      type: 'object'
+      properties:
+        classData:
+          $ref: '#/components/schemas/ClassDTO'
+        subjects:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/SubjectDTO'
+    SubjectClassAssignRequestDTO:
+      type: 'object'
+      required:
+        - subjectIds
+      properties:
+        subjectIds:
+          type: 'array'
+          items:
+            type: 'integer'
+          description: 'List of subject IDs to assign to the class'
+          example: [ 1, 2, 3 ]
+    SubjectClassRemoveRequestDTO:
+      type: 'object'
+      required:
+        - subjectIds
+      properties:
+        subjectIds:
+          type: 'array'
+          items:
+            type: 'integer'
+          description: 'List of subject IDs to remove from the class'
+          example: [ 1, 2, 3 ]
+    ExerciseDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        subjectClassId:
+          type: 'integer'
+        title:
+          type: 'string'
+        description:
+          type: 'string'
+        percentageGrade:
+          type: 'integer'
+        maxGrade:
+          type: 'integer'
+    QuarterExercisesDTO:
+      type: 'object'
+      properties:
+        quarter:
+          type: 'integer'
+        subjects:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/SubjectExercisesDTO'
+    SubjectExercisesDTO:
+      type: 'object'
+      properties:
+        subjectId:
+          type: 'integer'
+        subjectName:
+          type: 'string'
+        exercises:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ExerciseDTO'
+    ExerciseRequestDTO:
+      type: 'object'
+      properties:
+        title:
+          type: 'string'
+          example: 'Math Exam Unit 1'
+        description:
+          type: 'string'
+          example: 'Exam covering chapters 1-3'
+        quarter:
+          type: 'integer'
+          example: 1
+        percentageGrade:
+          type: 'integer'
+          example: 30
+        maxGrade:
+          type: 'integer'
+          example: 10
+    ExerciseUpdateRequestDTO:
+      type: 'object'
+      properties:
+        title:
+          type: 'string'
+          example: 'Updated Math Exam'
+        description:
+          type: 'string'
+          example: 'Updated description'
+        quarter:
+          type: 'integer'
+          example: 2
+        percentageGrade:
+          type: 'integer'
+          example: 30
+        maxGrade:
+          type: 'integer'
+          example: 10

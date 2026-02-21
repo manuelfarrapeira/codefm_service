@@ -1,0 +1,251 @@
+{
+  "info": {
+    "_postman_id": "classes-collection",
+    "name": "Teacher Notebook - Classes",
+    "description": "Colección para gestionar clases de colegios",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Classes by School",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/school/:schoolId/classes",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "school",
+            ":schoolId",
+            "classes"
+          ],
+          "variable": [
+            {
+              "key": "schoolId",
+              "value": "1",
+              "description": "ID del colegio"
+            }
+          ]
+        },
+        "description": "Obtiene todas las clases de un colegio específico."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Class",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"1º A\",\n    \"schoolYear\": \"24/25\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/school/:schoolId/classes",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "school",
+            ":schoolId",
+            "classes"
+          ],
+          "variable": [
+            {
+              "key": "schoolId",
+              "value": "1",
+              "description": "ID del colegio"
+            }
+          ]
+        },
+        "description": "Crea una nueva clase en un colegio."
+      },
+      "response": []
+    },
+    {
+      "name": "Update Class",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"1º B\",\n    \"schoolYear\": \"24/25\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID de la clase"
+            }
+          ]
+        },
+        "description": "Actualiza una clase existente."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Class",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID de la clase"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) una clase."
+      },
+      "response": []
+    },
+    {
+      "name": "Add Student to Class",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/students/:studentId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "students",
+            ":studentId"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID de la clase"
+            },
+            {
+              "key": "studentId",
+              "value": "1",
+              "description": "ID del estudiante"
+            }
+          ]
+        },
+        "description": "Añade un estudiante a una clase."
+      },
+      "response": []
+    },
+    {
+      "name": "Remove Student from Class",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/students/:studentId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "students",
+            ":studentId"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID de la clase"
+            },
+            {
+              "key": "studentId",
+              "value": "1",
+              "description": "ID del estudiante"
+            }
+          ]
+        },
+        "description": "Elimina un estudiante de una clase."
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  }
+}
+

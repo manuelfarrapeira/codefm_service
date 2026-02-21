@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.web</groupId>
     <artifactId>codeFm</artifactId>
-    <version>1.8.1</version>
+    <version>1.9.0</version>
     <name>codefm</name>
     <description>codefm</description>
     <packaging>pom</packaging>
@@ -53,6 +53,7 @@
         <module>codefm-kafka</module>
         <module>codefm-boot</module>
         <module>jacoco-report-aggregate</module>
+        <module>gatling-test</module>
     </modules>
 
     <dependencyManagement>
@@ -99,10 +100,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web-services</artifactId>
-        </dependency>
+
 
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -173,6 +171,11 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>4.0.0.4121</version>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

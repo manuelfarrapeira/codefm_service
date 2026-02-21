@@ -1,5 +1,6 @@
 package org.web.codefm.api.exception;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,17 +15,19 @@ import java.util.Objects;
 
 @Slf4j
 @ControllerAdvice
+@RequiredArgsConstructor
 public class RestExceptionHandler {
 
+    private final ErrorResponseMapper errorResponseMapper;
 
     @ExceptionHandler(BaseException.class)
-    public ResponseEntity<ErrorResponseDTO> mapperException(final Exception ex) {
+    public ResponseEntity<ErrorResponseDTO> mapperException(final BaseException ex) {
         log.error("Error response: " + ex.getMessage(), ex);
 
         final ExceptionStatusEnum exeptionEnum = ExceptionStatusEnum.getExceptionEnum(ex.getClass());
         final HttpStatus status = (Objects.isNull(exeptionEnum)) ? HttpStatus.INTERNAL_SERVER_ERROR : exeptionEnum.getStatus();
 
-        final ErrorResponseDTO errorDTO = ErrorResponseMapper.toDTO((BaseException) ex);
+        final ErrorResponseDTO errorDTO = errorResponseMapper.toDTO(ex);
 
         return ResponseEntity.status(status).body(errorDTO);
     }
@@ -52,8 +55,4 @@ public class RestExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorDTO);
     }
-
-
-
-
 }

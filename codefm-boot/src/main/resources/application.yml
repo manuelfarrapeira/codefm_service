@@ -44,6 +44,8 @@ spring:
     import:
       - "optional:consul:"
   cloud:
+    loadbalancer:
+      enabled: false
     consul:
       host: http://192.168.18.10
       port: 8500
@@ -62,12 +64,19 @@ spring:
   data:
     rest:
       detection-strategy: ANNOTATED #esto es para evitar la generación de endpoints relacionados con los JPA
-  datasource: #usamos librería p6spy para loguear las sql formateadas - spy.properties
-    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
-    url: jdbc:p6spy:mariadb://192.168.18.10:3306/codefm
-    username: codefm
-    password: ${MARIADB_PASSWORD}
+  datasource:
+    codefm:
+      driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+      url: jdbc:p6spy:mariadb://192.168.18.10:3306/codefm
+      username: codefm
+      password: ${MARIADB_PASSWORD}
+    teachernotebook:
+      driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+      url: jdbc:p6spy:mariadb://192.168.18.10:3306/teacher_notebook
+      username: codefm
+      password: ${MARIADB_PASSWORD}
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: none
     properties:
@@ -105,3 +114,7 @@ kafka:
   schema:
     registry:
       url: http://codefm.synology.me:8082
+
+student:
+  photos:
+    directory: ./data/student-photos
