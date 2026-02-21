@@ -7,7 +7,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SchoolEntity;
+import org.web.codefm.infrastructure.jpa.teachernotebook.ClassJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SchoolJPARepository;
+import org.web.codefm.infrastructure.mapper.ClassMapper;
 import org.web.codefm.infrastructure.mapper.SchoolMapper;
 
 import java.time.LocalDate;
@@ -23,7 +25,13 @@ class SchoolRepositoryImplTest {
     private SchoolJPARepository schoolJPARepository;
 
     @Mock
+    private ClassJPARepository classJPARepository;
+
+    @Mock
     private SchoolMapper schoolMapper;
+
+    @Mock
+    private ClassMapper classMapper;
 
     @InjectMocks
     private SchoolRepositoryImpl schoolRepository;
@@ -57,7 +65,7 @@ class SchoolRepositoryImplTest {
     void findById_shouldReturnSchoolWhenFoundAndNotDeleted() {
         // Given
         Integer schoolId = 1;
-        SchoolEntity schoolEntity = new SchoolEntity(schoolId, 101, "School A", "Town A", 123456789, null, null);
+        SchoolEntity schoolEntity = new SchoolEntity(schoolId, 101, "School A", "Town A", 123456789, null);
         School expectedSchool = School.builder().id(schoolId).name("School A").build();
 
         when(schoolJPARepository.findByIdAndDeletionDateIsNull(schoolId)).thenReturn(Optional.of(schoolEntity));
@@ -93,7 +101,7 @@ class SchoolRepositoryImplTest {
         // Given
         Integer schoolId = 1;
         Integer teacherId = 101;
-        SchoolEntity schoolEntity = new SchoolEntity(schoolId, teacherId, "School A", "Town A", 123456789, null, null);
+        SchoolEntity schoolEntity = new SchoolEntity(schoolId, teacherId, "School A", "Town A", 123456789, null);
         School updatedSchool = School.builder().id(schoolId).teacherId(teacherId).name("School A").deletionDate(LocalDate.now()).build();
 
         when(schoolJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)).thenReturn(Optional.of(schoolEntity));
