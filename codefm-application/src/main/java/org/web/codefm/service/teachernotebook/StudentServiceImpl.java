@@ -1,4 +1,4 @@
-package org.web.codefm.application.service.teachernotebook;
+package org.web.codefm.service.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package org.web.codefm.application.usecase.teachernotebook;
+package org.web.codefm.usecase.teachernotebook;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

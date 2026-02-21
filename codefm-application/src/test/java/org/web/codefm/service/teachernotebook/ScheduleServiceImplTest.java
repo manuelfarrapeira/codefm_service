@@ -1,4 +1,4 @@
-package org.web.codefm.application.service.teachernotebook;
+package org.web.codefm.service.teachernotebook;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
