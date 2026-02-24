@@ -183,5 +183,68 @@ class ExerciseRepositoryImplTest {
 
         assertFalse(exerciseRepository.subjectClassBelongsToTeacher(5, 1));
     }
+
+    @Test
+    void softDeleteBySubjectClassIds_shouldCallJPARepository_whenListIsNotEmpty() {
+        List<Integer> subjectClassIds = List.of(1, 2, 3);
+
+        exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);
+
+        verify(exerciseJPARepository).softDeleteBySubjectClassIds(subjectClassIds);
+    }
+
+    @Test
+    void softDeleteBySubjectClassIds_shouldNotCallJPARepository_whenListIsEmpty() {
+        exerciseRepository.softDeleteBySubjectClassIds(List.of());
+
+        verify(exerciseJPARepository, never()).softDeleteBySubjectClassIds(any());
+    }
+
+    @Test
+    void softDeleteBySubjectClassIds_shouldNotCallJPARepository_whenListIsNull() {
+        exerciseRepository.softDeleteBySubjectClassIds(null);
+
+        verify(exerciseJPARepository, never()).softDeleteBySubjectClassIds(any());
+    }
+
+    @Test
+    void findActiveIdsBySubjectClassIds_shouldReturnIds_whenExercisesExist() {
+        List<Integer> subjectClassIds = List.of(1, 2);
+        List<Integer> expectedIds = List.of(10, 20, 30);
+
+        when(exerciseJPARepository.findActiveIdsBySubjectClassIds(subjectClassIds)).thenReturn(expectedIds);
+
+        List<Integer> result = exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIds);
+
+        assertEquals(expectedIds, result);
+        verify(exerciseJPARepository).findActiveIdsBySubjectClassIds(subjectClassIds);
+    }
+
+    @Test
+    void findActiveIdsBySubjectClassIds_shouldReturnEmptyList_whenNoExercisesExist() {
+        List<Integer> subjectClassIds = List.of(1, 2);
+
+        when(exerciseJPARepository.findActiveIdsBySubjectClassIds(subjectClassIds)).thenReturn(List.of());
+
+        List<Integer> result = exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIds);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void findActiveIdsBySubjectClassIds_shouldReturnEmptyList_whenListIsEmpty() {
+        List<Integer> result = exerciseRepository.findActiveIdsBySubjectClassIds(List.of());
+
+        assertTrue(result.isEmpty());
+        verify(exerciseJPARepository, never()).findActiveIdsBySubjectClassIds(any());
+    }
+
+    @Test
+    void findActiveIdsBySubjectClassIds_shouldReturnEmptyList_whenListIsNull() {
+        List<Integer> result = exerciseRepository.findActiveIdsBySubjectClassIds(null);
+
+        assertTrue(result.isEmpty());
+        verify(exerciseJPARepository, never()).findActiveIdsBySubjectClassIds(any());
+    }
 }
 
