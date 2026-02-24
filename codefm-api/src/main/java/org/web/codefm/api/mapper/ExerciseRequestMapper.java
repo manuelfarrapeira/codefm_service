@@ -14,6 +14,7 @@ public interface ExerciseRequestMapper {
     @Mapping(target = "subjectId", ignore = true)
     @Mapping(target = "subjectName", ignore = true)
     @Mapping(target = "deletionDate", ignore = true)
+    @Mapping(target = "documents", ignore = true)
     Exercise toDomain(ExerciseRequestDTO dto);
 
     @Mapping(target = "id", ignore = true)
@@ -21,6 +22,7 @@ public interface ExerciseRequestMapper {
     @Mapping(target = "subjectId", ignore = true)
     @Mapping(target = "subjectName", ignore = true)
     @Mapping(target = "deletionDate", ignore = true)
+    @Mapping(target = "documents", ignore = true)
     Exercise toDomainForUpdate(ExerciseUpdateRequestDTO dto);
 }
 

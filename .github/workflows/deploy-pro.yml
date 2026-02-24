@@ -103,6 +103,7 @@ jobs:
           script: |
             mkdir -p ~/codefm/logs
             mkdir -p ~/codefm/data/student-photos
+            mkdir -p ~/codefm/data/exercise-documents
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1

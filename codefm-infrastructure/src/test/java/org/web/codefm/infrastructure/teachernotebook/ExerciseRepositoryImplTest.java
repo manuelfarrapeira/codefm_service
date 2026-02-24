@@ -9,9 +9,11 @@ import org.web.codefm.domain.entity.teachernotebook.Exercise;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ExerciseEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectEntity;
+import org.web.codefm.infrastructure.jpa.teachernotebook.ExerciseDocumentJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.ExerciseJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectClassJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectJPARepository;
+import org.web.codefm.infrastructure.mapper.ExerciseDocumentMapper;
 import org.web.codefm.infrastructure.mapper.ExerciseMapper;
 
 import java.util.ArrayList;
@@ -34,7 +36,13 @@ class ExerciseRepositoryImplTest {
     private SubjectJPARepository subjectJPARepository;
 
     @Mock
+    private ExerciseDocumentJPARepository exerciseDocumentJPARepository;
+
+    @Mock
     private ExerciseMapper exerciseMapper;
+
+    @Mock
+    private ExerciseDocumentMapper exerciseDocumentMapper;
 
     @InjectMocks
     private ExerciseRepositoryImpl exerciseRepository;

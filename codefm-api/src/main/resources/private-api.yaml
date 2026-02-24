@@ -25,6 +25,8 @@ tags:
     description: Operations related to Teacher Notebook Subject-Class associations
   - name: TeacherNoteBookExercises
     description: Operations related to Teacher Notebook Exercises
+  - name: TeacherNoteBookExerciseDocuments
+    description: Operations related to Teacher Notebook Exercise Documents
 
 paths:
   /greeting:
@@ -1610,6 +1612,212 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/exercises/{exerciseId}/documents:
+    post:
+      tags:
+        - TeacherNoteBookExerciseDocuments
+      operationId: uploadExerciseDocument
+      summary: Upload a document for an exercise
+      description: Uploads a document file for the specified exercise. Max size 2MB. Allowed formats doc, docx, pdf, xls, xlsx, jpeg, jpg, png.
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          description: The ID of the exercise
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The document file to upload
+                description:
+                  type: string
+                  description: Optional description for the document
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseDocumentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Exercise not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/exercises/{exerciseId}/documents/{documentId}/download:
+    get:
+      tags:
+        - TeacherNoteBookExerciseDocuments
+      operationId: downloadExerciseDocument
+      summary: Download a document
+      description: Downloads the document file for the specified exercise.
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          description: The ID of the exercise
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: Document downloaded successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/exercises/{exerciseId}/documents/{documentId}:
+    patch:
+      tags:
+        - TeacherNoteBookExerciseDocuments
+      operationId: updateExerciseDocumentDescription
+      summary: Update document description
+      description: Updates only the description of an exercise document.
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          description: The ID of the exercise
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseDocumentUpdateRequestDTO'
+      responses:
+        '200':
+          description: Document description updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseDocumentDTO'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookExerciseDocuments
+      operationId: deleteExerciseDocument
+      summary: Delete a document
+      description: Deletes the document record and file from disk (hard delete).
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          description: The ID of the exercise
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Document successfully deleted (No Content)
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
 components:
   schemas:
     ErrorResponseDTO:
@@ -1849,6 +2057,10 @@ components:
           type: 'integer'
         maxGrade:
           type: 'integer'
+        documents:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ExerciseDocumentDTO'
     QuarterExercisesDTO:
       type: 'object'
       properties:
@@ -1905,3 +2117,20 @@ components:
         maxGrade:
           type: 'integer'
           example: 10
+    ExerciseDocumentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        exerciseId:
+          type: 'integer'
+        document:
+          type: 'string'
+        description:
+          type: 'string'
+    ExerciseDocumentUpdateRequestDTO:
+      type: 'object'
+      properties:
+        description:
+          type: 'string'
+          example: 'Updated description'

@@ -12,6 +12,7 @@ import org.web.codefm.domain.exception.teachernotebook.*;
 import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.*;
+import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionUser;
 
@@ -40,6 +41,9 @@ class ClassServiceImplTest {
 
     @Mock
     private ExerciseRepository exerciseRepository;
+
+    @Mock
+    private ExerciseDocumentService exerciseDocumentService;
 
     @Mock
     private MessageSource messageSource;

@@ -16,6 +16,7 @@ import org.web.codefm.domain.exception.teachernotebook.ExerciseValidationExcepti
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
+import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 
@@ -35,6 +36,9 @@ class ExerciseServiceImplTest {
 
     @Mock
     private ClassRepository classRepository;
+
+    @Mock
+    private ExerciseDocumentService exerciseDocumentService;
 
     @Mock
     private MessageSource messageSource;

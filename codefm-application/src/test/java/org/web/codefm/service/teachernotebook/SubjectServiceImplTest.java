@@ -17,6 +17,7 @@ import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
 import org.web.codefm.domain.repository.teachernotebook.ScheduleRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
+import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 
@@ -39,6 +40,8 @@ class SubjectServiceImplTest {
     @Mock
     private ExerciseRepository exerciseRepository;
     @Mock
+    private ExerciseDocumentService exerciseDocumentService;
+    @Mock
     private MessageSource messageSource;
     @Mock
     private SessionUser sessionUser;
@@ -52,7 +55,7 @@ class SubjectServiceImplTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         subjectService = new SubjectServiceImpl(subjectRepository, subjectClassRepository,
-                scheduleRepository, exerciseRepository, messageSource, sessionUser);
+                scheduleRepository, exerciseRepository, exerciseDocumentService, messageSource, sessionUser);
         lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
     }
 

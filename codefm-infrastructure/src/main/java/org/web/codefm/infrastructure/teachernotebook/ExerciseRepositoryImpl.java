@@ -4,12 +4,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.teachernotebook.Exercise;
+import org.web.codefm.domain.entity.teachernotebook.ExerciseDocument;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectEntity;
+import org.web.codefm.infrastructure.jpa.teachernotebook.ExerciseDocumentJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.ExerciseJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectClassJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectJPARepository;
+import org.web.codefm.infrastructure.mapper.ExerciseDocumentMapper;
 import org.web.codefm.infrastructure.mapper.ExerciseMapper;
 
 import java.util.ArrayList;
@@ -25,7 +28,9 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
     private final ExerciseJPARepository exerciseJPARepository;
     private final SubjectClassJPARepository subjectClassJPARepository;
     private final SubjectJPARepository subjectJPARepository;
+    private final ExerciseDocumentJPARepository exerciseDocumentJPARepository;
     private final ExerciseMapper exerciseMapper;
+    private final ExerciseDocumentMapper exerciseDocumentMapper;
 
     @Override
     public List<Exercise> findByClassId(Integer classId) {
@@ -57,6 +62,17 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
             exercise.setSubjectId(subjectId);
             exercise.setSubjectName(subjectNames.getOrDefault(subjectId, ""));
         });
+
+        if (!exercises.isEmpty()) {
+            List<Integer> exerciseIds = exercises.stream().map(Exercise::getId).toList();
+            Map<Integer, List<ExerciseDocument>> documentsMap = exerciseDocumentMapper
+                    .toModelList(exerciseDocumentJPARepository.findByExerciseIdIn(exerciseIds))
+                    .stream()
+                    .collect(Collectors.groupingBy(ExerciseDocument::getExerciseId));
+            exercises.forEach(exercise ->
+                    exercise.setDocuments(documentsMap.getOrDefault(exercise.getId(), List.of()))
+            );
+        }
 
         return exercises;
     }
@@ -103,6 +119,14 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
         }
     }
 
+    @Override
+    public List<Integer> findActiveIdsBySubjectClassIds(List<Integer> subjectClassIds) {
+        if (subjectClassIds == null || subjectClassIds.isEmpty()) {
+            return List.of();
+        }
+        return exerciseJPARepository.findActiveIdsBySubjectClassIds(subjectClassIds);
+    }
+
     private void enrichWithSubjectData(Exercise exercise) {
         var scOpt = subjectClassJPARepository.findById(exercise.getSubjectClassId());
         scOpt.ifPresent(sc -> {
@@ -110,5 +134,10 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
             subjectJPARepository.findById(sc.getSubjectId())
                     .ifPresent(subject -> exercise.setSubjectName(subject.getName()));
         });
+        exercise.setDocuments(
+                exerciseDocumentMapper.toModelList(
+                        exerciseDocumentJPARepository.findByExerciseId(exercise.getId())
+                )
+        );
     }
 }

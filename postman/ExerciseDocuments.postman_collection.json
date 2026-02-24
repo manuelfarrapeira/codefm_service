@@ -1,0 +1,195 @@
+{
+  "info": {
+    "_postman_id": "exercise-documents-collection",
+    "name": "Teacher Notebook - Exercise Documents",
+    "description": "Colección para gestionar documentos de ejercicios",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Upload Exercise Document",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "",
+              "description": "Archivo del documento (max 2MB). Formatos: doc, docx, pdf, xls, xlsx, jpeg, jpg, png"
+            },
+            {
+              "key": "description",
+              "value": "Descripción del documento",
+              "type": "text",
+              "description": "Descripción opcional del documento"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/exercises/:exerciseId/documents",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "exercises",
+            ":exerciseId",
+            "documents"
+          ],
+          "variable": [
+            {
+              "key": "exerciseId",
+              "value": "1",
+              "description": "ID del ejercicio"
+            }
+          ]
+        },
+        "description": "Sube un documento para un ejercicio. Tamaño máximo 2MB. Formatos permitidos: doc, docx, pdf, xls, xlsx, jpeg, jpg, png. El nombre del archivo se guarda como {exerciseId}_{originalFilename}_{UUID}.{ext}."
+      },
+      "response": []
+    },
+    {
+      "name": "Download Exercise Document",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/exercises/:exerciseId/documents/:documentId/download",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "exercises",
+            ":exerciseId",
+            "documents",
+            ":documentId",
+            "download"
+          ],
+          "variable": [
+            {
+              "key": "exerciseId",
+              "value": "1",
+              "description": "ID del ejercicio"
+            },
+            {
+              "key": "documentId",
+              "value": "1",
+              "description": "ID del documento"
+            }
+          ]
+        },
+        "description": "Descarga el archivo de un documento de ejercicio. Detecta automáticamente el MIME type según la extensión del archivo."
+      },
+      "response": []
+    },
+    {
+      "name": "Update Exercise Document Description",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"description\": \"Descripción actualizada del documento\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/exercises/:exerciseId/documents/:documentId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "exercises",
+            ":exerciseId",
+            "documents",
+            ":documentId"
+          ],
+          "variable": [
+            {
+              "key": "exerciseId",
+              "value": "1",
+              "description": "ID del ejercicio"
+            },
+            {
+              "key": "documentId",
+              "value": "1",
+              "description": "ID del documento"
+            }
+          ]
+        },
+        "description": "Actualiza solo la descripción de un documento de ejercicio. No se puede cambiar el archivo."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Exercise Document",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/exercises/:exerciseId/documents/:documentId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "exercises",
+            ":exerciseId",
+            "documents",
+            ":documentId"
+          ],
+          "variable": [
+            {
+              "key": "exerciseId",
+              "value": "1",
+              "description": "ID del ejercicio"
+            },
+            {
+              "key": "documentId",
+              "value": "1",
+              "description": "ID del documento"
+            }
+          ]
+        },
+        "description": "Elimina un documento de ejercicio. Se borra el registro de base de datos y el archivo del disco (hard delete)."
+      },
+      "response": []
+    }
+  ]
+}
+
