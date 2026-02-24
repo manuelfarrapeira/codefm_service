@@ -31,6 +31,7 @@ public class SchoolServiceImpl implements SchoolService {
     private final ScheduleRepository scheduleRepository;
     private final StudentClassRepository studentClassRepository;
     private final ExerciseRepository exerciseRepository;
+    private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
     private final ExerciseDocumentService exerciseDocumentService;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
@@ -76,6 +77,7 @@ public class SchoolServiceImpl implements SchoolService {
         if (!subjectClassIds.isEmpty()) {
             List<Integer> exerciseIds = exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIds);
             if (!exerciseIds.isEmpty()) {
+                exerciseStudentGradeRepository.softDeleteByExerciseIds(exerciseIds);
                 exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
             }
             exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);

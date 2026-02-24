@@ -128,4 +128,10 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
         return subjectClassJPARepository.findBySubjectIdAndClassIdAndDeletionDateIsNull(subjectId, classId)
                 .map(SubjectClassEntity::getId);
     }
+
+    @Override
+    public Optional<SubjectClass> findById(Integer id) {
+        return subjectClassJPARepository.findById(id)
+                .map(subjectClassMapper::toModel);
+    }
 }

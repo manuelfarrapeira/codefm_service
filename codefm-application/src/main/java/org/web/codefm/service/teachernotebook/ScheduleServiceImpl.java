@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.Schedule;
 import org.web.codefm.domain.entity.teachernotebook.Subject;
+import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
+import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.ScheduleNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.ScheduleValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
@@ -37,9 +39,14 @@ public class ScheduleServiceImpl implements ScheduleService {
     public List<Schedule> getSchedulesByClassId(Integer classId) {
         Integer teacherId = getTeacherId();
 
+        classRepository.findById(classId)
+                .orElseThrow(() -> new ClassNotFoundException(
+                        messageSource.getMessage(MessageKeys.CLASS_NOT_FOUND, null, sessionUser.getLocale())
+                ));
+
         classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId)
-                .orElseThrow(() -> new ScheduleNotFoundException(
-                        messageSource.getMessage(MessageKeys.SCHEDULE_VALIDATION_CLASS_NOT_FOUND, null, sessionUser.getLocale())
+                .orElseThrow(() -> new ClassForbiddenException(
+                        messageSource.getMessage(MessageKeys.CLASS_FORBIDDEN, null, sessionUser.getLocale())
                 ));
 
         return scheduleRepository.findByClassId(classId);
@@ -50,9 +57,14 @@ public class ScheduleServiceImpl implements ScheduleService {
         Integer teacherId = getTeacherId();
         List<ErrorMessage> errors = new ArrayList<>();
 
+        classRepository.findById(classId)
+                .orElseThrow(() -> new ClassNotFoundException(
+                        messageSource.getMessage(MessageKeys.CLASS_NOT_FOUND, null, sessionUser.getLocale())
+                ));
+
         classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId)
-                .orElseThrow(() -> new ScheduleNotFoundException(
-                        messageSource.getMessage(MessageKeys.SCHEDULE_VALIDATION_CLASS_NOT_FOUND, null, sessionUser.getLocale())
+                .orElseThrow(() -> new ClassForbiddenException(
+                        messageSource.getMessage(MessageKeys.CLASS_FORBIDDEN, null, sessionUser.getLocale())
                 ));
 
         validateDay(day, errors);

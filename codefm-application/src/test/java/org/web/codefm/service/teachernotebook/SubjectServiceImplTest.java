@@ -13,10 +13,7 @@ import org.web.codefm.domain.exception.teachernotebook.SubjectForbiddenException
 import org.web.codefm.domain.exception.teachernotebook.SubjectNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
-import org.web.codefm.domain.repository.teachernotebook.ScheduleRepository;
-import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
-import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
+import org.web.codefm.domain.repository.teachernotebook.*;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
@@ -40,6 +37,8 @@ class SubjectServiceImplTest {
     @Mock
     private ExerciseRepository exerciseRepository;
     @Mock
+    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
+    @Mock
     private ExerciseDocumentService exerciseDocumentService;
     @Mock
     private MessageSource messageSource;
@@ -55,7 +54,7 @@ class SubjectServiceImplTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         subjectService = new SubjectServiceImpl(subjectRepository, subjectClassRepository,
-                scheduleRepository, exerciseRepository, exerciseDocumentService, messageSource, sessionUser);
+                scheduleRepository, exerciseRepository, exerciseStudentGradeRepository, exerciseDocumentService, messageSource, sessionUser);
         lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
     }
 

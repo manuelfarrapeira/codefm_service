@@ -92,4 +92,12 @@ public interface SubjectClassRepository {
      * @return Optional with the subject-class association ID if found and active
      */
     Optional<Integer> findIdBySubjectIdAndClassId(Integer subjectId, Integer classId);
+
+    /**
+     * Finds a subject-class association by its ID.
+     *
+     * @param id The unique identifier of the subject-class association
+     * @return Optional containing the subject-class association if found
+     */
+    Optional<SubjectClass> findById(Integer id);
 }

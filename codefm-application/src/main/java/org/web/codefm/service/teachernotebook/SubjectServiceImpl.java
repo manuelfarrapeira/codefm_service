@@ -11,10 +11,7 @@ import org.web.codefm.domain.exception.teachernotebook.SubjectForbiddenException
 import org.web.codefm.domain.exception.teachernotebook.SubjectNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
-import org.web.codefm.domain.repository.teachernotebook.ScheduleRepository;
-import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
-import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
+import org.web.codefm.domain.repository.teachernotebook.*;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.service.teachernotebook.SubjectService;
 import org.web.codefm.domain.session.SessionParameter;
@@ -34,6 +31,7 @@ public class SubjectServiceImpl implements SubjectService {
     private final SubjectClassRepository subjectClassRepository;
     private final ScheduleRepository scheduleRepository;
     private final ExerciseRepository exerciseRepository;
+    private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
     private final ExerciseDocumentService exerciseDocumentService;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
@@ -78,6 +76,7 @@ public class SubjectServiceImpl implements SubjectService {
         if (!subjectClassIds.isEmpty()) {
             List<Integer> exerciseIds = exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIds);
             if (!exerciseIds.isEmpty()) {
+                exerciseStudentGradeRepository.softDeleteByExerciseIds(exerciseIds);
                 exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
             }
             exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);

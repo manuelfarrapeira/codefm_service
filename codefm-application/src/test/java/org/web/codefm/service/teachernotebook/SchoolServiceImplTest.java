@@ -40,6 +40,8 @@ class SchoolServiceImplTest {
     @Mock
     private ExerciseRepository exerciseRepository;
     @Mock
+    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
+    @Mock
     private ExerciseDocumentService exerciseDocumentService;
     @Mock
     private MessageSource messageSource;
@@ -54,7 +56,7 @@ class SchoolServiceImplTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         schoolService = new SchoolServiceImpl(schoolRepository, classRepository, subjectClassRepository,
-                scheduleRepository, studentClassRepository, exerciseRepository, exerciseDocumentService, messageSource, sessionUser);
+                scheduleRepository, studentClassRepository, exerciseRepository, exerciseStudentGradeRepository, exerciseDocumentService, messageSource, sessionUser);
     }
 
     @Test

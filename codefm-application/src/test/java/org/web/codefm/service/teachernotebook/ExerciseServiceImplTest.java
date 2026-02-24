@@ -11,11 +11,14 @@ import org.mockito.quality.Strictness;
 import org.springframework.context.MessageSource;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.Exercise;
+import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
+import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.ExerciseNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.ExerciseValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
+import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepository;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
@@ -39,6 +42,9 @@ class ExerciseServiceImplTest {
 
     @Mock
     private ExerciseDocumentService exerciseDocumentService;
+
+    @Mock
+    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
 
     @Mock
     private MessageSource messageSource;
@@ -81,6 +87,10 @@ class ExerciseServiceImplTest {
                 .thenReturn("Max grade is required.");
         when(messageSource.getMessage(eq(MessageKeys.EXERCISE_VALIDATION_MAX_GRADE_INVALID), isNull(), any(Locale.class)))
                 .thenReturn("Max grade must be between 1 and 15.");
+        when(messageSource.getMessage(eq(MessageKeys.CLASS_NOT_FOUND), isNull(), any(Locale.class)))
+                .thenReturn("Class not found.");
+
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
     }
 
     @Test
@@ -91,6 +101,7 @@ class ExerciseServiceImplTest {
                 Exercise.builder().id(2).subjectClassId(SUBJECT_CLASS_ID).title("Exam 2").quarter(2).percentageGrade(40).maxGrade(10).build()
         );
 
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(classEntity));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
         when(exerciseRepository.findByClassId(CLASS_ID)).thenReturn(expectedExercises);
 
@@ -103,10 +114,18 @@ class ExerciseServiceImplTest {
     }
 
     @Test
-    void getExercisesByClassId_shouldThrowException_whenClassNotFound() {
+    void getExercisesByClassId_shouldThrowNotFoundException_whenClassNotExists() {
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ClassNotFoundException.class, () -> exerciseService.getExercisesByClassId(CLASS_ID));
+    }
+
+    @Test
+    void getExercisesByClassId_shouldThrowForbiddenException_whenClassNotOwnedByTeacher() {
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.empty());
 
-        assertThrows(ExerciseNotFoundException.class, () -> exerciseService.getExercisesByClassId(CLASS_ID));
+        assertThrows(ClassForbiddenException.class, () -> exerciseService.getExercisesByClassId(CLASS_ID));
     }
 
     @Test
@@ -126,12 +145,12 @@ class ExerciseServiceImplTest {
     }
 
     @Test
-    void createExercise_shouldThrowException_whenSubjectClassNotBelongsToTeacher() {
+    void createExercise_shouldThrowForbiddenException_whenSubjectClassNotBelongsToTeacher() {
         Exercise inputExercise = Exercise.builder().title("Exam 1").quarter(1).percentageGrade(30).maxGrade(10).build();
 
         when(exerciseRepository.subjectClassBelongsToTeacher(SUBJECT_CLASS_ID, TEACHER_ID)).thenReturn(false);
 
-        assertThrows(ExerciseNotFoundException.class, () -> exerciseService.createExercise(SUBJECT_CLASS_ID, inputExercise));
+        assertThrows(ClassForbiddenException.class, () -> exerciseService.createExercise(SUBJECT_CLASS_ID, inputExercise));
     }
 
     @Test

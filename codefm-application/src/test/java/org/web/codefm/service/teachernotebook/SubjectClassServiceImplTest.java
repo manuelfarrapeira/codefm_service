@@ -12,12 +12,10 @@ import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
 import org.web.codefm.domain.entity.teachernotebook.Subject;
 import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
+import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectClassValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
-import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
-import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
-import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
+import org.web.codefm.domain.repository.teachernotebook.*;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
@@ -40,6 +38,8 @@ class SubjectClassServiceImplTest {
     @Mock
     private ExerciseRepository exerciseRepository;
     @Mock
+    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
+    @Mock
     private ExerciseDocumentService exerciseDocumentService;
     @Mock
     private MessageSource messageSource;
@@ -58,9 +58,10 @@ class SubjectClassServiceImplTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         subjectClassService = new SubjectClassServiceImpl(
-                subjectClassRepository, classRepository, subjectRepository, exerciseRepository, exerciseDocumentService, messageSource, sessionUser);
+                subjectClassRepository, classRepository, subjectRepository, exerciseRepository, exerciseStudentGradeRepository, exerciseDocumentService, messageSource, sessionUser);
         lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        lenient().when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
     }
 
     @Test
@@ -81,6 +82,15 @@ class SubjectClassServiceImplTest {
         assertEquals(2, result.size());
         verify(classRepository).findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID);
         verify(subjectClassRepository).findSubjectsByClassId(CLASS_ID);
+    }
+
+    @Test
+    void getSubjectsByClassId_shouldThrowNotFoundException_whenClassNotExists() {
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ClassNotFoundException.class, () -> subjectClassService.getSubjectsByClassId(CLASS_ID));
+
+        verify(subjectClassRepository, never()).findSubjectsByClassId(any());
     }
 
     @Test
@@ -250,6 +260,18 @@ class SubjectClassServiceImplTest {
         verify(exerciseDocumentService).deleteDocumentsByExerciseIds(exerciseIds);
         verify(exerciseRepository).softDeleteBySubjectClassIds(subjectClassIds);
         verify(subjectClassRepository).softDeleteAll(CLASS_ID, subjectIds);
+    }
+
+    @Test
+    void removeSubjectsFromClass_shouldThrowNotFoundException_whenClassNotExists() {
+        List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1);
+
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ClassNotFoundException.class,
+                () -> subjectClassService.removeSubjectsFromClass(CLASS_ID, subjectIds));
+
+        verify(subjectClassRepository, never()).softDeleteAll(anyInt(), anyList());
     }
 
     @Test
