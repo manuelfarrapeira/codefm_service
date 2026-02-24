@@ -18,6 +18,13 @@ Feature: Teacher Notebook - Get Subjects by Class
 
     Given path '/teacher-notebook/v1/classes/9999/subjects'
     When method GET
+    Then status 404
+    And match response.code == "1003"
+
+  Scenario: Fail to get subjects for a class not found
+    * configure headers = { 'Cookie': '#(authTokens.karateuseradmin)', 'Accept-Language': 'es' }
+
+    Given path '/teacher-notebook/v1/classes/5/subjects'
+    When method GET
     Then status 403
     And match response.code == "1004"
-

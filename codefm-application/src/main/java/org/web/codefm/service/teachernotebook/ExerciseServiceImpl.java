@@ -14,6 +14,7 @@ import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepository;
+import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.service.teachernotebook.ExerciseService;
 import org.web.codefm.domain.session.SessionParameter;
@@ -29,6 +30,7 @@ public class ExerciseServiceImpl implements ExerciseService {
 
     private final ExerciseRepository exerciseRepository;
     private final ClassRepository classRepository;
+    private final SubjectClassRepository subjectClassRepository;
     private final ExerciseDocumentService exerciseDocumentService;
     private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
     private final MessageSource messageSource;
@@ -116,9 +118,14 @@ public class ExerciseServiceImpl implements ExerciseService {
     }
 
     private void validateSubjectClassOwnership(Integer subjectClassId, Integer teacherId) {
+        subjectClassRepository.findById(subjectClassId)
+                .orElseThrow(() -> new ExerciseNotFoundException(
+                        messageSource.getMessage(MessageKeys.EXERCISE_VALIDATION_SUBJECT_CLASS_NOT_FOUND, null, sessionUser.getLocale())
+                ));
+
         if (!exerciseRepository.subjectClassBelongsToTeacher(subjectClassId, teacherId)) {
             throw new ClassForbiddenException(
-                    messageSource.getMessage(MessageKeys.EXERCISE_VALIDATION_SUBJECT_CLASS_NOT_FOUND, null, sessionUser.getLocale())
+                    messageSource.getMessage(MessageKeys.CLASS_FORBIDDEN, null, sessionUser.getLocale())
             );
         }
     }

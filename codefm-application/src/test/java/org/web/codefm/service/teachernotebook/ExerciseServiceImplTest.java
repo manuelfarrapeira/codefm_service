@@ -11,6 +11,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.context.MessageSource;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.Exercise;
+import org.web.codefm.domain.entity.teachernotebook.SubjectClass;
 import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
 import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.ExerciseNotFoundException;
@@ -19,6 +20,7 @@ import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepository;
+import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
@@ -39,6 +41,9 @@ class ExerciseServiceImplTest {
 
     @Mock
     private ClassRepository classRepository;
+
+    @Mock
+    private SubjectClassRepository subjectClassRepository;
 
     @Mock
     private ExerciseDocumentService exerciseDocumentService;
@@ -91,6 +96,7 @@ class ExerciseServiceImplTest {
                 .thenReturn("Class not found.");
 
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
+        when(subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(SubjectClass.builder().id(SUBJECT_CLASS_ID).build()));
     }
 
     @Test
@@ -133,6 +139,7 @@ class ExerciseServiceImplTest {
         Exercise inputExercise = Exercise.builder().title("Exam 1").description("Description").quarter(1).percentageGrade(30).maxGrade(10).build();
         Exercise savedExercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).title("Exam 1").description("Description").quarter(1).percentageGrade(30).maxGrade(10).build();
 
+        when(subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(SubjectClass.builder().id(SUBJECT_CLASS_ID).build()));
         when(exerciseRepository.subjectClassBelongsToTeacher(SUBJECT_CLASS_ID, TEACHER_ID)).thenReturn(true);
         when(exerciseRepository.save(any(Exercise.class))).thenReturn(savedExercise);
 
@@ -145,9 +152,19 @@ class ExerciseServiceImplTest {
     }
 
     @Test
+    void createExercise_shouldThrowNotFoundException_whenSubjectClassNotExists() {
+        Exercise inputExercise = Exercise.builder().title("Exam 1").quarter(1).percentageGrade(30).maxGrade(10).build();
+
+        when(subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ExerciseNotFoundException.class, () -> exerciseService.createExercise(SUBJECT_CLASS_ID, inputExercise));
+    }
+
+    @Test
     void createExercise_shouldThrowForbiddenException_whenSubjectClassNotBelongsToTeacher() {
         Exercise inputExercise = Exercise.builder().title("Exam 1").quarter(1).percentageGrade(30).maxGrade(10).build();
 
+        when(subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(SubjectClass.builder().id(SUBJECT_CLASS_ID).build()));
         when(exerciseRepository.subjectClassBelongsToTeacher(SUBJECT_CLASS_ID, TEACHER_ID)).thenReturn(false);
 
         assertThrows(ClassForbiddenException.class, () -> exerciseService.createExercise(SUBJECT_CLASS_ID, inputExercise));

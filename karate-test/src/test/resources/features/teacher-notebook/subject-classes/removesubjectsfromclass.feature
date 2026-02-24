@@ -15,11 +15,19 @@ Feature: Teacher Notebook - Remove Subjects from Class
     And match response.code == "1006"
     And match response.description == "VALIDATION_ERROR"
 
-  Scenario: Fail to remove subjects from a class that does not belong to teacher
+  Scenario: Fail to remove subjects from a class not found
     * def requestBody = { subjectIds: [1, 2] }
 
     Given path '/teacher-notebook/v1/classes/9999/subjects'
     And request requestBody
     When method DELETE
-    Then status 403
+    Then status 404
+
+     Scenario: Fail to remove subjects from a class that does not belong to teacher
+       * def requestBody = { subjectIds: [1, 2] }
+
+       Given path '/teacher-notebook/v1/classes/5/subjects'
+       And request requestBody
+       When method DELETE
+       Then status 403
 
