@@ -10,12 +10,10 @@ import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
 import org.web.codefm.domain.entity.teachernotebook.Subject;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClass;
 import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
+import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectClassValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
-import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
-import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
-import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
+import org.web.codefm.domain.repository.teachernotebook.*;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.service.teachernotebook.SubjectClassService;
 import org.web.codefm.domain.session.SessionParameter;
@@ -36,6 +34,7 @@ public class SubjectClassServiceImpl implements SubjectClassService {
     private final ClassRepository classRepository;
     private final SubjectRepository subjectRepository;
     private final ExerciseRepository exerciseRepository;
+    private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
     private final ExerciseDocumentService exerciseDocumentService;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
@@ -117,6 +116,7 @@ public class SubjectClassServiceImpl implements SubjectClassService {
         if (!subjectClassIdsToDelete.isEmpty()) {
             List<Integer> exerciseIds = exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIdsToDelete);
             if (!exerciseIds.isEmpty()) {
+                exerciseStudentGradeRepository.softDeleteByExerciseIds(exerciseIds);
                 exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
             }
             exerciseRepository.softDeleteBySubjectClassIds(subjectClassIdsToDelete);
@@ -130,11 +130,15 @@ public class SubjectClassServiceImpl implements SubjectClassService {
     }
 
     private void validateClassOwnership(Integer classId, Integer teacherId, Locale locale) {
+        classRepository.findById(classId)
+                .orElseThrow(() -> new ClassNotFoundException(
+                        messageSource.getMessage(MessageKeys.CLASS_NOT_FOUND, null, locale)
+                ));
+
         classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId)
-                .orElseThrow(() -> {
-                    String message = messageSource.getMessage(MessageKeys.CLASS_FORBIDDEN, null, locale);
-                    return new ClassForbiddenException(message);
-                });
+                .orElseThrow(() -> new ClassForbiddenException(
+                        messageSource.getMessage(MessageKeys.CLASS_FORBIDDEN, null, locale)
+                ));
     }
 
     private void validateSubjectIdsNotEmpty(List<Integer> subjectIds, List<ErrorMessage> errors, Locale locale) {

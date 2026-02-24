@@ -45,6 +45,9 @@ class ClassServiceImplTest {
     private ExerciseRepository exerciseRepository;
 
     @Mock
+    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
+
+    @Mock
     private ExerciseDocumentService exerciseDocumentService;
 
     @Mock

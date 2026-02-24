@@ -12,6 +12,8 @@ import org.springframework.context.MessageSource;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.Schedule;
 import org.web.codefm.domain.entity.teachernotebook.Subject;
+import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
+import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.ScheduleNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.ScheduleValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
@@ -92,6 +94,12 @@ class ScheduleServiceImplTest {
                 .thenReturn("Schedule overlaps with an existing schedule for the same class and day.");
         when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_SUBJECT_NOT_IN_CLASS), any(), any(Locale.class)))
                 .thenReturn("Subject is not assigned to this class.");
+        when(messageSource.getMessage(eq(MessageKeys.CLASS_NOT_FOUND), isNull(), any(Locale.class)))
+                .thenReturn("Class not found.");
+        when(messageSource.getMessage(eq(MessageKeys.CLASS_FORBIDDEN), isNull(), any(Locale.class)))
+                .thenReturn("Not authorized.");
+
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
     }
 
     @Test
@@ -102,6 +110,7 @@ class ScheduleServiceImplTest {
                 Schedule.builder().id(2).classId(CLASS_ID).subjectId(SUBJECT_ID).day(2).start(LocalTime.of(10, 0)).end(LocalTime.of(11, 0)).build()
         );
 
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(classEntity));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
         when(scheduleRepository.findByClassId(CLASS_ID)).thenReturn(expectedSchedules);
 
@@ -114,13 +123,21 @@ class ScheduleServiceImplTest {
     }
 
     @Test
-    void getSchedulesByClassId_shouldThrowException_whenClassNotFound() {
+    void getSchedulesByClassId_shouldThrowNotFoundException_whenClassNotExists() {
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ClassNotFoundException.class,
+                () -> scheduleService.getSchedulesByClassId(CLASS_ID));
+        verify(scheduleRepository, never()).findByClassId(anyInt());
+    }
+
+    @Test
+    void getSchedulesByClassId_shouldThrowForbiddenException_whenClassNotOwnedByTeacher() {
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.empty());
 
-        ScheduleNotFoundException exception = assertThrows(ScheduleNotFoundException.class,
+        assertThrows(ClassForbiddenException.class,
                 () -> scheduleService.getSchedulesByClassId(CLASS_ID));
-
-        assertEquals("[Code: 1003, CodeDescription: RESOURCE_NOT_FOUND, ErrorDescription: Class not found.]", exception.getMessage());
         verify(scheduleRepository, never()).findByClassId(anyInt());
     }
 
@@ -128,6 +145,7 @@ class ScheduleServiceImplTest {
     void getSchedulesByClassId_shouldReturnEmptyList_whenNoSchedulesExist() {
         Class classEntity = Class.builder().id(CLASS_ID).build();
 
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(classEntity));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
         when(scheduleRepository.findByClassId(CLASS_ID)).thenReturn(Collections.emptyList());
 
@@ -145,6 +163,7 @@ class ScheduleServiceImplTest {
                 Schedule.builder().subjectId(SUBJECT_ID).start(LocalTime.of(8, 0)).end(LocalTime.of(9, 0)).build()
         );
 
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(classEntity));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(classEntity));
         when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID)).thenReturn(Optional.of(subject));
         when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID)).thenReturn(true);
@@ -168,14 +187,23 @@ class ScheduleServiceImplTest {
     }
 
     @Test
-    void createSchedules_shouldThrowException_whenClassNotFound() {
+    void createSchedules_shouldThrowNotFoundException_whenClassNotExists() {
         List<Schedule> emptySchedules = new ArrayList<>();
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ClassNotFoundException.class,
+                () -> scheduleService.createSchedules(CLASS_ID, 1, emptySchedules));
+        verify(scheduleRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void createSchedules_shouldThrowForbiddenException_whenClassNotOwnedByTeacher() {
+        List<Schedule> emptySchedules = new ArrayList<>();
+        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.empty());
 
-        ScheduleNotFoundException exception = assertThrows(ScheduleNotFoundException.class,
+        assertThrows(ClassForbiddenException.class,
                 () -> scheduleService.createSchedules(CLASS_ID, 1, emptySchedules));
-
-        assertEquals("[Code: 1003, CodeDescription: RESOURCE_NOT_FOUND, ErrorDescription: Class not found.]", exception.getMessage());
         verify(scheduleRepository, never()).saveAll(anyList());
     }
 

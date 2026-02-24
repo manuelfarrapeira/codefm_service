@@ -689,11 +689,15 @@ School
         ├── StudentClasses (id_class)
         ├── SubjectClasses (id_class)
         │     └── Exercises (id_subject_class)
+        │           ├── ExerciseStudentGrades (id_exercise) [soft delete]
+        │           └── ExerciseDocuments (class_subject_exercise) [hard delete + borrar archivo]
         └── Schedules (class_id)
 
 Subject
   ├── SubjectClasses (id_subject)
   │     └── Exercises (id_subject_class)
+  │           ├── ExerciseStudentGrades (id_exercise) [soft delete]
+  │           └── ExerciseDocuments (class_subject_exercise) [hard delete + borrar archivo]
   └── Schedules (subject_id)
 
 Student
@@ -888,27 +892,150 @@ Scenario: Get schools by teacher
 
 ---
 
-## Comandos Frecuentes
+## Validaciones de Ownership y Permisos del Profesor (CRÍTICO)
 
-```bash
-# Compilar y generar código desde OpenAPI y Mappers
-mvn clean compile
+**OBLIGATORIO**: Todas las operaciones CRUD deben validar que el profesor autenticado tiene permisos sobre los recursos
+que está manipulando. **NUNCA** permitir que un profesor acceda, modifique o elimine recursos de otro profesor.
 
-# Ejecutar todos los tests unitarios
-mvn test
+### Principio General
 
-# Ejecutar tests de un módulo específico
-mvn test -pl codefm-application
+Cada operación debe verificar que **toda la cadena de pertenencia** del recurso lleva al `teacherId` del profesor
+autenticado. Si en cualquier punto de la cadena la validación falla, se debe lanzar una excepción
+`NotFoundException` o `ForbiddenException`.
 
-# Ejecutar un test específico
-mvn test -Dtest=SchoolServiceImplTest
+### Cadena de Pertenencia
 
-# Ejecutar tests de integración Karate
-mvn test -pl karate-test
-
-# Compilar todo el proyecto
-mvn clean install
 ```
+Teacher (teacherId de SessionUser)
+  ├── Schools (teacher_id)
+  │     └── Classes (school_id → school.teacher_id)
+  │           ├── StudentClasses (id_class)
+  │           ├── SubjectClasses (id_class)
+  │           │     └── Exercises (id_subject_class)
+  │           │           ├── ExerciseStudentGrades (id_exercise)
+  │           │           └── ExerciseDocuments (class_subject_exercise)
+  │           └── Schedules (class_id)
+  ├── Subjects (id_teacher)
+  └── Students (teacher_id)
+```
+
+### Validaciones Obligatorias por Entidad
+
+| Entidad              | Validación de Ownership                                                                                                     |
+|----------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| School               | `schoolRepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)`                                           |
+| Class                | `classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId)`                                             |
+| Subject              | `subjectRepository.findByIdAndTeacherId(subjectId, teacherId)`                                                              |
+| Student              | `studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId)`                                         |
+| SubjectClass         | Validar que la **clase** y la **asignatura** pertenecen al profesor                                                         |
+| Schedule             | Validar que la **clase** pertenece al profesor                                                                              |
+| Exercise             | `exerciseRepository.findByIdAndTeacherId(exerciseId, teacherId)` (valida cadena exercise→subjectClass→class→school→teacher) |
+| ExerciseStudentGrade | `exerciseStudentGradeRepository.findByIdAndTeacherId(gradeId, teacherId)` (valida cadena completa)                          |
+| ExerciseDocument     | Validar que el **exercise** pertenece al profesor                                                                           |
+| StudentClass         | Validar que la **clase** y el **estudiante** pertenecen al profesor                                                         |
+
+### Reglas de Validación por Tipo de Operación
+
+#### Consultas (GET)
+
+- **Siempre** filtrar por `teacherId` en la query o validar ownership antes de devolver resultados
+- Si se recibe un `classId` como parámetro, validar que la clase pertenece al profesor ANTES de consultar
+- Si se recibe un `studentId` como parámetro, validar que el estudiante pertenece al profesor
+
+#### Creación (POST/PUT)
+
+- Validar que **todos los IDs referenciados** en el body pertenecen al profesor:
+    - Si se recibe `classId` → validar que la clase es del profesor
+    - Si se recibe `subjectId` → validar que la asignatura es del profesor
+    - Si se recibe `studentId` → validar que el estudiante es del profesor
+    - Si se recibe `exerciseId` → validar que el ejercicio es del profesor
+- Validar que las **asociaciones intermedias** existen:
+    - Para crear un grade: validar que el **estudiante está matriculado en la clase** del ejercicio
+    - Para crear un schedule: validar que la **asignatura está asignada a la clase** (existe en `subject_classes`)
+    - Para crear un exercise: validar que la **subjectClass existe y está activa**
+
+#### Modificación (PUT/PATCH)
+
+- Validar ownership del recurso que se está modificando (buscar con `findByIdAndTeacherId`)
+- Si se modifican IDs referenciados, validar ownership de los nuevos IDs
+
+#### Eliminación (DELETE)
+
+- Validar ownership del recurso que se está eliminando (buscar con `findByIdAndTeacherId`)
+- Aplicar cascada de soft delete según la cadena de dependencias
+
+### Ejemplo de Validación Completa en Service
+
+```java
+
+@Override
+public ExerciseStudentGrade createGrade(Integer exerciseId, ExerciseStudentGrade grade) {
+    Integer teacherId = getTeacherId();
+    Locale locale = sessionUser.getLocale();
+
+    Exercise exercise = exerciseRepository.findByIdAndTeacherId(exerciseId, teacherId)
+            .orElseThrow(() -> new ExerciseStudentGradeNotFoundException(
+                    messageSource.getMessage(MessageKeys.EXERCISE_NOT_FOUND, null, locale)));
+
+    validateStudentId(grade.getStudentId(), teacherId, errors, locale);
+    validateGrade(grade, exercise, errors, locale);
+    validateStudentInExerciseClass(grade.getStudentId(), exercise, teacherId, errors, locale);
+    validateNoDuplicate(grade.getStudentId(), exerciseId, teacherId, errors, locale);
+
+    ...
+}
+
+private void validateStudentId(Integer studentId, Integer teacherId, List<ErrorMessage> errors, Locale locale) {
+    if (studentId == null) {
+        errors.add(new ErrorMessage("studentId", messageSource.getMessage(
+                MessageKeys.STUDENT_REQUIRED, null, locale)));
+        return;
+    }
+
+    Optional<Student> student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
+    if (student.isEmpty()) {
+        errors.add(new ErrorMessage("studentId", messageSource.getMessage(
+                MessageKeys.STUDENT_NOT_FOUND, null, locale)));
+    }
+}
+```
+
+### Patrón `findByIdAndTeacherId` en Repository
+
+Para validar ownership en queries complejas (entidades que no tienen `teacher_id` directo), usar JOINs en el JPA
+Repository:
+
+```java
+
+@Query("SELECT g FROM ExerciseStudentGradeEntity g " +
+        "JOIN ExerciseEntity e ON g.exerciseId = e.id " +
+        "JOIN SubjectClassEntity sc ON e.subjectClassId = sc.id " +
+        "JOIN ClassEntity c ON sc.classId = c.id " +
+        "JOIN SchoolEntity s ON c.schoolId = s.id " +
+        "WHERE g.id = :id AND s.teacherId = :teacherId AND g.deletionDate IS NULL")
+Optional<ExerciseStudentGradeEntity> findByIdAndTeacherId(@Param("id") Integer id, @Param("teacherId") Integer teacherId);
+```
+
+### Validaciones de Asociaciones entre Entidades
+
+| Operación                  | Validación requerida                                                                                                         |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| Asignar asignatura a clase | Clase pertenece al profesor + Asignatura pertenece al profesor + No existe duplicado                                         |
+| Crear schedule             | Clase pertenece al profesor + Asignatura asignada a la clase (`subject_classes`)                                             |
+| Crear exercise             | SubjectClass existe y pertenece al profesor (vía clase)                                                                      |
+| Crear grade de alumno      | Exercise pertenece al profesor + Student pertenece al profesor + Student está en la clase del exercise + No existe duplicado |
+| Subir documento a exercise | Exercise pertenece al profesor                                                                                               |
+| Matricular alumno en clase | Clase pertenece al profesor + Alumno pertenece al profesor                                                                   |
+
+### Tests Obligatorios de Ownership
+
+Para cada operación CRUD, SIEMPRE crear tests que verifiquen:
+
+1. ✅ **Happy path**: recurso pertenece al profesor → operación exitosa
+2. ✅ **Recurso no encontrado**: ID no existe → `NotFoundException`
+3. ✅ **Recurso de otro profesor**: recurso existe pero pertenece a otro profesor → `NotFoundException` o
+   `ForbiddenException`
+4. ✅ **Entidades asociadas inválidas**: IDs referenciados no pertenecen al profesor → `ValidationException`
 
 ---
 
@@ -930,6 +1057,9 @@ mvn clean install
     asignada a la clase en la tabla `subject_classes`
 14. **Colecciones Postman**: SIEMPRE actualizar la colección de Postman correspondiente en `postman/` al crear o
     modificar endpoints
+15. **Ownership del Profesor**: SIEMPRE validar que TODOS los recursos y entidades referenciadas pertenecen al profesor
+    autenticado. NUNCA permitir operaciones sobre recursos de otro profesor. Validar también que las asociaciones
+    intermedias existen (alumno en clase, asignatura asignada a clase, etc.)
 
 ---
 

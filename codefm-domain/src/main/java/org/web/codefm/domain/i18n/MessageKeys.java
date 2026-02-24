@@ -76,4 +76,13 @@ public class MessageKeys {
     public static final String EXERCISE_DOCUMENT_INVALID_EXTENSION = "exercise.document.invalid.extension";
     public static final String EXERCISE_DOCUMENT_SIZE_EXCEEDED = "exercise.document.size.exceeded";
 
+    public static final String EXERCISE_STUDENT_GRADE_NOT_FOUND = "exercise.student.grade.not.found";
+    public static final String EXERCISE_STUDENT_GRADE_REQUIRED = "exercise.student.grade.required";
+    public static final String EXERCISE_STUDENT_GRADE_EXCEEDS_MAX = "exercise.student.grade.exceeds.max";
+    public static final String EXERCISE_STUDENT_GRADE_STUDENT_REQUIRED = "exercise.student.grade.student.required";
+    public static final String EXERCISE_STUDENT_GRADE_STUDENT_NOT_FOUND = "exercise.student.grade.student.not.found";
+    public static final String EXERCISE_STUDENT_GRADE_STUDENT_NOT_IN_CLASS = "exercise.student.grade.student.not.in.class";
+    public static final String EXERCISE_STUDENT_GRADE_ALREADY_EXISTS = "exercise.student.grade.already.exists";
+    public static final String EXERCISE_STUDENT_GRADE_EXERCISE_NOT_FOUND = "exercise.student.grade.exercise.not.found";
+
 }

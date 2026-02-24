@@ -6,11 +6,15 @@ import org.springframework.stereotype.Service;
 import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.Exercise;
+import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
+import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.ExerciseNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.ExerciseValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
+import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepository;
+import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.service.teachernotebook.ExerciseService;
 import org.web.codefm.domain.session.SessionParameter;
@@ -18,6 +22,7 @@ import org.web.codefm.domain.session.SessionUser;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -25,17 +30,25 @@ public class ExerciseServiceImpl implements ExerciseService {
 
     private final ExerciseRepository exerciseRepository;
     private final ClassRepository classRepository;
+    private final SubjectClassRepository subjectClassRepository;
     private final ExerciseDocumentService exerciseDocumentService;
+    private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
     @Override
     public List<Exercise> getExercisesByClassId(Integer classId) {
         Integer teacherId = getTeacherId();
+        Locale locale = sessionUser.getLocale();
+
+        classRepository.findById(classId)
+                .orElseThrow(() -> new ClassNotFoundException(
+                        messageSource.getMessage(MessageKeys.CLASS_NOT_FOUND, null, locale)
+                ));
 
         Class cl = classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId)
-                .orElseThrow(() -> new ExerciseNotFoundException(
-                        messageSource.getMessage(MessageKeys.CLASS_FORBIDDEN, null, sessionUser.getLocale())
+                .orElseThrow(() -> new ClassForbiddenException(
+                        messageSource.getMessage(MessageKeys.CLASS_FORBIDDEN, null, locale)
                 ));
 
         return exerciseRepository.findByClassId(cl.getId());
@@ -99,14 +112,20 @@ public class ExerciseServiceImpl implements ExerciseService {
                         messageSource.getMessage(MessageKeys.EXERCISE_NOT_FOUND, null, sessionUser.getLocale())
                 ));
 
+        exerciseStudentGradeRepository.softDeleteByExerciseIds(List.of(exercise.getId()));
         exerciseDocumentService.deleteDocumentsByExerciseId(exercise.getId());
         exerciseRepository.softDelete(exercise.getId());
     }
 
     private void validateSubjectClassOwnership(Integer subjectClassId, Integer teacherId) {
+        subjectClassRepository.findById(subjectClassId)
+                .orElseThrow(() -> new ExerciseNotFoundException(
+                        messageSource.getMessage(MessageKeys.EXERCISE_VALIDATION_SUBJECT_CLASS_NOT_FOUND, null, sessionUser.getLocale())
+                ));
+
         if (!exerciseRepository.subjectClassBelongsToTeacher(subjectClassId, teacherId)) {
-            throw new ExerciseNotFoundException(
-                    messageSource.getMessage(MessageKeys.EXERCISE_VALIDATION_SUBJECT_CLASS_NOT_FOUND, null, sessionUser.getLocale())
+            throw new ClassForbiddenException(
+                    messageSource.getMessage(MessageKeys.CLASS_FORBIDDEN, null, sessionUser.getLocale())
             );
         }
     }
