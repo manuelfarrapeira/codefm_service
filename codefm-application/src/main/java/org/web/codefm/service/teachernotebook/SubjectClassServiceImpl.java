@@ -16,6 +16,7 @@ import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
+import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.service.teachernotebook.SubjectClassService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
@@ -35,6 +36,7 @@ public class SubjectClassServiceImpl implements SubjectClassService {
     private final ClassRepository classRepository;
     private final SubjectRepository subjectRepository;
     private final ExerciseRepository exerciseRepository;
+    private final ExerciseDocumentService exerciseDocumentService;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -113,6 +115,10 @@ public class SubjectClassServiceImpl implements SubjectClassService {
         }
 
         if (!subjectClassIdsToDelete.isEmpty()) {
+            List<Integer> exerciseIds = exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIdsToDelete);
+            if (!exerciseIds.isEmpty()) {
+                exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
+            }
             exerciseRepository.softDeleteBySubjectClassIds(subjectClassIdsToDelete);
         }
 

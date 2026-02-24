@@ -11,6 +11,7 @@ import org.web.codefm.domain.exception.teachernotebook.ExerciseValidationExcepti
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
+import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.service.teachernotebook.ExerciseService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
@@ -24,6 +25,7 @@ public class ExerciseServiceImpl implements ExerciseService {
 
     private final ExerciseRepository exerciseRepository;
     private final ClassRepository classRepository;
+    private final ExerciseDocumentService exerciseDocumentService;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -97,6 +99,7 @@ public class ExerciseServiceImpl implements ExerciseService {
                         messageSource.getMessage(MessageKeys.EXERCISE_NOT_FOUND, null, sessionUser.getLocale())
                 ));
 
+        exerciseDocumentService.deleteDocumentsByExerciseId(exercise.getId());
         exerciseRepository.softDelete(exercise.getId());
     }
 

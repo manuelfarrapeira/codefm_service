@@ -18,6 +18,7 @@ import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
+import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 
@@ -39,6 +40,8 @@ class SubjectClassServiceImplTest {
     @Mock
     private ExerciseRepository exerciseRepository;
     @Mock
+    private ExerciseDocumentService exerciseDocumentService;
+    @Mock
     private MessageSource messageSource;
     @Mock
     private SessionUser sessionUser;
@@ -55,7 +58,7 @@ class SubjectClassServiceImplTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         subjectClassService = new SubjectClassServiceImpl(
-                subjectClassRepository, classRepository, subjectRepository, exerciseRepository, messageSource, sessionUser);
+                subjectClassRepository, classRepository, subjectRepository, exerciseRepository, exerciseDocumentService, messageSource, sessionUser);
         lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
     }
@@ -202,6 +205,7 @@ class SubjectClassServiceImplTest {
     void removeSubjectsFromClass_shouldRemoveSubjectsAndCascadeDeleteExercises_whenClassBelongsToTeacher() {
         Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").build();
         List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2);
+        List<Integer> subjectClassIds = Arrays.asList(200, 201);
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
                 .thenReturn(Optional.of(clazz));
@@ -213,11 +217,38 @@ class SubjectClassServiceImplTest {
                 .thenReturn(Optional.of(200));
         when(subjectClassRepository.findIdBySubjectIdAndClassId(SUBJECT_ID_2, CLASS_ID))
                 .thenReturn(Optional.of(201));
+        when(exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIds))
+                .thenReturn(Collections.emptyList());
         doNothing().when(subjectClassRepository).softDeleteAll(CLASS_ID, subjectIds);
 
         assertDoesNotThrow(() -> subjectClassService.removeSubjectsFromClass(CLASS_ID, subjectIds));
 
-        verify(exerciseRepository).softDeleteBySubjectClassIds(Arrays.asList(200, 201));
+        verify(exerciseRepository).softDeleteBySubjectClassIds(subjectClassIds);
+        verify(exerciseDocumentService, never()).deleteDocumentsByExerciseIds(any());
+        verify(subjectClassRepository).softDeleteAll(CLASS_ID, subjectIds);
+    }
+
+    @Test
+    void removeSubjectsFromClass_shouldDeleteDocuments_whenExercisesExist() {
+        Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").build();
+        List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1);
+        List<Integer> subjectClassIds = Arrays.asList(200);
+        List<Integer> exerciseIds = Arrays.asList(300, 301);
+
+        when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                .thenReturn(Optional.of(clazz));
+        when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID_1, CLASS_ID))
+                .thenReturn(true);
+        when(subjectClassRepository.findIdBySubjectIdAndClassId(SUBJECT_ID_1, CLASS_ID))
+                .thenReturn(Optional.of(200));
+        when(exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIds))
+                .thenReturn(exerciseIds);
+        doNothing().when(subjectClassRepository).softDeleteAll(CLASS_ID, subjectIds);
+
+        subjectClassService.removeSubjectsFromClass(CLASS_ID, subjectIds);
+
+        verify(exerciseDocumentService).deleteDocumentsByExerciseIds(exerciseIds);
+        verify(exerciseRepository).softDeleteBySubjectClassIds(subjectClassIds);
         verify(subjectClassRepository).softDeleteAll(CLASS_ID, subjectIds);
     }
 

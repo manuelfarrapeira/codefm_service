@@ -14,6 +14,7 @@ import org.web.codefm.domain.exception.teachernotebook.SchoolNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SchoolValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.*;
+import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.session.SessionUser;
 
 import java.util.*;
@@ -39,6 +40,8 @@ class SchoolServiceImplTest {
     @Mock
     private ExerciseRepository exerciseRepository;
     @Mock
+    private ExerciseDocumentService exerciseDocumentService;
+    @Mock
     private MessageSource messageSource;
     @Mock
     private SessionUser sessionUser;
@@ -51,7 +54,7 @@ class SchoolServiceImplTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         schoolService = new SchoolServiceImpl(schoolRepository, classRepository, subjectClassRepository,
-                scheduleRepository, studentClassRepository, exerciseRepository, messageSource, sessionUser);
+                scheduleRepository, studentClassRepository, exerciseRepository, exerciseDocumentService, messageSource, sessionUser);
     }
 
     @Test

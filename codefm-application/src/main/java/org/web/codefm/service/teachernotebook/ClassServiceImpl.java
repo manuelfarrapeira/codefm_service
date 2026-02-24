@@ -11,6 +11,7 @@ import org.web.codefm.domain.exception.teachernotebook.ClassValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.*;
 import org.web.codefm.domain.service.teachernotebook.ClassService;
+import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionUser;
 import org.web.codefm.util.ClassValidationUtil;
@@ -36,6 +37,7 @@ public class ClassServiceImpl implements ClassService {
     private final ScheduleRepository scheduleRepository;
     private final StudentClassRepository studentClassRepository;
     private final ExerciseRepository exerciseRepository;
+    private final ExerciseDocumentService exerciseDocumentService;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -76,6 +78,10 @@ public class ClassServiceImpl implements ClassService {
         List<Integer> subjectClassIds = subjectClassRepository.findActiveIdsByClassId(classId);
 
         if (!subjectClassIds.isEmpty()) {
+            List<Integer> exerciseIds = exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIds);
+            if (!exerciseIds.isEmpty()) {
+                exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
+            }
             exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);
         }
 

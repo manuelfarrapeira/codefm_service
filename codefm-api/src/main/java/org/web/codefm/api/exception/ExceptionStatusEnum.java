@@ -36,7 +36,10 @@ public enum ExceptionStatusEnum {
     SUBJECT_CLASS_VALIDATION_ERROR(SubjectClassValidationException.class, HttpStatus.BAD_REQUEST),
     SUBJECT_CLASS_DUPLICATE(SubjectClassDuplicateException.class, HttpStatus.CONFLICT),
     EXERCISE_NOT_FOUND(ExerciseNotFoundException.class, HttpStatus.NOT_FOUND),
-    EXERCISE_VALIDATION_ERROR(ExerciseValidationException.class, HttpStatus.BAD_REQUEST);
+    EXERCISE_VALIDATION_ERROR(ExerciseValidationException.class, HttpStatus.BAD_REQUEST),
+    EXERCISE_DOCUMENT_NOT_FOUND(ExerciseDocumentNotFoundException.class, HttpStatus.NOT_FOUND),
+    EXERCISE_DOCUMENT_UPLOAD_ERROR(ExerciseDocumentUploadException.class, HttpStatus.INTERNAL_SERVER_ERROR),
+    EXERCISE_DOCUMENT_VALIDATION_ERROR(ExerciseDocumentValidationException.class, HttpStatus.BAD_REQUEST);
 
     private final Class<?> exceptionClazz;
 

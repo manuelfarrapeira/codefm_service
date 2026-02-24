@@ -12,6 +12,7 @@ public interface ExerciseMapper {
 
     @Mapping(target = "subjectId", ignore = true)
     @Mapping(target = "subjectName", ignore = true)
+    @Mapping(target = "documents", ignore = true)
     Exercise toModel(ExerciseEntity entity);
 
     List<Exercise> toModelList(List<ExerciseEntity> entities);

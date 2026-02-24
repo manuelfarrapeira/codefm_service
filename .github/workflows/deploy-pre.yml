@@ -83,8 +83,17 @@ jobs:
           password: ${{ secrets.SYNOLOGY_PASS }}
           port: 33
           script: |
+            echo "=== Creating directories ==="
             mkdir -p ~/codefm-pre/logs
             mkdir -p ~/codefm-pre/data/student-photos
+            mkdir -p ~/codefm-pre/data/exercise-documents
+            echo "=== Verifying created directories ==="
+            ls -la ~/codefm-pre/data/
+            echo "=== Full path ==="
+            realpath ~/codefm-pre/data/exercise-documents
+            echo "${{ secrets.SYNOLOGY_PASS }}" | sudo -S chmod -R 777 ~/codefm-pre/data
+            echo "=== Final permissions ==="
+            ls -la ~/codefm-pre/data/
 
       - name: Deploy PRE via SSH
         uses: appleboy/ssh-action@v1

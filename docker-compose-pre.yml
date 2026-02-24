@@ -23,6 +23,7 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./data/student-photos:/app/data/student-photos
+      - ./data/exercise-documents:/app/data/exercise-documents
     networks:
       - logging
       - infisical_external

@@ -66,4 +66,12 @@ public interface ExerciseRepository {
      * @param subjectClassIds The list of subject-class association IDs
      */
     void softDeleteBySubjectClassIds(List<Integer> subjectClassIds);
+
+    /**
+     * Finds all active exercise IDs for the given subject-class association IDs.
+     *
+     * @param subjectClassIds The list of subject-class association IDs
+     * @return List of active exercise IDs
+     */
+    List<Integer> findActiveIdsBySubjectClassIds(List<Integer> subjectClassIds);
 }

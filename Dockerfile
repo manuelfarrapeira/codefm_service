@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y bash curl && curl -1sLf \
 WORKDIR /app
 RUN mkdir -p /app/logs
 RUN mkdir -p /app/data/student-photos
+RUN mkdir -p /app/data/exercise-documents
 COPY --from=build /app/codefm-boot/target/codefm-boot-*.jar app.jar
 EXPOSE 8080
 

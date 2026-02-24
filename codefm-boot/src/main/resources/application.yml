@@ -118,3 +118,7 @@ kafka:
 student:
   photos:
     directory: ./data/student-photos
+
+exercise:
+  documents:
+    directory: ./data/exercise-documents

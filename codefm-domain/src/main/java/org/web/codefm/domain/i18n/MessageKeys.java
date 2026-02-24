@@ -69,4 +69,11 @@ public class MessageKeys {
     public static final String EXERCISE_VALIDATION_MAX_GRADE_REQUIRED = "exercise.validation.maxGrade.required";
     public static final String EXERCISE_VALIDATION_MAX_GRADE_INVALID = "exercise.validation.maxGrade.invalid";
 
+    public static final String EXERCISE_DOCUMENT_NOT_FOUND = "exercise.document.not.found";
+    public static final String EXERCISE_DOCUMENT_EMPTY = "exercise.document.empty";
+    public static final String EXERCISE_DOCUMENT_UPLOAD_ERROR = "exercise.document.upload.error";
+    public static final String EXERCISE_DOCUMENT_DELETE_ERROR = "exercise.document.delete.error";
+    public static final String EXERCISE_DOCUMENT_INVALID_EXTENSION = "exercise.document.invalid.extension";
+    public static final String EXERCISE_DOCUMENT_SIZE_EXCEEDED = "exercise.document.size.exceeded";
+
 }
