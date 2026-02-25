@@ -94,9 +94,13 @@ class ExerciseServiceImplTest {
                 .thenReturn("Max grade must be between 1 and 15.");
         when(messageSource.getMessage(eq(MessageKeys.CLASS_NOT_FOUND), isNull(), any(Locale.class)))
                 .thenReturn("Class not found.");
+        when(messageSource.getMessage(eq(MessageKeys.EXERCISE_VALIDATION_PERCENTAGE_GRADE_SUM_EXCEEDED), any(Object[].class), any(Locale.class)))
+                .thenReturn("Percentage sum exceeded.");
 
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
         when(subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(SubjectClass.builder().id(SUBJECT_CLASS_ID).build()));
+        when(exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarter(anyInt(), anyInt())).thenReturn(0);
+        when(exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(anyInt(), anyInt(), anyInt())).thenReturn(0);
     }
 
     @Test
@@ -333,5 +337,104 @@ class ExerciseServiceImplTest {
 
         assertThrows(ExerciseNotFoundException.class, () -> exerciseService.deleteExercise(EXERCISE_ID));
     }
+
+    @Test
+    void createExercise_shouldThrowValidationException_whenPercentageSumExceeds100() {
+        Exercise inputExercise = Exercise.builder().title("Exam").quarter(1).percentageGrade(40).maxGrade(10).build();
+
+        when(exerciseRepository.subjectClassBelongsToTeacher(SUBJECT_CLASS_ID, TEACHER_ID)).thenReturn(true);
+        when(exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarter(SUBJECT_CLASS_ID, 1)).thenReturn(70);
+
+        assertThrows(ExerciseValidationException.class, () -> exerciseService.createExercise(SUBJECT_CLASS_ID, inputExercise));
+    }
+
+    @Test
+    void createExercise_shouldSucceed_whenPercentageSumEquals100() {
+        Exercise inputExercise = Exercise.builder().title("Exam").quarter(1).percentageGrade(30).maxGrade(10).build();
+        Exercise savedExercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).title("Exam").quarter(1).percentageGrade(30).maxGrade(10).build();
+
+        when(exerciseRepository.subjectClassBelongsToTeacher(SUBJECT_CLASS_ID, TEACHER_ID)).thenReturn(true);
+        when(exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarter(SUBJECT_CLASS_ID, 1)).thenReturn(70);
+        when(exerciseRepository.save(any(Exercise.class))).thenReturn(savedExercise);
+
+        Exercise result = exerciseService.createExercise(SUBJECT_CLASS_ID, inputExercise);
+
+        assertNotNull(result);
+        assertEquals(EXERCISE_ID, result.getId());
+    }
+
+    @Test
+    void createExercise_shouldSucceed_whenNoExistingExercises() {
+        Exercise inputExercise = Exercise.builder().title("Exam").quarter(1).percentageGrade(50).maxGrade(10).build();
+        Exercise savedExercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).title("Exam").quarter(1).percentageGrade(50).maxGrade(10).build();
+
+        when(exerciseRepository.subjectClassBelongsToTeacher(SUBJECT_CLASS_ID, TEACHER_ID)).thenReturn(true);
+        when(exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarter(SUBJECT_CLASS_ID, 1)).thenReturn(0);
+        when(exerciseRepository.save(any(Exercise.class))).thenReturn(savedExercise);
+
+        Exercise result = exerciseService.createExercise(SUBJECT_CLASS_ID, inputExercise);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void updateExercise_shouldThrowValidationException_whenPercentageSumExceeds100() {
+        Exercise existingExercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).title("Old").quarter(1).percentageGrade(20).maxGrade(10).build();
+        Exercise inputExercise = Exercise.builder().title("New").quarter(1).percentageGrade(50).maxGrade(10).build();
+
+        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(existingExercise));
+        when(exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(SUBJECT_CLASS_ID, 1, EXERCISE_ID)).thenReturn(60);
+
+        assertThrows(ExerciseValidationException.class, () -> exerciseService.updateExercise(EXERCISE_ID, inputExercise));
+    }
+
+    @Test
+    void updateExercise_shouldSucceed_whenPercentageSumEquals100AfterUpdate() {
+        Exercise existingExercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).title("Old").quarter(1).percentageGrade(20).maxGrade(10).build();
+        Exercise inputExercise = Exercise.builder().title("New").quarter(1).percentageGrade(40).maxGrade(10).build();
+        Exercise updatedExercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).title("New").quarter(1).percentageGrade(40).maxGrade(10).build();
+
+        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(existingExercise));
+        when(exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(SUBJECT_CLASS_ID, 1, EXERCISE_ID)).thenReturn(60);
+        when(exerciseRepository.update(any(Exercise.class))).thenReturn(updatedExercise);
+
+        Exercise result = exerciseService.updateExercise(EXERCISE_ID, inputExercise);
+
+        assertNotNull(result);
+        assertEquals(40, result.getPercentageGrade());
+    }
+
+    @Test
+    void updateExercise_shouldUseExcludingId_whenCalculatingPercentageSum() {
+        Exercise existingExercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).title("Old").quarter(1).percentageGrade(30).maxGrade(10).build();
+        Exercise inputExercise = Exercise.builder().title("New").quarter(1).percentageGrade(30).maxGrade(10).build();
+        Exercise updatedExercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).title("New").quarter(1).percentageGrade(30).maxGrade(10).build();
+
+        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(existingExercise));
+        when(exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(SUBJECT_CLASS_ID, 1, EXERCISE_ID)).thenReturn(50);
+        when(exerciseRepository.update(any(Exercise.class))).thenReturn(updatedExercise);
+
+        Exercise result = exerciseService.updateExercise(EXERCISE_ID, inputExercise);
+
+        assertNotNull(result);
+        verify(exerciseRepository).sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(SUBJECT_CLASS_ID, 1, EXERCISE_ID);
+    }
+
+    @Test
+    void updateExercise_shouldAllowQuarterChange_whenPercentageSumIsValid() {
+        Exercise existingExercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).title("Old").quarter(1).percentageGrade(30).maxGrade(10).build();
+        Exercise inputExercise = Exercise.builder().title("New").quarter(2).percentageGrade(30).maxGrade(10).build();
+        Exercise updatedExercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).title("New").quarter(2).percentageGrade(30).maxGrade(10).build();
+
+        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(existingExercise));
+        when(exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(SUBJECT_CLASS_ID, 2, EXERCISE_ID)).thenReturn(50);
+        when(exerciseRepository.update(any(Exercise.class))).thenReturn(updatedExercise);
+
+        Exercise result = exerciseService.updateExercise(EXERCISE_ID, inputExercise);
+
+        assertNotNull(result);
+        assertEquals(2, result.getQuarter());
+    }
 }
+
 

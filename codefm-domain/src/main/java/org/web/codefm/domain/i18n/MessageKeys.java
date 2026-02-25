@@ -66,6 +66,7 @@ public class MessageKeys {
     public static final String EXERCISE_VALIDATION_SUBJECT_CLASS_NOT_FOUND = "exercise.validation.subjectClass.not.found";
     public static final String EXERCISE_VALIDATION_PERCENTAGE_GRADE_REQUIRED = "exercise.validation.percentageGrade.required";
     public static final String EXERCISE_VALIDATION_PERCENTAGE_GRADE_INVALID = "exercise.validation.percentageGrade.invalid";
+    public static final String EXERCISE_VALIDATION_PERCENTAGE_GRADE_SUM_EXCEEDED = "exercise.validation.percentageGrade.sum.exceeded";
     public static final String EXERCISE_VALIDATION_MAX_GRADE_REQUIRED = "exercise.validation.maxGrade.required";
     public static final String EXERCISE_VALIDATION_MAX_GRADE_INVALID = "exercise.validation.maxGrade.invalid";
 
