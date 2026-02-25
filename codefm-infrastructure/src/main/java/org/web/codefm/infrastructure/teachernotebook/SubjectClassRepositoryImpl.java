@@ -6,8 +6,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
-import org.web.codefm.domain.entity.teachernotebook.Subject;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClass;
+import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
 import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectClassEntity;
@@ -17,12 +17,12 @@ import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectClassJPAReposito
 import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectJPARepository;
 import org.web.codefm.infrastructure.mapper.ClassMapper;
 import org.web.codefm.infrastructure.mapper.SubjectClassMapper;
-import org.web.codefm.infrastructure.mapper.SubjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Repository
@@ -34,25 +34,35 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
     private final SubjectJPARepository subjectJPARepository;
     private final ClassJPARepository classJPARepository;
     private final SubjectClassMapper subjectClassMapper;
-    private final SubjectMapper subjectMapper;
     private final ClassMapper classMapper;
 
     @Override
-    public List<Subject> findSubjectsByClassId(Integer classId) {
+    public List<SubjectClassDetail> findSubjectsByClassId(Integer classId) {
         List<SubjectClassEntity> subjectClassEntities = subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(classId);
+
+        if (subjectClassEntities.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         List<Integer> subjectIds = subjectClassEntities.stream()
                 .map(SubjectClassEntity::getSubjectId)
                 .toList();
 
-        if (subjectIds.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        List<SubjectEntity> subjectEntities = subjectJPARepository.findAllById(subjectIds).stream()
+        Map<Integer, SubjectEntity> subjectMap = subjectJPARepository.findAllById(subjectIds).stream()
                 .filter(s -> s.getDeletionDate() == null)
-                .toList();
+                .collect(Collectors.toMap(SubjectEntity::getId, Function.identity()));
 
-        return subjectMapper.toModelList(subjectEntities);
+        return subjectClassEntities.stream()
+                .filter(sc -> subjectMap.containsKey(sc.getSubjectId()))
+                .map(sc -> {
+                    SubjectEntity subject = subjectMap.get(sc.getSubjectId());
+                    return SubjectClassDetail.builder()
+                            .subjectClassId(sc.getId())
+                            .subjectId(subject.getId())
+                            .subjectName(subject.getName())
+                            .build();
+                })
+                .toList();
     }
 
     @Override
@@ -85,7 +95,7 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
                 .filter(c -> c.getDeletionDate() == null)
                 .toList();
 
-        Map<Integer, List<Subject>> subjectsByClassId = classIds.stream()
+        Map<Integer, List<SubjectClassDetail>> subjectsByClassId = classIds.stream()
                 .collect(Collectors.toMap(
                         classId -> classId,
                         this::findSubjectsByClassId
@@ -94,7 +104,7 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
         return classEntities.stream()
                 .map(classEntity -> {
                     Class classData = classMapper.toModel(classEntity);
-                    List<Subject> subjects = subjectsByClassId.getOrDefault(classEntity.getId(), new ArrayList<>());
+                    List<SubjectClassDetail> subjects = subjectsByClassId.getOrDefault(classEntity.getId(), new ArrayList<>());
                     return ClassWithSubjects.builder()
                             .classData(classData)
                             .subjects(subjects)

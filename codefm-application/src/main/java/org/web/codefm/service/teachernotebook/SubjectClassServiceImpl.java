@@ -9,6 +9,7 @@ import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
 import org.web.codefm.domain.entity.teachernotebook.Subject;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClass;
+import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
 import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
 import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectClassValidationException;
@@ -40,7 +41,7 @@ public class SubjectClassServiceImpl implements SubjectClassService {
     private final SessionUser sessionUser;
 
     @Override
-    public List<Subject> getSubjectsByClassId(Integer classId) {
+    public List<SubjectClassDetail> getSubjectsByClassId(Integer classId) {
         Integer teacherId = getTeacherId();
         Locale locale = sessionUser.getLocale();
 
@@ -57,7 +58,7 @@ public class SubjectClassServiceImpl implements SubjectClassService {
 
     @Override
     @Transactional
-    public List<Subject> assignSubjectsToClass(Integer classId, List<Integer> subjectIds) {
+    public List<SubjectClassDetail> assignSubjectsToClass(Integer classId, List<Integer> subjectIds) {
         Integer teacherId = getTeacherId();
         Locale locale = sessionUser.getLocale();
         List<ErrorMessage> errors = new ArrayList<>();

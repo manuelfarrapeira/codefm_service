@@ -6,7 +6,7 @@ Feature: Teacher Notebook - Get Subjects by Class
     Given url baseHttpsUrl
 
   Scenario: Get subjects for a class successfully
-    * def subjectSchema = { id: '#number', name: '#string' }
+    * def subjectSchema = { subjectClassId: '#number', subjectId: '#number', subjectName: '#string' }
 
     Given path '/teacher-notebook/v1/classes/1/subjects'
     When method GET

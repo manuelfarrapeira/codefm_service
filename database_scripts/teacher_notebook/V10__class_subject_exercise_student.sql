@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS class_subject_exercise_student
     id            int auto_increment primary key,
     id_student    int  not null,
     id_exercise   int  not null,
-    grade         int  not null,
+    grade decimal(5, 2) not null,
     description   text null,
     deletion_date date null,
     constraint class_subject_exercise_student_class_subject_exercise_id_fk

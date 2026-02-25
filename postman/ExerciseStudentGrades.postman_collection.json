@@ -91,7 +91,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"studentId\": 1,\n    \"grade\": 8,\n    \"description\": \"Buen rendimiento\"\n}"
+          "raw": "{\n    \"studentId\": 1,\n    \"grade\": 8.5,\n    \"description\": \"Buen rendimiento\"\n}"
         },
         "url": {
           "raw": "{{host}}/teacher-notebook/v1/exercises/:exerciseId/grades",
@@ -131,7 +131,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"grade\": 9,\n    \"description\": \"Nota actualizada tras revisión\"\n}"
+          "raw": "{\n    \"grade\": 9.25,\n    \"description\": \"Nota actualizada tras revisión\"\n}"
         },
         "url": {
           "raw": "{{host}}/teacher-notebook/v1/grades/:id",

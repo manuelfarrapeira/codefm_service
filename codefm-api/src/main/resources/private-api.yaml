@@ -1255,7 +1255,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SubjectDTO'
+                  $ref: '#/components/schemas/SubjectClassDetailDTO'
         '403':
           description: Forbidden - Teacher does not own this class
           content:
@@ -1308,7 +1308,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SubjectDTO'
+                  $ref: '#/components/schemas/SubjectClassDetailDTO'
         '400':
           description: Validation error
           content:
@@ -2259,7 +2259,16 @@ components:
         subjects:
           type: 'array'
           items:
-            $ref: '#/components/schemas/SubjectDTO'
+            $ref: '#/components/schemas/SubjectClassDetailDTO'
+    SubjectClassDetailDTO:
+      type: 'object'
+      properties:
+        subjectClassId:
+          type: 'integer'
+        subjectId:
+          type: 'integer'
+        subjectName:
+          type: 'string'
     SubjectClassAssignRequestDTO:
       type: 'object'
       required:
@@ -2384,7 +2393,8 @@ components:
         exerciseId:
           type: 'integer'
         grade:
-          type: 'integer'
+          type: 'number'
+          format: 'double'
         description:
           type: 'string'
     ExerciseStudentGradeRequestDTO:
@@ -2394,8 +2404,9 @@ components:
           type: 'integer'
           example: 1
         grade:
-          type: 'integer'
-          example: 8
+          type: 'number'
+          format: 'double'
+          example: 8.5
         description:
           type: 'string'
           example: 'Good performance'
@@ -2403,8 +2414,9 @@ components:
       type: 'object'
       properties:
         grade:
-          type: 'integer'
-          example: 9
+          type: 'number'
+          format: 'double'
+          example: 9.25
         description:
           type: 'string'
           example: 'Updated grade after review'
@@ -2444,6 +2456,8 @@ components:
     ExerciseGradeDTO:
       type: 'object'
       properties:
+        gradeId:
+          type: 'integer'
         exerciseId:
           type: 'integer'
         exerciseTitle:
@@ -2453,6 +2467,7 @@ components:
         percentageGrade:
           type: 'integer'
         grade:
-          type: 'integer'
+          type: 'number'
+          format: 'double'
         description:
           type: 'string'

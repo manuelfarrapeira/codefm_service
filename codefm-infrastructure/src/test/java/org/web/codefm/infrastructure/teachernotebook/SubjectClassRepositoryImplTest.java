@@ -9,8 +9,8 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
-import org.web.codefm.domain.entity.teachernotebook.Subject;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClass;
+import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectEntity;
@@ -19,7 +19,6 @@ import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectClassJPAReposito
 import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectJPARepository;
 import org.web.codefm.infrastructure.mapper.ClassMapper;
 import org.web.codefm.infrastructure.mapper.SubjectClassMapper;
-import org.web.codefm.infrastructure.mapper.SubjectMapper;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -42,8 +41,6 @@ class SubjectClassRepositoryImplTest {
     @Mock
     private SubjectClassMapper subjectClassMapper;
     @Mock
-    private SubjectMapper subjectMapper;
-    @Mock
     private ClassMapper classMapper;
 
     @InjectMocks
@@ -59,7 +56,7 @@ class SubjectClassRepositoryImplTest {
         MockitoAnnotations.openMocks(this);
         subjectClassRepository = new SubjectClassRepositoryImpl(
                 subjectClassJPARepository, subjectJPARepository, classJPARepository,
-                subjectClassMapper, subjectMapper, classMapper);
+                subjectClassMapper, classMapper);
     }
 
     @Test
@@ -70,20 +67,21 @@ class SubjectClassRepositoryImplTest {
 
         SubjectEntity subjectEntity1 = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null);
         SubjectEntity subjectEntity2 = new SubjectEntity(SUBJECT_ID_2, "Science", TEACHER_ID, null);
-        List<SubjectEntity> subjectEntities = Arrays.asList(subjectEntity1, subjectEntity2);
-
-        Subject subject1 = Subject.builder().id(SUBJECT_ID_1).name("Math").teacherId(TEACHER_ID).build();
-        Subject subject2 = Subject.builder().id(SUBJECT_ID_2).name("Science").teacherId(TEACHER_ID).build();
-        List<Subject> expectedSubjects = Arrays.asList(subject1, subject2);
 
         when(subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(CLASS_ID)).thenReturn(scEntities);
-        when(subjectJPARepository.findAllById(Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2))).thenReturn(subjectEntities);
-        when(subjectMapper.toModelList(subjectEntities)).thenReturn(expectedSubjects);
+        when(subjectJPARepository.findAllById(Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2)))
+                .thenReturn(Arrays.asList(subjectEntity1, subjectEntity2));
 
-        List<Subject> result = subjectClassRepository.findSubjectsByClassId(CLASS_ID);
+        List<SubjectClassDetail> result = subjectClassRepository.findSubjectsByClassId(CLASS_ID);
 
         assertNotNull(result);
         assertEquals(2, result.size());
+        assertEquals(1, result.get(0).getSubjectClassId());
+        assertEquals(SUBJECT_ID_1, result.get(0).getSubjectId());
+        assertEquals("Math", result.get(0).getSubjectName());
+        assertEquals(2, result.get(1).getSubjectClassId());
+        assertEquals(SUBJECT_ID_2, result.get(1).getSubjectId());
+        assertEquals("Science", result.get(1).getSubjectName());
         verify(subjectClassJPARepository).findByClassIdAndDeletionDateIsNull(CLASS_ID);
     }
 
@@ -91,7 +89,7 @@ class SubjectClassRepositoryImplTest {
     void findSubjectsByClassId_shouldReturnEmptyList_whenNoAssociationsExist() {
         when(subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(CLASS_ID)).thenReturn(Arrays.asList());
 
-        List<Subject> result = subjectClassRepository.findSubjectsByClassId(CLASS_ID);
+        List<SubjectClassDetail> result = subjectClassRepository.findSubjectsByClassId(CLASS_ID);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -169,7 +167,6 @@ class SubjectClassRepositoryImplTest {
 
         SubjectClassEntity scEntity = new SubjectClassEntity(1, SUBJECT_ID_1, CLASS_ID, null);
         SubjectEntity subjectEntity = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null);
-        Subject subject = Subject.builder().id(SUBJECT_ID_1).name("Math").teacherId(TEACHER_ID).build();
 
         when(subjectClassJPARepository.findClassIdsByTeacherId(TEACHER_ID)).thenReturn(classIds);
         when(classJPARepository.findAllById(classIds)).thenReturn(classEntities);
@@ -178,8 +175,6 @@ class SubjectClassRepositoryImplTest {
                 .thenReturn(Arrays.asList(scEntity));
         when(subjectJPARepository.findAllById(Arrays.asList(SUBJECT_ID_1)))
                 .thenReturn(Arrays.asList(subjectEntity));
-        when(subjectMapper.toModelList(Arrays.asList(subjectEntity)))
-                .thenReturn(Arrays.asList(subject));
 
         List<ClassWithSubjects> result = subjectClassRepository.findAllClassesWithSubjectsByTeacherId(TEACHER_ID);
 
@@ -187,6 +182,9 @@ class SubjectClassRepositoryImplTest {
         assertEquals(1, result.size());
         assertEquals(CLASS_ID, result.get(0).getClassData().getId());
         assertEquals(1, result.get(0).getSubjects().size());
+        assertEquals(1, result.get(0).getSubjects().get(0).getSubjectClassId());
+        assertEquals(SUBJECT_ID_1, result.get(0).getSubjects().get(0).getSubjectId());
+        assertEquals("Math", result.get(0).getSubjects().get(0).getSubjectName());
     }
 
     @Test
@@ -316,20 +314,17 @@ class SubjectClassRepositoryImplTest {
         SubjectEntity activeSubject = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null);
         SubjectEntity deletedSubject = new SubjectEntity(SUBJECT_ID_2, "Science", TEACHER_ID, LocalDate.now());
 
-        Subject subject = Subject.builder().id(SUBJECT_ID_1).name("Math").teacherId(TEACHER_ID).build();
-
         when(subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(CLASS_ID))
                 .thenReturn(Arrays.asList(scEntity1, scEntity2));
         when(subjectJPARepository.findAllById(Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2)))
                 .thenReturn(Arrays.asList(activeSubject, deletedSubject));
-        when(subjectMapper.toModelList(List.of(activeSubject)))
-                .thenReturn(List.of(subject));
 
-        List<Subject> result = subjectClassRepository.findSubjectsByClassId(CLASS_ID);
+        List<SubjectClassDetail> result = subjectClassRepository.findSubjectsByClassId(CLASS_ID);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals("Math", result.get(0).getName());
+        assertEquals("Math", result.get(0).getSubjectName());
+        assertEquals(1, result.get(0).getSubjectClassId());
     }
 
     @Test
@@ -342,7 +337,6 @@ class SubjectClassRepositoryImplTest {
 
         SubjectClassEntity scEntity = new SubjectClassEntity(1, SUBJECT_ID_1, CLASS_ID, null);
         SubjectEntity subjectEntity = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null);
-        Subject subject = Subject.builder().id(SUBJECT_ID_1).name("Math").teacherId(TEACHER_ID).build();
 
         when(subjectClassJPARepository.findClassIdsByTeacherId(TEACHER_ID)).thenReturn(classIds);
         when(classJPARepository.findAllById(classIds)).thenReturn(Arrays.asList(activeClass, deletedClass));
@@ -353,8 +347,6 @@ class SubjectClassRepositoryImplTest {
                 .thenReturn(Collections.emptyList());
         when(subjectJPARepository.findAllById(Arrays.asList(SUBJECT_ID_1)))
                 .thenReturn(Arrays.asList(subjectEntity));
-        when(subjectMapper.toModelList(Arrays.asList(subjectEntity)))
-                .thenReturn(Arrays.asList(subject));
 
         List<ClassWithSubjects> result = subjectClassRepository.findAllClassesWithSubjectsByTeacherId(TEACHER_ID);
 

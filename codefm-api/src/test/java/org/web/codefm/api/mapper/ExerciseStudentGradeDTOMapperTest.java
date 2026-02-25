@@ -33,6 +33,7 @@ class ExerciseStudentGradeDTOMapperTest {
         @Override
         public ExerciseGradeDTO toExerciseGradeDTO(ExerciseStudentGrade grade) {
             ExerciseGradeDTO dto = new ExerciseGradeDTO();
+            dto.setGradeId(grade.getId());
             dto.setExerciseId(grade.getExerciseId());
             dto.setExerciseTitle(grade.getExerciseTitle());
             dto.setMaxGrade(grade.getMaxGrade());
@@ -46,10 +47,10 @@ class ExerciseStudentGradeDTOMapperTest {
     @Test
     void toGroupedByStudentDTOList_shouldGroupByStudentAndQuarterAndSubject() {
         List<ExerciseStudentGrade> grades = Arrays.asList(
-                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8, null),
-                buildGrade(2, 1, "Juan", "García", 1, 1, "Math", 102, "Exam 2", 10, 40, 9, null),
-                buildGrade(3, 1, "Juan", "García", 2, 2, "Science", 103, "Lab 1", 10, 50, 7, "Good"),
-                buildGrade(4, 2, "María", "López", 1, 1, "Math", 101, "Exam 1", 10, 30, 6, null)
+                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8.0, null),
+                buildGrade(2, 1, "Juan", "García", 1, 1, "Math", 102, "Exam 2", 10, 40, 9.0, null),
+                buildGrade(3, 1, "Juan", "García", 2, 2, "Science", 103, "Lab 1", 10, 50, 7.0, "Good"),
+                buildGrade(4, 2, "María", "López", 1, 1, "Math", 101, "Exam 1", 10, 30, 6.0, null)
         );
 
         List<StudentGradesDTO> result = mapper.toGroupedByStudentDTOList(grades);
@@ -91,7 +92,7 @@ class ExerciseStudentGradeDTOMapperTest {
     @Test
     void toGroupedByStudentDTOList_shouldHandleSingleGrade() {
         List<ExerciseStudentGrade> grades = List.of(
-                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8, "Well done")
+                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8.0, "Well done")
         );
 
         List<StudentGradesDTO> result = mapper.toGroupedByStudentDTOList(grades);
@@ -102,19 +103,20 @@ class ExerciseStudentGradeDTOMapperTest {
         assertEquals(1, result.get(0).getQuarters().get(0).getSubjects().get(0).getExercises().size());
 
         ExerciseGradeDTO exercise = result.get(0).getQuarters().get(0).getSubjects().get(0).getExercises().get(0);
+        assertEquals(1, exercise.getGradeId());
         assertEquals(101, exercise.getExerciseId());
         assertEquals("Exam 1", exercise.getExerciseTitle());
         assertEquals(10, exercise.getMaxGrade());
         assertEquals(30, exercise.getPercentageGrade());
-        assertEquals(8, exercise.getGrade());
+        assertEquals(8.0, exercise.getGrade());
         assertEquals("Well done", exercise.getDescription());
     }
 
     @Test
     void toGroupedByStudentDTOList_shouldGroupMultipleSubjectsInSameQuarter() {
         List<ExerciseStudentGrade> grades = Arrays.asList(
-                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8, null),
-                buildGrade(2, 1, "Juan", "García", 1, 2, "Science", 102, "Lab 1", 10, 40, 7, null)
+                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8.0, null),
+                buildGrade(2, 1, "Juan", "García", 1, 2, "Science", 102, "Lab 1", 10, 40, 7.0, null)
         );
 
         List<StudentGradesDTO> result = mapper.toGroupedByStudentDTOList(grades);
@@ -132,9 +134,9 @@ class ExerciseStudentGradeDTOMapperTest {
     @Test
     void toGroupedDTOList_shouldGroupByQuarterAndSubject() {
         List<ExerciseStudentGrade> grades = Arrays.asList(
-                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8, null),
-                buildGrade(2, 1, "Juan", "García", 1, 1, "Math", 102, "Exam 2", 10, 40, 9, null),
-                buildGrade(3, 1, "Juan", "García", 2, 2, "Science", 103, "Lab 1", 10, 50, 7, null)
+                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8.0, null),
+                buildGrade(2, 1, "Juan", "García", 1, 1, "Math", 102, "Exam 2", 10, 40, 9.0, null),
+                buildGrade(3, 1, "Juan", "García", 2, 2, "Science", 103, "Lab 1", 10, 50, 7.0, null)
         );
 
         List<QuarterGradesDTO> result = mapper.toGroupedDTOList(grades);
@@ -167,24 +169,25 @@ class ExerciseStudentGradeDTOMapperTest {
     @Test
     void toGroupedDTOList_shouldPreserveExerciseFields() {
         List<ExerciseStudentGrade> grades = List.of(
-                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8, "Good job")
+                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8.0, "Good job")
         );
 
         List<QuarterGradesDTO> result = mapper.toGroupedDTOList(grades);
 
         ExerciseGradeDTO exercise = result.get(0).getSubjects().get(0).getExercises().get(0);
+        assertEquals(1, exercise.getGradeId());
         assertEquals(101, exercise.getExerciseId());
         assertEquals("Exam 1", exercise.getExerciseTitle());
         assertEquals(10, exercise.getMaxGrade());
         assertEquals(30, exercise.getPercentageGrade());
-        assertEquals(8, exercise.getGrade());
+        assertEquals(8.0, exercise.getGrade());
         assertEquals("Good job", exercise.getDescription());
     }
 
     @Test
     void toGroupedDTOList_shouldHandleNullDescription() {
         List<ExerciseStudentGrade> grades = List.of(
-                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8, null)
+                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8.0, null)
         );
 
         List<QuarterGradesDTO> result = mapper.toGroupedDTOList(grades);
@@ -196,9 +199,9 @@ class ExerciseStudentGradeDTOMapperTest {
     @Test
     void toGroupedByStudentDTOList_shouldPreserveInsertionOrder() {
         List<ExerciseStudentGrade> grades = Arrays.asList(
-                buildGrade(1, 3, "Carlos", "Ruiz", 2, 1, "Math", 101, "Exam 1", 10, 30, 8, null),
-                buildGrade(2, 1, "Ana", "López", 1, 2, "Science", 102, "Lab 1", 10, 40, 9, null),
-                buildGrade(3, 2, "Bea", "Pérez", 1, 1, "Math", 103, "Exam 2", 10, 50, 7, null)
+                buildGrade(1, 3, "Carlos", "Ruiz", 2, 1, "Math", 101, "Exam 1", 10, 30, 8.0, null),
+                buildGrade(2, 1, "Ana", "López", 1, 2, "Science", 102, "Lab 1", 10, 40, 9.0, null),
+                buildGrade(3, 2, "Bea", "Pérez", 1, 1, "Math", 103, "Exam 2", 10, 50, 7.0, null)
         );
 
         List<StudentGradesDTO> result = mapper.toGroupedByStudentDTOList(grades);
@@ -212,9 +215,9 @@ class ExerciseStudentGradeDTOMapperTest {
     @Test
     void toGroupedByStudentDTOList_shouldMapMultipleExercisesForSameSubjectAndQuarter() {
         List<ExerciseStudentGrade> grades = Arrays.asList(
-                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8, null),
-                buildGrade(2, 1, "Juan", "García", 1, 1, "Math", 102, "Exam 2", 10, 40, 9, null),
-                buildGrade(3, 1, "Juan", "García", 1, 1, "Math", 103, "Exam 3", 10, 30, 5, null)
+                buildGrade(1, 1, "Juan", "García", 1, 1, "Math", 101, "Exam 1", 10, 30, 8.0, null),
+                buildGrade(2, 1, "Juan", "García", 1, 1, "Math", 102, "Exam 2", 10, 40, 9.0, null),
+                buildGrade(3, 1, "Juan", "García", 1, 1, "Math", 103, "Exam 3", 10, 30, 5.0, null)
         );
 
         List<StudentGradesDTO> result = mapper.toGroupedByStudentDTOList(grades);
@@ -228,7 +231,7 @@ class ExerciseStudentGradeDTOMapperTest {
     private ExerciseStudentGrade buildGrade(Integer id, Integer studentId, String studentName,
                                             String studentSurnames, Integer quarter, Integer subjectId,
                                             String subjectName, Integer exerciseId, String exerciseTitle,
-                                            Integer maxGrade, Integer percentageGrade, Integer grade,
+                                            Integer maxGrade, Integer percentageGrade, Double grade,
                                             String description) {
         return ExerciseStudentGrade.builder()
                 .id(id)

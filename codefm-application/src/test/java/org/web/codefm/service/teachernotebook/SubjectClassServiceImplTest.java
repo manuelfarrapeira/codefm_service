@@ -11,6 +11,7 @@ import org.springframework.context.MessageSource;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
 import org.web.codefm.domain.entity.teachernotebook.Subject;
+import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
 import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
 import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectClassValidationException;
@@ -67,16 +68,16 @@ class SubjectClassServiceImplTest {
     @Test
     void getSubjectsByClassId_shouldReturnSubjects_whenClassBelongsToTeacher() {
         Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").build();
-        List<Subject> expectedSubjects = Arrays.asList(
-                Subject.builder().id(SUBJECT_ID_1).name("Math").teacherId(TEACHER_ID).build(),
-                Subject.builder().id(SUBJECT_ID_2).name("Science").teacherId(TEACHER_ID).build()
+        List<SubjectClassDetail> expectedSubjects = Arrays.asList(
+                SubjectClassDetail.builder().subjectClassId(200).subjectId(SUBJECT_ID_1).subjectName("Math").build(),
+                SubjectClassDetail.builder().subjectClassId(201).subjectId(SUBJECT_ID_2).subjectName("Science").build()
         );
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
                 .thenReturn(Optional.of(clazz));
         when(subjectClassRepository.findSubjectsByClassId(CLASS_ID)).thenReturn(expectedSubjects);
 
-        List<Subject> result = subjectClassService.getSubjectsByClassId(CLASS_ID);
+        List<SubjectClassDetail> result = subjectClassService.getSubjectsByClassId(CLASS_ID);
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -110,7 +111,7 @@ class SubjectClassServiceImplTest {
         List<ClassWithSubjects> expectedResult = Arrays.asList(
                 ClassWithSubjects.builder()
                         .classData(Class.builder().id(CLASS_ID).name("1A").build())
-                        .subjects(Arrays.asList(Subject.builder().id(SUBJECT_ID_1).name("Math").build()))
+                        .subjects(Arrays.asList(SubjectClassDetail.builder().subjectClassId(200).subjectId(SUBJECT_ID_1).subjectName("Math").build()))
                         .build()
         );
 
@@ -127,23 +128,23 @@ class SubjectClassServiceImplTest {
     void assignSubjectsToClass_shouldAssignSubjects_whenAllValidationsPass() {
         Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").build();
         List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2);
-        List<Subject> expectedSubjects = Arrays.asList(
-                Subject.builder().id(SUBJECT_ID_1).name("Math").teacherId(TEACHER_ID).build(),
-                Subject.builder().id(SUBJECT_ID_2).name("Science").teacherId(TEACHER_ID).build()
+        List<SubjectClassDetail> expectedSubjects = Arrays.asList(
+                SubjectClassDetail.builder().subjectClassId(200).subjectId(SUBJECT_ID_1).subjectName("Math").build(),
+                SubjectClassDetail.builder().subjectClassId(201).subjectId(SUBJECT_ID_2).subjectName("Science").build()
         );
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
                 .thenReturn(Optional.of(clazz));
         when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID_1, TEACHER_ID))
-                .thenReturn(Optional.of(expectedSubjects.get(0)));
+                .thenReturn(Optional.of(Subject.builder().id(SUBJECT_ID_1).name("Math").teacherId(TEACHER_ID).build()));
         when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID_2, TEACHER_ID))
-                .thenReturn(Optional.of(expectedSubjects.get(1)));
+                .thenReturn(Optional.of(Subject.builder().id(SUBJECT_ID_2).name("Science").teacherId(TEACHER_ID).build()));
         when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(anyInt(), eq(CLASS_ID)))
                 .thenReturn(false);
         when(subjectClassRepository.saveAll(anyList())).thenReturn(new ArrayList<>());
         when(subjectClassRepository.findSubjectsByClassId(CLASS_ID)).thenReturn(expectedSubjects);
 
-        List<Subject> result = subjectClassService.assignSubjectsToClass(CLASS_ID, subjectIds);
+        List<SubjectClassDetail> result = subjectClassService.assignSubjectsToClass(CLASS_ID, subjectIds);
 
         assertNotNull(result);
         assertEquals(2, result.size());

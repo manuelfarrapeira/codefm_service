@@ -16,6 +16,7 @@ public interface ExerciseStudentGradeDTOMapper {
 
     ExerciseStudentGradeDTO toDTO(ExerciseStudentGrade grade);
 
+    @Mapping(target = "gradeId", source = "id")
     @Mapping(target = "exerciseId", source = "exerciseId")
     @Mapping(target = "exerciseTitle", source = "exerciseTitle")
     @Mapping(target = "maxGrade", source = "maxGrade")
