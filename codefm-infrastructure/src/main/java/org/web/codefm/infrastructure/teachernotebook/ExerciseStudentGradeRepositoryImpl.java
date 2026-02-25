@@ -96,6 +96,16 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
         }
     }
 
+    @Override
+    public void softDeleteByStudentIdAndClassId(Integer studentId, Integer classId) {
+        exerciseStudentGradeJPARepository.softDeleteByStudentIdAndClassId(studentId, classId);
+    }
+
+    @Override
+    public void softDeleteByStudentId(Integer studentId) {
+        exerciseStudentGradeJPARepository.softDeleteByStudentId(studentId);
+    }
+
     private List<Integer> getActiveExerciseIdsByClassId(Integer classId) {
         List<SubjectClassEntity> subjectClassEntities = subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(classId);
         if (subjectClassEntities.isEmpty()) {

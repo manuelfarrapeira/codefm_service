@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.web.codefm.domain.entity.teachernotebook.Student;
 import org.web.codefm.domain.exception.teachernotebook.*;
 import org.web.codefm.domain.i18n.MessageKeys;
+import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepository;
 import org.web.codefm.domain.repository.teachernotebook.StudentClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.StudentRepository;
 import org.web.codefm.domain.session.SessionParameter;
@@ -42,6 +43,9 @@ class StudentServiceImplTest {
 
     @Mock
     private StudentClassRepository studentClassRepository;
+
+    @Mock
+    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
 
     @Mock
     private MessageSource messageSource;
@@ -406,6 +410,7 @@ class StudentServiceImplTest {
 
         studentService.softDeleteStudent(studentId);
 
+        verify(exerciseStudentGradeRepository, times(1)).softDeleteByStudentId(studentId);
         verify(studentClassRepository, times(1)).softDeleteByStudentId(studentId);
         verify(studentRepository, times(1)).softDelete(studentId, teacherId);
     }

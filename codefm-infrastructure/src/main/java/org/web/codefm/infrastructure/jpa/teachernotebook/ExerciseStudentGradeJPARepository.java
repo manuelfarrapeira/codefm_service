@@ -37,5 +37,20 @@ public interface ExerciseStudentGradeJPARepository extends JpaRepository<Exercis
     @Transactional
     @Query("UPDATE ExerciseStudentGradeEntity g SET g.deletionDate = CURRENT_DATE WHERE g.exerciseId IN :exerciseIds AND g.deletionDate IS NULL")
     void softDeleteByExerciseIds(@Param("exerciseIds") List<Integer> exerciseIds);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE ExerciseStudentGradeEntity g SET g.deletionDate = CURRENT_DATE " +
+            "WHERE g.studentId = :studentId AND g.deletionDate IS NULL " +
+            "AND g.exerciseId IN (SELECT e.id FROM ExerciseEntity e " +
+            "JOIN SubjectClassEntity sc ON e.subjectClassId = sc.id " +
+            "WHERE sc.classId = :classId AND e.deletionDate IS NULL)")
+    void softDeleteByStudentIdAndClassId(@Param("studentId") Integer studentId, @Param("classId") Integer classId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE ExerciseStudentGradeEntity g SET g.deletionDate = CURRENT_DATE " +
+            "WHERE g.studentId = :studentId AND g.deletionDate IS NULL")
+    void softDeleteByStudentId(@Param("studentId") Integer studentId);
 }
 

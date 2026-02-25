@@ -75,5 +75,20 @@ public interface ExerciseStudentGradeRepository {
      * @param exerciseIds The list of exercise IDs
      */
     void softDeleteByExerciseIds(List<Integer> exerciseIds);
+
+    /**
+     * Soft-deletes all grades for a specific student in all exercises belonging to a specific class.
+     *
+     * @param studentId The unique identifier of the student
+     * @param classId   The unique identifier of the class
+     */
+    void softDeleteByStudentIdAndClassId(Integer studentId, Integer classId);
+
+    /**
+     * Soft-deletes all grades for a specific student across all exercises.
+     *
+     * @param studentId The unique identifier of the student
+     */
+    void softDeleteByStudentId(Integer studentId);
 }
 
