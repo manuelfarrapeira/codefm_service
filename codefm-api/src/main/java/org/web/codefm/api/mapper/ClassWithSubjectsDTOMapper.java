@@ -7,7 +7,7 @@ import org.web.codefm.model.ClassWithSubjectsDTO;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring", uses = {ClassDTOMapper.class, SubjectDTOMapper.class})
+@Mapper(componentModel = "spring", uses = {ClassDTOMapper.class, SubjectClassDetailDTOMapper.class})
 public interface ClassWithSubjectsDTOMapper {
 
     @Mapping(source = "classData", target = "classData")

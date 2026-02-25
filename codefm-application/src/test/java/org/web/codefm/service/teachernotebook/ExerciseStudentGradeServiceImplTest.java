@@ -161,14 +161,14 @@ class ExerciseStudentGradeServiceImplTest {
         StudentClass studentClass = StudentClass.builder().classId(CLASS_ID).studentId(STUDENT_ID).build();
         when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(studentClass));
         when(exerciseStudentGradeRepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(STUDENT_ID, EXERCISE_ID)).thenReturn(false);
-        ExerciseStudentGrade saved = ExerciseStudentGrade.builder().id(1).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(8).build();
+        ExerciseStudentGrade saved = ExerciseStudentGrade.builder().id(1).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(8.0).build();
         when(exerciseStudentGradeRepository.save(any())).thenReturn(saved);
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8).description("Good").build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).description("Good").build();
         ExerciseStudentGrade result = exerciseStudentGradeService.createGrade(EXERCISE_ID, input);
 
         assertNotNull(result);
-        assertEquals(8, result.getGrade());
+        assertEquals(8.0, result.getGrade());
         verify(exerciseStudentGradeRepository).save(any());
     }
 
@@ -176,7 +176,7 @@ class ExerciseStudentGradeServiceImplTest {
     void createGrade_shouldThrowNotFoundException_whenExerciseNotFound() {
         when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
 
         assertThrows(ExerciseStudentGradeNotFoundException.class,
                 () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
@@ -202,7 +202,7 @@ class ExerciseStudentGradeServiceImplTest {
         Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
         when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(15).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(15.0).build();
 
         assertThrows(ExerciseStudentGradeValidationException.class,
                 () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
@@ -218,7 +218,7 @@ class ExerciseStudentGradeServiceImplTest {
         when(subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(sc));
         when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.empty());
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
 
         assertThrows(ExerciseStudentGradeValidationException.class,
                 () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
@@ -236,7 +236,7 @@ class ExerciseStudentGradeServiceImplTest {
         when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(studentClass));
         when(exerciseStudentGradeRepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(STUDENT_ID, EXERCISE_ID)).thenReturn(true);
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
 
         assertThrows(ExerciseStudentGradeValidationException.class,
                 () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
@@ -252,7 +252,7 @@ class ExerciseStudentGradeServiceImplTest {
         when(subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(sc));
         when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.empty());
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
 
         assertThrows(ExerciseStudentGradeValidationException.class,
                 () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
@@ -263,7 +263,7 @@ class ExerciseStudentGradeServiceImplTest {
         Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
         when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(null).grade(8).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(null).grade(8.0).build();
 
         assertThrows(ExerciseStudentGradeValidationException.class,
                 () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
@@ -275,7 +275,7 @@ class ExerciseStudentGradeServiceImplTest {
         when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
         when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.empty());
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
 
         assertThrows(ExerciseStudentGradeValidationException.class,
                 () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
@@ -283,17 +283,17 @@ class ExerciseStudentGradeServiceImplTest {
 
     @Test
     void updateGrade_shouldUpdateGrade_whenValid() {
-        ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5).build();
+        ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5.0).build();
         when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(existing));
         Exercise exercise = Exercise.builder().id(EXERCISE_ID).maxGrade(10).build();
         when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        ExerciseStudentGrade updated = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(9).description("Updated").build();
+        ExerciseStudentGrade updated = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(9.0).description("Updated").build();
         when(exerciseStudentGradeRepository.update(any())).thenReturn(updated);
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9).description("Updated").build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9.0).description("Updated").build();
         ExerciseStudentGrade result = exerciseStudentGradeService.updateGrade(GRADE_ID, input);
 
-        assertEquals(9, result.getGrade());
+        assertEquals(9.0, result.getGrade());
         assertEquals("Updated", result.getDescription());
     }
 
@@ -301,7 +301,7 @@ class ExerciseStudentGradeServiceImplTest {
     void updateGrade_shouldThrowNotFoundException_whenGradeNotFound() {
         when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.empty());
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9.0).build();
 
         assertThrows(ExerciseStudentGradeNotFoundException.class,
                 () -> exerciseStudentGradeService.updateGrade(GRADE_ID, input));
@@ -309,12 +309,12 @@ class ExerciseStudentGradeServiceImplTest {
 
     @Test
     void updateGrade_shouldThrowValidation_whenGradeExceedsMax() {
-        ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5).build();
+        ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5.0).build();
         when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(existing));
         Exercise exercise = Exercise.builder().id(EXERCISE_ID).maxGrade(10).build();
         when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(15).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(15.0).build();
 
         assertThrows(ExerciseStudentGradeValidationException.class,
                 () -> exerciseStudentGradeService.updateGrade(GRADE_ID, input));
@@ -322,11 +322,11 @@ class ExerciseStudentGradeServiceImplTest {
 
     @Test
     void updateGrade_shouldThrowNotFoundException_whenExerciseNotFound() {
-        ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5).build();
+        ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5.0).build();
         when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(existing));
         when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
 
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9.0).build();
 
         assertThrows(ExerciseStudentGradeNotFoundException.class,
                 () -> exerciseStudentGradeService.updateGrade(GRADE_ID, input));

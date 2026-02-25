@@ -13,7 +13,7 @@ public class ExerciseStudentGrade {
     private Integer id;
     private Integer studentId;
     private Integer exerciseId;
-    private Integer grade;
+    private Double grade;
     private String description;
     private LocalDate deletionDate;
     private String studentName;

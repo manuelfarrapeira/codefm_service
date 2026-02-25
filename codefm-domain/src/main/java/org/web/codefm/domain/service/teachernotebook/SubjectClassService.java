@@ -1,7 +1,7 @@
 package org.web.codefm.domain.service.teachernotebook;
 
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
-import org.web.codefm.domain.entity.teachernotebook.Subject;
+import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
 
 import java.util.List;
 
@@ -12,13 +12,13 @@ import java.util.List;
 public interface SubjectClassService {
 
     /**
-     * Retrieves all subjects associated with a specific class.
+     * Retrieves all subjects associated with a specific class, including the subject-class association ID.
      * Validates that the class belongs to the authenticated teacher.
      *
      * @param classId The unique identifier of the class
-     * @return List of subjects belonging to the specified class
+     * @return List of subject-class details belonging to the specified class
      */
-    List<Subject> getSubjectsByClassId(Integer classId);
+    List<SubjectClassDetail> getSubjectsByClassId(Integer classId);
 
     /**
      * Retrieves all classes with their associated subjects for the authenticated teacher.
@@ -34,9 +34,9 @@ public interface SubjectClassService {
      *
      * @param classId    The unique identifier of the class
      * @param subjectIds The list of subject IDs to assign to the class
-     * @return List of subjects that were assigned to the class
+     * @return List of subject-class details that were assigned to the class
      */
-    List<Subject> assignSubjectsToClass(Integer classId, List<Integer> subjectIds);
+    List<SubjectClassDetail> assignSubjectsToClass(Integer classId, List<Integer> subjectIds);
 
     /**
      * Removes multiple subjects from a class by soft-deleting the associations.

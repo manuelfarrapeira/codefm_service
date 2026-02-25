@@ -246,5 +246,42 @@ class ExerciseRepositoryImplTest {
         assertTrue(result.isEmpty());
         verify(exerciseJPARepository, never()).findActiveIdsBySubjectClassIds(any());
     }
-}
 
+    @Test
+    void sumPercentageGradeBySubjectClassIdAndQuarter_shouldReturnSum() {
+        when(exerciseJPARepository.sumPercentageGradeBySubjectClassIdAndQuarter(5, 1)).thenReturn(70);
+
+        Integer result = exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarter(5, 1);
+
+        assertEquals(70, result);
+        verify(exerciseJPARepository).sumPercentageGradeBySubjectClassIdAndQuarter(5, 1);
+    }
+
+    @Test
+    void sumPercentageGradeBySubjectClassIdAndQuarter_shouldReturnZero_whenNoExercises() {
+        when(exerciseJPARepository.sumPercentageGradeBySubjectClassIdAndQuarter(5, 1)).thenReturn(0);
+
+        Integer result = exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarter(5, 1);
+
+        assertEquals(0, result);
+    }
+
+    @Test
+    void sumPercentageGradeBySubjectClassIdAndQuarterExcludingId_shouldReturnSumExcludingExercise() {
+        when(exerciseJPARepository.sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(5, 1, 100)).thenReturn(50);
+
+        Integer result = exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(5, 1, 100);
+
+        assertEquals(50, result);
+        verify(exerciseJPARepository).sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(5, 1, 100);
+    }
+
+    @Test
+    void sumPercentageGradeBySubjectClassIdAndQuarterExcludingId_shouldReturnZero_whenNoOtherExercises() {
+        when(exerciseJPARepository.sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(5, 1, 100)).thenReturn(0);
+
+        Integer result = exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(5, 1, 100);
+
+        assertEquals(0, result);
+    }
+}

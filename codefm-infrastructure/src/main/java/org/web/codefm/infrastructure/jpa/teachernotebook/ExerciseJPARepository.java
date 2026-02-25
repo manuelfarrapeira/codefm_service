@@ -42,4 +42,15 @@ public interface ExerciseJPARepository extends JpaRepository<ExerciseEntity, Int
 
     @Query("SELECT e.id FROM ExerciseEntity e WHERE e.subjectClassId IN :subjectClassIds AND e.deletionDate IS NULL")
     List<Integer> findActiveIdsBySubjectClassIds(@Param("subjectClassIds") List<Integer> subjectClassIds);
+
+    @Query("SELECT COALESCE(SUM(e.percentageGrade), 0) FROM ExerciseEntity e " +
+            "WHERE e.subjectClassId = :subjectClassId AND e.quarter = :quarter AND e.deletionDate IS NULL")
+    Integer sumPercentageGradeBySubjectClassIdAndQuarter(@Param("subjectClassId") Integer subjectClassId,
+                                                         @Param("quarter") Integer quarter);
+
+    @Query("SELECT COALESCE(SUM(e.percentageGrade), 0) FROM ExerciseEntity e " +
+            "WHERE e.subjectClassId = :subjectClassId AND e.quarter = :quarter AND e.id != :excludeId AND e.deletionDate IS NULL")
+    Integer sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(@Param("subjectClassId") Integer subjectClassId,
+                                                                    @Param("quarter") Integer quarter,
+                                                                    @Param("excludeId") Integer excludeId);
 }

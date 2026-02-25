@@ -6,7 +6,7 @@ Feature: Get Grades by Class
     Given url baseHttpsUrl
 
   Scenario: Get grades by class - Success
-    * def exerciseGradeSchema = { exerciseId: '#number', exerciseTitle: '#string', maxGrade: '#number', percentageGrade: '#number', grade: '#number', description: '##string' }
+    * def exerciseGradeSchema = { gradeId: '#number', exerciseId: '#number', exerciseTitle: '#string', maxGrade: '#number', percentageGrade: '#number', grade: '#number', description: '##string' }
     * def subjectGradeSchema = { subjectId: '#number', subjectName: '#string', exercises: '#[] exerciseGradeSchema' }
     * def quarterGradeSchema = { quarter: '#number', subjects: '#[] subjectGradeSchema' }
     * def studentGradeSchema = { studentId: '#number', studentName: '#string', studentSurnames: '#string', quarters: '#[] quarterGradeSchema' }

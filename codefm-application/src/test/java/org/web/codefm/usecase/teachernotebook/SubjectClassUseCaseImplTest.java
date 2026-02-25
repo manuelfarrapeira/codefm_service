@@ -9,7 +9,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
-import org.web.codefm.domain.entity.teachernotebook.Subject;
+import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
 import org.web.codefm.domain.service.teachernotebook.SubjectClassService;
 
 import java.util.Arrays;
@@ -39,14 +39,14 @@ class SubjectClassUseCaseImplTest {
 
     @Test
     void getSubjectsByClassId_shouldDelegateToService() {
-        List<Subject> expectedSubjects = Arrays.asList(
-                Subject.builder().id(SUBJECT_ID_1).name("Math").build(),
-                Subject.builder().id(SUBJECT_ID_2).name("Science").build()
+        List<SubjectClassDetail> expectedSubjects = Arrays.asList(
+                SubjectClassDetail.builder().subjectClassId(200).subjectId(SUBJECT_ID_1).subjectName("Math").build(),
+                SubjectClassDetail.builder().subjectClassId(201).subjectId(SUBJECT_ID_2).subjectName("Science").build()
         );
 
         when(subjectClassService.getSubjectsByClassId(CLASS_ID)).thenReturn(expectedSubjects);
 
-        List<Subject> result = subjectClassUseCase.getSubjectsByClassId(CLASS_ID);
+        List<SubjectClassDetail> result = subjectClassUseCase.getSubjectsByClassId(CLASS_ID);
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -58,7 +58,7 @@ class SubjectClassUseCaseImplTest {
         List<ClassWithSubjects> expectedResult = Arrays.asList(
                 ClassWithSubjects.builder()
                         .classData(Class.builder().id(CLASS_ID).name("1A").build())
-                        .subjects(Arrays.asList(Subject.builder().id(SUBJECT_ID_1).name("Math").build()))
+                        .subjects(Arrays.asList(SubjectClassDetail.builder().subjectClassId(200).subjectId(SUBJECT_ID_1).subjectName("Math").build()))
                         .build()
         );
 
@@ -74,14 +74,14 @@ class SubjectClassUseCaseImplTest {
     @Test
     void assignSubjectsToClass_shouldDelegateToService() {
         List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2);
-        List<Subject> expectedSubjects = Arrays.asList(
-                Subject.builder().id(SUBJECT_ID_1).name("Math").build(),
-                Subject.builder().id(SUBJECT_ID_2).name("Science").build()
+        List<SubjectClassDetail> expectedSubjects = Arrays.asList(
+                SubjectClassDetail.builder().subjectClassId(200).subjectId(SUBJECT_ID_1).subjectName("Math").build(),
+                SubjectClassDetail.builder().subjectClassId(201).subjectId(SUBJECT_ID_2).subjectName("Science").build()
         );
 
         when(subjectClassService.assignSubjectsToClass(CLASS_ID, subjectIds)).thenReturn(expectedSubjects);
 
-        List<Subject> result = subjectClassUseCase.assignSubjectsToClass(CLASS_ID, subjectIds);
+        List<SubjectClassDetail> result = subjectClassUseCase.assignSubjectsToClass(CLASS_ID, subjectIds);
 
         assertNotNull(result);
         assertEquals(2, result.size());

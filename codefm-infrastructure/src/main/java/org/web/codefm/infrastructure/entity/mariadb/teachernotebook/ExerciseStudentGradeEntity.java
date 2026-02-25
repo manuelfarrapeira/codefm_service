@@ -27,7 +27,7 @@ public class ExerciseStudentGradeEntity {
     private Integer exerciseId;
 
     @Column(nullable = false)
-    private Integer grade;
+    private Double grade;
 
     @Column(columnDefinition = "TEXT")
     private String description;

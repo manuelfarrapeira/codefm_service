@@ -47,9 +47,9 @@ class ExerciseStudentGradeRepositoryImplTest {
         when(subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(1)).thenReturn(List.of(scEntity));
         when(exerciseJPARepository.findActiveIdsBySubjectClassIds(List.of(10))).thenReturn(List.of(100));
 
-        ExerciseStudentGradeEntity gradeEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8, "Good", null);
+        ExerciseStudentGradeEntity gradeEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, "Good", null);
         when(exerciseStudentGradeJPARepository.findByExerciseIdInAndDeletionDateIsNull(List.of(100))).thenReturn(List.of(gradeEntity));
-        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8).build();
+        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
         when(exerciseStudentGradeMapper.toModelList(List.of(gradeEntity))).thenReturn(new ArrayList<>(List.of(grade)));
 
         ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
@@ -87,9 +87,9 @@ class ExerciseStudentGradeRepositoryImplTest {
         when(subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(1)).thenReturn(List.of(scEntity));
         when(exerciseJPARepository.findActiveIdsBySubjectClassIds(List.of(10))).thenReturn(List.of(100));
 
-        ExerciseStudentGradeEntity gradeEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8, "Good", null);
+        ExerciseStudentGradeEntity gradeEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, "Good", null);
         when(exerciseStudentGradeJPARepository.findByExerciseIdInAndStudentIdAndDeletionDateIsNull(List.of(100), 5)).thenReturn(List.of(gradeEntity));
-        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8).build();
+        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
         when(exerciseStudentGradeMapper.toModelList(List.of(gradeEntity))).thenReturn(new ArrayList<>(List.of(grade)));
 
         ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
@@ -120,9 +120,9 @@ class ExerciseStudentGradeRepositoryImplTest {
 
     @Test
     void findByIdAndTeacherId_shouldReturnEnrichedGrade_whenFound() {
-        ExerciseStudentGradeEntity entity = new ExerciseStudentGradeEntity(1, 5, 100, 8, "Good", null);
+        ExerciseStudentGradeEntity entity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, "Good", null);
         when(exerciseStudentGradeJPARepository.findByIdAndTeacherId(1, 1)).thenReturn(Optional.of(entity));
-        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8).build();
+        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
         when(exerciseStudentGradeMapper.toModel(entity)).thenReturn(grade);
 
         ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
@@ -155,10 +155,10 @@ class ExerciseStudentGradeRepositoryImplTest {
 
     @Test
     void save_shouldSaveAndReturnEnrichedGrade() {
-        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().studentId(5).exerciseId(100).grade(8).build();
+        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().studentId(5).exerciseId(100).grade(8.0).build();
         ExerciseStudentGradeEntity entity = new ExerciseStudentGradeEntity();
-        ExerciseStudentGradeEntity savedEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8, null, null);
-        ExerciseStudentGrade saved = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8).build();
+        ExerciseStudentGradeEntity savedEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, null, null);
+        ExerciseStudentGrade saved = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
 
         when(exerciseStudentGradeMapper.toEntity(grade)).thenReturn(entity);
         when(exerciseStudentGradeJPARepository.save(entity)).thenReturn(savedEntity);

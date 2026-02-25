@@ -4,13 +4,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.Generated;
 
-import java.util.List;
-
 @Data
 @Builder
 @Generated
-public class ClassWithSubjects {
-    private Class classData;
-    private List<SubjectClassDetail> subjects;
+public class SubjectClassDetail {
+    private Integer subjectClassId;
+    private Integer subjectId;
+    private String subjectName;
 }
 

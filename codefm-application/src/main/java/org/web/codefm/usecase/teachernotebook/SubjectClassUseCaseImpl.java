@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
-import org.web.codefm.domain.entity.teachernotebook.Subject;
+import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
 import org.web.codefm.domain.service.teachernotebook.SubjectClassService;
 import org.web.codefm.domain.usecase.teachernotebook.SubjectClassUseCase;
 
@@ -18,7 +18,7 @@ public class SubjectClassUseCaseImpl implements SubjectClassUseCase {
     private final SubjectClassService subjectClassService;
 
     @Override
-    public List<Subject> getSubjectsByClassId(Integer classId) {
+    public List<SubjectClassDetail> getSubjectsByClassId(Integer classId) {
         return subjectClassService.getSubjectsByClassId(classId);
     }
 
@@ -28,7 +28,7 @@ public class SubjectClassUseCaseImpl implements SubjectClassUseCase {
     }
 
     @Override
-    public List<Subject> assignSubjectsToClass(Integer classId, List<Integer> subjectIds) {
+    public List<SubjectClassDetail> assignSubjectsToClass(Integer classId, List<Integer> subjectIds) {
         return subjectClassService.assignSubjectsToClass(classId, subjectIds);
     }
 

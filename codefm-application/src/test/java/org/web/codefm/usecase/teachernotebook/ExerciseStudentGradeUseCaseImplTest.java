@@ -47,8 +47,8 @@ class ExerciseStudentGradeUseCaseImplTest {
 
     @Test
     void createGrade_shouldDelegateToService() {
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(1).grade(8).build();
-        ExerciseStudentGrade saved = ExerciseStudentGrade.builder().id(1).studentId(1).exerciseId(1).grade(8).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(1).grade(8.0).build();
+        ExerciseStudentGrade saved = ExerciseStudentGrade.builder().id(1).studentId(1).exerciseId(1).grade(8.0).build();
         when(exerciseStudentGradeService.createGrade(1, input)).thenReturn(saved);
 
         ExerciseStudentGrade result = exerciseStudentGradeUseCase.createGrade(1, input);
@@ -59,8 +59,8 @@ class ExerciseStudentGradeUseCaseImplTest {
 
     @Test
     void updateGrade_shouldDelegateToService() {
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9).build();
-        ExerciseStudentGrade updated = ExerciseStudentGrade.builder().id(1).grade(9).build();
+        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9.0).build();
+        ExerciseStudentGrade updated = ExerciseStudentGrade.builder().id(1).grade(9.0).build();
         when(exerciseStudentGradeService.updateGrade(1, input)).thenReturn(updated);
 
         ExerciseStudentGrade result = exerciseStudentGradeUseCase.updateGrade(1, input);

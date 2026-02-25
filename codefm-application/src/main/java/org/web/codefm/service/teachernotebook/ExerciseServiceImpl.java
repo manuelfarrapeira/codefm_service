@@ -28,6 +28,8 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class ExerciseServiceImpl implements ExerciseService {
 
+    private static final String FIELD_PERCENTAGE_GRADE = "percentageGrade";
+
     private final ExerciseRepository exerciseRepository;
     private final ClassRepository classRepository;
     private final SubjectClassRepository subjectClassRepository;
@@ -61,6 +63,7 @@ public class ExerciseServiceImpl implements ExerciseService {
 
         validateSubjectClassOwnership(subjectClassId, teacherId);
         validateExercise(exercise, errors);
+        validatePercentageGradeSum(subjectClassId, exercise.getQuarter(), exercise.getPercentageGrade(), null, errors);
 
         if (!errors.isEmpty()) {
             throw new ExerciseValidationException(errors);
@@ -89,6 +92,7 @@ public class ExerciseServiceImpl implements ExerciseService {
                 ));
 
         validateExercise(exercise, errors);
+        validatePercentageGradeSum(existingExercise.getSubjectClassId(), exercise.getQuarter(), exercise.getPercentageGrade(), existingExercise.getId(), errors);
 
         if (!errors.isEmpty()) {
             throw new ExerciseValidationException(errors);
@@ -146,10 +150,10 @@ public class ExerciseServiceImpl implements ExerciseService {
 
         if (exercise.getPercentageGrade() == null) {
             String message = messageSource.getMessage(MessageKeys.EXERCISE_VALIDATION_PERCENTAGE_GRADE_REQUIRED, null, sessionUser.getLocale());
-            errors.add(new ErrorMessage("percentageGrade", message));
+            errors.add(new ErrorMessage(FIELD_PERCENTAGE_GRADE, message));
         } else if (exercise.getPercentageGrade() < 1 || exercise.getPercentageGrade() > 100) {
             String message = messageSource.getMessage(MessageKeys.EXERCISE_VALIDATION_PERCENTAGE_GRADE_INVALID, null, sessionUser.getLocale());
-            errors.add(new ErrorMessage("percentageGrade", message));
+            errors.add(new ErrorMessage(FIELD_PERCENTAGE_GRADE, message));
         }
 
         if (exercise.getMaxGrade() == null) {
@@ -165,6 +169,29 @@ public class ExerciseServiceImpl implements ExerciseService {
         return Integer.valueOf(
                 sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
         );
+    }
+
+    private void validatePercentageGradeSum(Integer subjectClassId, Integer quarter, Integer percentageGrade, Integer excludeExerciseId, List<ErrorMessage> errors) {
+        if (quarter == null || percentageGrade == null || subjectClassId == null) {
+            return;
+        }
+
+        Integer currentSum;
+        if (excludeExerciseId != null) {
+            currentSum = exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(subjectClassId, quarter, excludeExerciseId);
+        } else {
+            currentSum = exerciseRepository.sumPercentageGradeBySubjectClassIdAndQuarter(subjectClassId, quarter);
+        }
+
+        int totalSum = currentSum + percentageGrade;
+        if (totalSum > 100) {
+            String message = messageSource.getMessage(
+                    MessageKeys.EXERCISE_VALIDATION_PERCENTAGE_GRADE_SUM_EXCEEDED,
+                    new Object[]{totalSum, currentSum},
+                    sessionUser.getLocale()
+            );
+            errors.add(new ErrorMessage(FIELD_PERCENTAGE_GRADE, message));
+        }
     }
 }
 

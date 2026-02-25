@@ -127,6 +127,16 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
         return exerciseJPARepository.findActiveIdsBySubjectClassIds(subjectClassIds);
     }
 
+    @Override
+    public Integer sumPercentageGradeBySubjectClassIdAndQuarter(Integer subjectClassId, Integer quarter) {
+        return exerciseJPARepository.sumPercentageGradeBySubjectClassIdAndQuarter(subjectClassId, quarter);
+    }
+
+    @Override
+    public Integer sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(Integer subjectClassId, Integer quarter, Integer excludeId) {
+        return exerciseJPARepository.sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(subjectClassId, quarter, excludeId);
+    }
+
     private void enrichWithSubjectData(Exercise exercise) {
         var scOpt = subjectClassJPARepository.findById(exercise.getSubjectClassId());
         scOpt.ifPresent(sc -> {
