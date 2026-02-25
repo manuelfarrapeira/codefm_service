@@ -225,5 +225,19 @@ class ExerciseStudentGradeRepositoryImplTest {
 
         verify(exerciseStudentGradeJPARepository, never()).softDeleteByExerciseIds(any());
     }
+
+    @Test
+    void softDeleteByStudentIdAndClassId_shouldCallJPARepository() {
+        exerciseStudentGradeRepository.softDeleteByStudentIdAndClassId(5, 10);
+
+        verify(exerciseStudentGradeJPARepository).softDeleteByStudentIdAndClassId(5, 10);
+    }
+
+    @Test
+    void softDeleteByStudentId_shouldCallJPARepository() {
+        exerciseStudentGradeRepository.softDeleteByStudentId(5);
+
+        verify(exerciseStudentGradeJPARepository).softDeleteByStudentId(5);
+    }
 }
 

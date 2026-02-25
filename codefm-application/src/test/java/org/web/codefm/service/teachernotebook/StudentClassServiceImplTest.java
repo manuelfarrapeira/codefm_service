@@ -15,6 +15,7 @@ import org.web.codefm.domain.exception.teachernotebook.StudentClassNotFoundExcep
 import org.web.codefm.domain.exception.teachernotebook.StudentClassValidationException;
 import org.web.codefm.domain.exception.teachernotebook.StudentNotFoundException;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
+import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepository;
 import org.web.codefm.domain.repository.teachernotebook.StudentClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.StudentRepository;
 import org.web.codefm.domain.session.SessionParameter;
@@ -42,6 +43,9 @@ class StudentClassServiceImplTest {
 
     @Mock
     private StudentRepository studentRepository;
+
+    @Mock
+    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
 
     @Mock
     private MessageSource messageSource;
@@ -176,7 +180,31 @@ class StudentClassServiceImplTest {
 
         studentClassService.removeStudentFromClass(classId, studentId);
 
+        verify(exerciseStudentGradeRepository).softDeleteByStudentIdAndClassId(studentId, classId);
         verify(studentClassRepository).softDelete(classId, studentId);
+    }
+
+    @Test
+    void removeStudentFromClass_shouldCascadeDeleteGradesBeforeDeletingAssociation() {
+        StudentClass activeAssociation = StudentClass.builder()
+                .id(1)
+                .classId(classId)
+                .studentId(studentId)
+                .deletionDate(null)
+                .build();
+
+        when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
+                .thenReturn(Optional.of(Class.builder().id(classId).build()));
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                .thenReturn(Optional.of(Student.builder().id(studentId).build()));
+        when(studentClassRepository.findByClassIdAndStudentId(classId, studentId))
+                .thenReturn(Optional.of(activeAssociation));
+
+        studentClassService.removeStudentFromClass(classId, studentId);
+
+        var inOrder = inOrder(exerciseStudentGradeRepository, studentClassRepository);
+        inOrder.verify(exerciseStudentGradeRepository).softDeleteByStudentIdAndClassId(studentId, classId);
+        inOrder.verify(studentClassRepository).softDelete(classId, studentId);
     }
 
     @Test
