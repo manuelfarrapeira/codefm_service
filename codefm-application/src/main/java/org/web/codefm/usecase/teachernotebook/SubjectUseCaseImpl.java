@@ -3,7 +3,9 @@ package org.web.codefm.usecase.teachernotebook;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.teachernotebook.Subject;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.SubjectService;
 import org.web.codefm.domain.usecase.teachernotebook.SubjectUseCase;
 
@@ -15,6 +17,7 @@ import java.util.List;
 public class SubjectUseCaseImpl implements SubjectUseCase {
 
     private final SubjectService subjectService;
+    private final CascadeSoftDeleteService cascadeSoftDeleteService;
 
     @Override
     public List<Subject> getSubjectsByTeacher() {
@@ -27,7 +30,9 @@ public class SubjectUseCaseImpl implements SubjectUseCase {
     }
 
     @Override
+    @Transactional
     public void softDeleteSubject(Integer subjectId) {
+        cascadeSoftDeleteService.cascadeDeleteChildrenOfSubject(subjectId);
         subjectService.softDeleteSubject(subjectId);
     }
 

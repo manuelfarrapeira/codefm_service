@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 import org.web.codefm.domain.entity.teachernotebook.Student;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.StudentService;
 
 import java.time.LocalDate;
@@ -22,6 +23,9 @@ class StudentUseCaseImplTest {
 
     @Mock
     private StudentService studentService;
+
+    @Mock
+    private CascadeSoftDeleteService cascadeSoftDeleteService;
 
     @InjectMocks
     private StudentUseCaseImpl studentUseCase;
@@ -75,11 +79,14 @@ class StudentUseCaseImplTest {
     void softDeleteStudent_shouldCallService() {
         Integer studentId = 1;
 
+        doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfStudent(studentId);
         doNothing().when(studentService).softDeleteStudent(studentId);
 
         studentUseCase.softDeleteStudent(studentId);
 
-        verify(studentService, times(1)).softDeleteStudent(studentId);
+        var order = inOrder(cascadeSoftDeleteService, studentService);
+        order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfStudent(studentId);
+        order.verify(studentService).softDeleteStudent(studentId);
     }
 
     @Test
@@ -106,7 +113,7 @@ class StudentUseCaseImplTest {
                 .name("Juan")
                 .surnames("García López")
                 .build();
-        List<Student> expectedStudents = Arrays.asList(student1);
+        List<Student> expectedStudents = List.of(student1);
 
         when(studentService.searchStudents(studentId, null, null)).thenReturn(expectedStudents);
 
@@ -153,7 +160,7 @@ class StudentUseCaseImplTest {
                 .name("Juan")
                 .surnames("García López")
                 .build();
-        List<Student> expectedStudents = Arrays.asList(student1);
+        List<Student> expectedStudents = List.of(student1);
 
         when(studentService.searchStudents(null, null, surnames)).thenReturn(expectedStudents);
 
@@ -175,7 +182,7 @@ class StudentUseCaseImplTest {
                 .name("Juan")
                 .surnames("García López")
                 .build();
-        List<Student> expectedStudents = Arrays.asList(student1);
+        List<Student> expectedStudents = List.of(student1);
 
         when(studentService.searchStudents(null, name, surnames)).thenReturn(expectedStudents);
 

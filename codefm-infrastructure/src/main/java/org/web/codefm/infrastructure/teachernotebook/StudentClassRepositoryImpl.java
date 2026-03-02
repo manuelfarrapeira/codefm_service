@@ -28,6 +28,12 @@ public class StudentClassRepositoryImpl implements StudentClassRepository {
     }
 
     @Override
+    public Optional<StudentClass> findById(Integer id) {
+        return studentClassJPARepository.findById(id)
+                .map(studentClassMapper::toModel);
+    }
+
+    @Override
     public List<Integer> findClassIdsByStudentId(Integer studentId) {
         return studentClassJPARepository.findClassIdsByStudentIdAndDeletionDateIsNull(studentId);
     }

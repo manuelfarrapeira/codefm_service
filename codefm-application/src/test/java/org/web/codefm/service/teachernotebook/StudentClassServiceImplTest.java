@@ -15,7 +15,6 @@ import org.web.codefm.domain.exception.teachernotebook.StudentClassNotFoundExcep
 import org.web.codefm.domain.exception.teachernotebook.StudentClassValidationException;
 import org.web.codefm.domain.exception.teachernotebook.StudentNotFoundException;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
-import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepository;
 import org.web.codefm.domain.repository.teachernotebook.StudentClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.StudentRepository;
 import org.web.codefm.domain.session.SessionParameter;
@@ -27,8 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -43,9 +41,6 @@ class StudentClassServiceImplTest {
 
     @Mock
     private StudentRepository studentRepository;
-
-    @Mock
-    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
 
     @Mock
     private MessageSource messageSource;
@@ -64,7 +59,7 @@ class StudentClassServiceImplTest {
     void setUp() {
         Map<String, String> sessionParameters = new HashMap<>();
         sessionParameters.put(SessionParameter.TEACHER_ID.getClaimName(), teacherId.toString());
-        when(sessionUser.getParameters()).thenReturn(sessionParameters);
+        lenient().when(sessionUser.getParameters()).thenReturn(sessionParameters);
     }
 
     @Test
@@ -88,11 +83,8 @@ class StudentClassServiceImplTest {
     @Test
     void addStudentToClass_shouldReactivateAssociation_whenExistsAndDeleted() {
         StudentClass deletedAssociation = StudentClass.builder()
-                .id(1)
-                .classId(classId)
-                .studentId(studentId)
-                .deletionDate(LocalDate.now().minusDays(5))
-                .build();
+                .id(1).classId(classId).studentId(studentId)
+                .deletionDate(LocalDate.now().minusDays(5)).build();
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
                 .thenReturn(Optional.of(Class.builder().id(classId).build()));
@@ -111,11 +103,7 @@ class StudentClassServiceImplTest {
     @Test
     void addStudentToClass_shouldThrowValidationException_whenAssociationAlreadyActive() {
         StudentClass activeAssociation = StudentClass.builder()
-                .id(1)
-                .classId(classId)
-                .studentId(studentId)
-                .deletionDate(null)
-                .build();
+                .id(1).classId(classId).studentId(studentId).deletionDate(null).build();
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
                 .thenReturn(Optional.of(Class.builder().id(classId).build()));
@@ -163,13 +151,9 @@ class StudentClassServiceImplTest {
     }
 
     @Test
-    void removeStudentFromClass_shouldSoftDeleteAssociation_whenExists() {
+    void findActiveAssociation_shouldReturnAssociation_whenActiveAndOwned() {
         StudentClass activeAssociation = StudentClass.builder()
-                .id(1)
-                .classId(classId)
-                .studentId(studentId)
-                .deletionDate(null)
-                .build();
+                .id(1).classId(classId).studentId(studentId).deletionDate(null).build();
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
                 .thenReturn(Optional.of(Class.builder().id(classId).build()));
@@ -178,33 +162,54 @@ class StudentClassServiceImplTest {
         when(studentClassRepository.findByClassIdAndStudentId(classId, studentId))
                 .thenReturn(Optional.of(activeAssociation));
 
-        studentClassService.removeStudentFromClass(classId, studentId);
+        StudentClass result = studentClassService.findActiveAssociation(classId, studentId);
 
-        verify(exerciseStudentGradeRepository).softDeleteByStudentIdAndClassId(studentId, classId);
-        verify(studentClassRepository).softDelete(classId, studentId);
+        assertNotNull(result);
+        assertEquals(1, result.getId());
+        verify(studentClassRepository).findByClassIdAndStudentId(classId, studentId);
     }
 
     @Test
-    void removeStudentFromClass_shouldCascadeDeleteGradesBeforeDeletingAssociation() {
-        StudentClass activeAssociation = StudentClass.builder()
-                .id(1)
-                .classId(classId)
-                .studentId(studentId)
-                .deletionDate(null)
-                .build();
+    void findActiveAssociation_shouldThrowNotFoundException_whenAssociationDoesNotExist() {
+        when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
+                .thenReturn(Optional.of(Class.builder().id(classId).build()));
+        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                .thenReturn(Optional.of(Student.builder().id(studentId).build()));
+        when(studentClassRepository.findByClassIdAndStudentId(classId, studentId))
+                .thenReturn(Optional.empty());
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
+
+        assertThrows(StudentClassNotFoundException.class, () ->
+                studentClassService.findActiveAssociation(classId, studentId));
+    }
+
+    @Test
+    void findActiveAssociation_shouldThrowNotFoundException_whenAssociationIsDeleted() {
+        StudentClass deletedAssociation = StudentClass.builder()
+                .id(1).classId(classId).studentId(studentId)
+                .deletionDate(LocalDate.now().minusDays(1)).build();
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
                 .thenReturn(Optional.of(Class.builder().id(classId).build()));
         when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
                 .thenReturn(Optional.of(Student.builder().id(studentId).build()));
         when(studentClassRepository.findByClassIdAndStudentId(classId, studentId))
-                .thenReturn(Optional.of(activeAssociation));
+                .thenReturn(Optional.of(deletedAssociation));
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
+
+        assertThrows(StudentClassNotFoundException.class, () ->
+                studentClassService.findActiveAssociation(classId, studentId));
+    }
+
+    @Test
+    void removeStudentFromClass_shouldSoftDeleteAssociation() {
+        doNothing().when(studentClassRepository).softDelete(classId, studentId);
 
         studentClassService.removeStudentFromClass(classId, studentId);
 
-        var inOrder = inOrder(exerciseStudentGradeRepository, studentClassRepository);
-        inOrder.verify(exerciseStudentGradeRepository).softDeleteByStudentIdAndClassId(studentId, classId);
-        inOrder.verify(studentClassRepository).softDelete(classId, studentId);
+        verify(studentClassRepository).softDelete(classId, studentId);
     }
 
     @Test
@@ -219,7 +224,7 @@ class StudentClassServiceImplTest {
         when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
 
         assertThrows(StudentClassNotFoundException.class, () ->
-                studentClassService.removeStudentFromClass(classId, studentId));
+                studentClassService.findActiveAssociation(classId, studentId));
 
         verify(studentClassRepository, never()).softDelete(anyInt(), anyInt());
     }
@@ -227,11 +232,8 @@ class StudentClassServiceImplTest {
     @Test
     void removeStudentFromClass_shouldThrowNotFoundException_whenAssociationAlreadyDeleted() {
         StudentClass deletedAssociation = StudentClass.builder()
-                .id(1)
-                .classId(classId)
-                .studentId(studentId)
-                .deletionDate(LocalDate.now().minusDays(5))
-                .build();
+                .id(1).classId(classId).studentId(studentId)
+                .deletionDate(LocalDate.now().minusDays(5)).build();
 
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId))
                 .thenReturn(Optional.of(Class.builder().id(classId).build()));
@@ -243,7 +245,7 @@ class StudentClassServiceImplTest {
         when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
 
         assertThrows(StudentClassNotFoundException.class, () ->
-                studentClassService.removeStudentFromClass(classId, studentId));
+                studentClassService.findActiveAssociation(classId, studentId));
 
         verify(studentClassRepository, never()).softDelete(anyInt(), anyInt());
     }
@@ -256,7 +258,7 @@ class StudentClassServiceImplTest {
         when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
 
         assertThrows(ClassNotFoundException.class, () ->
-                studentClassService.removeStudentFromClass(classId, studentId));
+                studentClassService.findActiveAssociation(classId, studentId));
 
         verify(studentRepository, never()).findByIdAndTeacherIdAndDeletionDateIsNull(anyInt(), anyInt());
         verify(studentClassRepository, never()).findByClassIdAndStudentId(anyInt(), anyInt());
@@ -272,7 +274,7 @@ class StudentClassServiceImplTest {
         when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
 
         assertThrows(StudentNotFoundException.class, () ->
-                studentClassService.removeStudentFromClass(classId, studentId));
+                studentClassService.findActiveAssociation(classId, studentId));
 
         verify(studentClassRepository, never()).findByClassIdAndStudentId(anyInt(), anyInt());
     }

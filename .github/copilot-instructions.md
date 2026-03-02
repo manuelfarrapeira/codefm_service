@@ -679,7 +679,15 @@ public School softDeleteSchool(Integer schoolId, Integer teacherId) {
 **OBLIGATORIO**: Cada vez que se realice un soft delete de una entidad, se DEBEN dar de baja en cascada **todas las
 entidades dependientes** y las dependientes de estas, recursivamente, hasta el final de la cadena.
 
-**La cascada se gestiona SIEMPRE desde Java (ServiceImpl), NUNCA con triggers de base de datos.**
+**La cascada se gestiona SIEMPRE a través del servicio centralizado `CascadeSoftDeleteService`, NUNCA en los
+ServiceImpl de cada entidad ni con triggers de base de datos.**
+
+#### Arquitectura de la cascada
+
+La cascada está centralizada en un único servicio:
+
+- **Interfaz**: `org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService` (en `codefm-domain`)
+- **Implementación**: `org.web.codefm.service.teachernotebook.CascadeSoftDeleteServiceImpl` (en `codefm-application`)
 
 #### Cadena de dependencias actual
 
@@ -707,53 +715,91 @@ Student
         └── ExerciseStudentGrades (id_student + exercises de la clase) [soft delete]
 ```
 
-#### Implementación obligatoria
+#### Métodos disponibles en CascadeSoftDeleteService
 
-La cascada se implementa en el método `softDelete` del **ServiceImpl** con `@Transactional`:
+| Método                                                        | Descripción                                                                              |
+|---------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `cascadeDeleteChildrenOfSchool(Integer schoolId)`             | Elimina en cascada clases → subjectClasses → exercises → grades/docs + schedules         |
+| `cascadeDeleteChildrenOfClass(Integer classId)`               | Elimina en cascada subjectClasses → exercises → grades/docs + studentClasses + schedules |
+| `cascadeDeleteChildrenOfSubjectClass(Integer subjectClassId)` | Elimina en cascada exercises → grades + docs                                             |
+| `cascadeDeleteChildrenOfSubject(Integer subjectId)`           | Elimina en cascada subjectClasses → exercises + schedules                                |
+| `cascadeDeleteChildrenOfExercise(Integer exerciseId)`         | Elimina grades + docs del ejercicio                                                      |
+| `cascadeDeleteChildrenOfStudent(Integer studentId)`           | Elimina grades + studentClasses del alumno                                               |
+
+#### Implementación obligatoria en el UseCase
+
+La cascada se llama desde el **UseCaseImpl** con `@Transactional`, **antes** de llamar al Service principal:
 
 ```java
 
+@Service
+@RequiredArgsConstructor
+public class SchoolUseCaseImpl implements SchoolUseCase {
+
+    private final SchoolService schoolService;
+    private final CascadeSoftDeleteService cascadeSoftDeleteService;
+    private final SessionUser sessionUser;
+
+    @Override
+    @Transactional
+    public void softDeleteSchool(Integer schoolId) {
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(schoolId);
+        schoolService.softDeleteSchool(schoolId, teacherId);
+    }
+}
+```
+
+**Otros ejemplos de UseCases:**
+
+```java
+// ClassUseCaseImpl
 @Override
 @Transactional
-public void softDeleteSchool(Integer schoolId, Integer teacherId) {
-    Locale locale = sessionUser.getLocale();
-    SchoolValidationUtil.validateSchoolOwnership(schoolId, teacherId, this, messageSource, locale);
-
-    List<Integer> classIds = classRepository.findActiveIdsBySchoolId(schoolId);
-
-    for (Integer classId : classIds) {
-        cascadeDeleteClass(classId);
-    }
-
-    classRepository.softDeleteBySchoolId(schoolId);
-    schoolRepository.softDeleteSchool(schoolId, teacherId);
+public void softDeleteClass(Integer classId) {
+    Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+    cascadeSoftDeleteService.cascadeDeleteChildrenOfClass(classId);
+    classService.softDeleteClass(classId, teacherId);
 }
 
-private void cascadeDeleteClass(Integer classId) {
-    List<Integer> subjectClassIds = subjectClassRepository.findActiveIdsByClassId(classId);
+// SubjectUseCaseImpl
+@Override
+@Transactional
+public void softDeleteSubject(Integer subjectId) {
+    cascadeSoftDeleteService.cascadeDeleteChildrenOfSubject(subjectId);
+    subjectService.softDeleteSubject(subjectId);
+}
 
-    if (!subjectClassIds.isEmpty()) {
-        exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);
-    }
+// ExerciseUseCaseImpl
+@Override
+@Transactional
+public void deleteExercise(Integer exerciseId) {
+    cascadeSoftDeleteService.cascadeDeleteChildrenOfExercise(exerciseId);
+    exerciseService.deleteExercise(exerciseId);
+}
 
-    studentClassRepository.softDeleteByClassId(classId);
-    subjectClassRepository.softDeleteByClassId(classId);
-    scheduleRepository.softDeleteByClassId(classId);
+// StudentUseCaseImpl
+@Override
+@Transactional
+public void softDeleteStudent(Integer studentId) {
+    cascadeSoftDeleteService.cascadeDeleteChildrenOfStudent(studentId);
+    studentService.softDeleteStudent(studentId);
 }
 ```
 
 #### Reglas de la cascada
 
-1. **El Service que hace el soft delete** inyecta los repositories de las entidades dependientes
-2. **Primero** se dan de baja las entidades más profundas de la cadena (exercises), **después** las intermedias
-   (subjectClasses, schedules, studentClasses), y **por último** la entidad principal
-3. **`@Transactional`** en el método del Service garantiza que toda la cascada es atómica
-4. **Los RepositoryImpl de cascada NO necesitan `@Transactional`** porque participan de la transacción del Service
-5. **Cada Repository** debe exponer métodos de soft delete masivo (`softDeleteByClassId`, `softDeleteBySubjectId`, etc.)
+1. **La cascada se llama SIEMPRE desde el UseCase**, nunca desde el Service ni el Repository
+2. **El orden es**: primero `cascadeSoftDeleteService.cascadeDeleteChildrenOfX(id)`, después `xService.softDeleteX(id)`
+3. **`@Transactional`** en el método del UseCase garantiza atomicidad de toda la operación
+4. **Los Services** solo eliminan su propia entidad, sin conocer dependencias
+5. **Los RepositoryImpl de cascada NO necesitan `@Transactional`** porque participan de la transacción del UseCase
+6. **Cada Repository** debe exponer métodos de soft delete masivo (`softDeleteByClassId`, `softDeleteBySubjectId`, etc.)
    implementados con queries `@Modifying` en el JPA Repository
-6. **Siempre que se añada una nueva entidad dependiente**, actualizar la cascada de la entidad padre
+7. **Siempre que se añada una nueva entidad dependiente**, actualizar `CascadeSoftDeleteServiceImpl` con el nuevo paso
+   de cascada en el método correspondiente
 
-#### Métodos necesarios en cada capa
+#### Métodos necesarios en cada capa para soporte de cascada
 
 | Capa              | Método                                                                      | Ejemplo                                                  |
 |-------------------|-----------------------------------------------------------------------------|----------------------------------------------------------|
@@ -762,29 +808,119 @@ private void cascadeDeleteClass(Integer classId) {
 | RepositoryImpl    | Delegación al JPA                                                           | `subjectClassJPARepository.softDeleteByClassId(classId)` |
 | Domain Repository | Método para obtener IDs activos                                             | `List<Integer> findActiveIdsByClassId(Integer classId)`  |
 
-#### Tests de cascada
+#### Tests de UseCase con cascada
 
-Cada test de soft delete DEBE verificar que se llama a los métodos de cascada de todas las dependencias:
+Los tests de UseCase DEBEN verificar que se llama a `CascadeSoftDeleteService` antes que al Service:
 
 ```java
 
-@Test
-void softDeleteSchool_shouldCascadeDeleteAllDependencies() {
-    when(classRepository.findActiveIdsBySchoolId(schoolId)).thenReturn(Arrays.asList(classId1, classId2));
-    when(subjectClassRepository.findActiveIdsByClassId(classId1)).thenReturn(Arrays.asList(100, 101));
-    when(subjectClassRepository.findActiveIdsByClassId(classId2)).thenReturn(Collections.emptyList());
+@ExtendWith(MockitoExtension.class)
+class SchoolUseCaseImplTest {
 
-    schoolService.softDeleteSchool(schoolId, teacherId);
+    @Mock
+    private SchoolService schoolService;
 
-    verify(exerciseRepository).softDeleteBySubjectClassIds(Arrays.asList(100, 101));
-    verify(studentClassRepository).softDeleteByClassId(classId1);
-    verify(subjectClassRepository).softDeleteByClassId(classId1);
-    verify(scheduleRepository).softDeleteByClassId(classId1);
-    verify(studentClassRepository).softDeleteByClassId(classId2);
-    verify(subjectClassRepository).softDeleteByClassId(classId2);
-    verify(scheduleRepository).softDeleteByClassId(classId2);
-    verify(classRepository).softDeleteBySchoolId(schoolId);
-    verify(schoolRepository).softDeleteSchool(schoolId, teacherId);
+    @Mock
+    private CascadeSoftDeleteService cascadeSoftDeleteService;
+
+    @Mock
+    private SessionUser sessionUser;
+
+    @InjectMocks
+    private SchoolUseCaseImpl schoolUseCase;
+
+    @Test
+    void softDeleteSchool_shouldCallCascadeBeforeService() {
+        Integer schoolId = 1;
+        Integer teacherId = 1;
+
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(teacherId);
+        doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfSchool(schoolId);
+        doNothing().when(schoolService).softDeleteSchool(schoolId, teacherId);
+
+        schoolUseCase.softDeleteSchool(schoolId);
+
+        var order = inOrder(cascadeSoftDeleteService, schoolService);
+        order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfSchool(schoolId);
+        order.verify(schoolService).softDeleteSchool(schoolId, teacherId);
+    }
+}
+```
+
+#### Tests de Service con soft delete
+
+Los tests de Service solo verifican la eliminación de **su propia entidad** y la validación de ownership, sin mocks de
+cascada:
+
+```java
+
+@ExtendWith(MockitoExtension.class)
+class SchoolServiceImplTest {
+
+    @Mock
+    private SchoolRepository schoolRepository;
+
+    @Mock
+    private MessageSource messageSource;
+
+    @Mock
+    private SessionUser sessionUser;
+
+    @InjectMocks
+    private SchoolServiceImpl schoolService;
+
+    @Test
+    void softDeleteSchool_shouldCallRepository_whenSchoolExistsAndOwnedByTeacher() {
+        Integer schoolId = 1;
+        Integer teacherId = 1;
+        School school = School.builder().id(schoolId).teacherId(teacherId).name("School A").build();
+
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
+        when(schoolRepository.softDeleteSchool(schoolId, teacherId)).thenReturn(school);
+
+        schoolService.softDeleteSchool(schoolId, teacherId);
+
+        verify(schoolRepository).findById(schoolId);
+        verify(schoolRepository).softDeleteSchool(schoolId, teacherId);
+    }
+}
+```
+
+#### Tests de CascadeSoftDeleteServiceImpl
+
+Los tests del servicio de cascada verifican que cada método llama a los repositories en el orden correcto:
+
+```java
+
+@ExtendWith(MockitoExtension.class)
+class CascadeSoftDeleteServiceImplTest {
+
+    @Mock
+    private ClassRepository classRepository;
+    @Mock
+    private SubjectClassRepository subjectClassRepository;
+    @Mock
+    private ExerciseRepository exerciseRepository;
+    @Mock
+    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
+    @Mock
+    private ExerciseDocumentService exerciseDocumentService;
+
+    @InjectMocks
+    private CascadeSoftDeleteServiceImpl cascadeSoftDeleteService;
+
+    @Test
+    void cascadeDeleteChildrenOfSchool_shouldCascadeToClassesAndSoftDeleteThem() {
+        when(classRepository.findActiveIdsBySchoolId(1)).thenReturn(Arrays.asList(10, 20));
+        when(subjectClassRepository.findActiveIdsByClassId(10)).thenReturn(Collections.emptyList());
+        when(subjectClassRepository.findActiveIdsByClassId(20)).thenReturn(Collections.emptyList());
+
+        cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(1);
+
+        verify(subjectClassRepository).softDeleteByClassId(10);
+        verify(subjectClassRepository).softDeleteByClassId(20);
+        verify(classRepository).softDeleteBySchoolId(1);
+    }
 }
 ```
 
@@ -1063,6 +1199,10 @@ Para cada operación CRUD, SIEMPRE crear tests que verifiquen:
 15. **Ownership del Profesor**: SIEMPRE validar que TODOS los recursos y entidades referenciadas pertenecen al profesor
     autenticado. NUNCA permitir operaciones sobre recursos de otro profesor. Validar también que las asociaciones
     intermedias existen (alumno en clase, asignatura asignada a clase, etc.)
+16. **Soft Delete en Cascada**: SIEMPRE usar `CascadeSoftDeleteService` para la cascada. La cascada se invoca desde el
+    **UseCaseImpl** con `@Transactional`, llamando primero a `cascadeSoftDeleteService.cascadeDeleteChildrenOfX(id)` y
+    después a `xService.softDeleteX(id)`. Los Services solo eliminan su propia entidad. NUNCA implementar la lógica de
+    cascada dentro de un ServiceImpl.
 
 ---
 

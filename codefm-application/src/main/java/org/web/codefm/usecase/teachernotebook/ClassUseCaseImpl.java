@@ -1,17 +1,19 @@
 package org.web.codefm.usecase.teachernotebook;
 
-import java.util.Comparator;
-import java.util.List;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.teachernotebook.Class;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.ClassService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 import org.web.codefm.domain.usecase.teachernotebook.ClassUseCase;
 import org.web.codefm.domain.util.SchoolYearUtil;
+
+import java.util.Comparator;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -19,6 +21,7 @@ import org.web.codefm.domain.util.SchoolYearUtil;
 public class ClassUseCaseImpl implements ClassUseCase {
 
     private final ClassService classService;
+    private final CascadeSoftDeleteService cascadeSoftDeleteService;
     private final SessionUser sessionUser;
 
     @Override
@@ -39,8 +42,10 @@ public class ClassUseCaseImpl implements ClassUseCase {
     }
 
     @Override
+    @Transactional
     public void softDeleteClass(Integer classId) {
-      Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        cascadeSoftDeleteService.cascadeDeleteChildrenOfClass(classId);
         classService.softDeleteClass(classId, teacherId);
     }
 

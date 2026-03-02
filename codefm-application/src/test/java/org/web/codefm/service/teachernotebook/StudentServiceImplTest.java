@@ -410,9 +410,9 @@ class StudentServiceImplTest {
 
         studentService.softDeleteStudent(studentId);
 
-        verify(exerciseStudentGradeRepository, times(1)).softDeleteByStudentId(studentId);
-        verify(studentClassRepository, times(1)).softDeleteByStudentId(studentId);
         verify(studentRepository, times(1)).softDelete(studentId, teacherId);
+        verify(exerciseStudentGradeRepository, never()).softDeleteByStudentId(any());
+        verify(studentClassRepository, never()).softDeleteByStudentId(any());
     }
 
     @Test

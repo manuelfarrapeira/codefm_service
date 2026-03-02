@@ -10,7 +10,6 @@ import org.web.codefm.domain.exception.teachernotebook.StudentClassValidationExc
 import org.web.codefm.domain.exception.teachernotebook.StudentNotFoundException;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
-import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepository;
 import org.web.codefm.domain.repository.teachernotebook.StudentClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.StudentRepository;
 import org.web.codefm.domain.service.teachernotebook.StudentClassService;
@@ -26,7 +25,6 @@ public class StudentClassServiceImpl implements StudentClassService {
     private final StudentClassRepository studentClassRepository;
     private final ClassRepository classRepository;
     private final StudentRepository studentRepository;
-    private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -60,7 +58,7 @@ public class StudentClassServiceImpl implements StudentClassService {
     }
 
     @Override
-    public void removeStudentFromClass(Integer classId, Integer studentId) {
+    public StudentClass findActiveAssociation(Integer classId, Integer studentId) {
         Integer teacherId = getTeacherId();
 
         validateClassOwnership(classId, teacherId);
@@ -77,7 +75,11 @@ public class StudentClassServiceImpl implements StudentClassService {
             );
         }
 
-        exerciseStudentGradeRepository.softDeleteByStudentIdAndClassId(studentId, classId);
+        return association;
+    }
+
+    @Override
+    public void removeStudentFromClass(Integer classId, Integer studentId) {
         studentClassRepository.softDelete(classId, studentId);
     }
 
@@ -103,4 +105,3 @@ public class StudentClassServiceImpl implements StudentClassService {
         );
     }
 }
-
