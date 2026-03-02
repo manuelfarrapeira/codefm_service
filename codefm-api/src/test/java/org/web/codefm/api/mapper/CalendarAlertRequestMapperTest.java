@@ -3,6 +3,8 @@ package org.web.codefm.api.mapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -10,7 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.MessageSource;
-import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.CalendarAlert;
 import org.web.codefm.domain.exception.teachernotebook.CalendarAlertValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
@@ -123,11 +124,12 @@ class CalendarAlertRequestMapperTest {
         assertNull(result.getDate());
     }
 
-    @Test
-    void toDomain_shouldThrowValidationException_whenDateFormatIsInvalid() {
+    @ParameterizedTest
+    @ValueSource(strings = {"2026-03-15", "32/03/2026", "15/13/2026", "not-a-date"})
+    void toDomain_shouldThrowValidationException_whenDateIsInvalid(String invalidDate) {
         // Given
         CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate("2026-03-15");
+        dto.setDate(invalidDate);
         dto.setTitle("Parent meeting");
 
         // When & Then
@@ -136,59 +138,7 @@ class CalendarAlertRequestMapperTest {
 
         assertNotNull(exception);
         assertFalse(exception.getErrors().isEmpty());
-        ErrorMessage error = exception.getErrors().get(0);
-        assertEquals("date", error.getParam());
-    }
-
-    @Test
-    void toDomain_shouldThrowValidationException_whenDateHasInvalidDay() {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate("32/03/2026");
-        dto.setTitle("Parent meeting");
-
-        // When & Then
-        CalendarAlertValidationException exception = assertThrows(CalendarAlertValidationException.class, () ->
-                mapper.toDomain(dto));
-
-        assertNotNull(exception);
-        assertFalse(exception.getErrors().isEmpty());
-        ErrorMessage error = exception.getErrors().get(0);
-        assertEquals("date", error.getParam());
-    }
-
-    @Test
-    void toDomain_shouldThrowValidationException_whenDateHasInvalidMonth() {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate("15/13/2026");
-        dto.setTitle("Parent meeting");
-
-        // When & Then
-        CalendarAlertValidationException exception = assertThrows(CalendarAlertValidationException.class, () ->
-                mapper.toDomain(dto));
-
-        assertNotNull(exception);
-        assertFalse(exception.getErrors().isEmpty());
-        ErrorMessage error = exception.getErrors().get(0);
-        assertEquals("date", error.getParam());
-    }
-
-    @Test
-    void toDomain_shouldThrowValidationException_whenDateIsInvalidText() {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate("not-a-date");
-        dto.setTitle("Parent meeting");
-
-        // When & Then
-        CalendarAlertValidationException exception = assertThrows(CalendarAlertValidationException.class, () ->
-                mapper.toDomain(dto));
-
-        assertNotNull(exception);
-        assertFalse(exception.getErrors().isEmpty());
-        ErrorMessage error = exception.getErrors().get(0);
-        assertEquals("date", error.getParam());
+        assertEquals("date", exception.getErrors().get(0).getParam());
     }
 
     @Test
@@ -251,4 +201,3 @@ class CalendarAlertRequestMapperTest {
         assertNull(result.getTeacherId());
     }
 }
-

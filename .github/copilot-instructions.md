@@ -951,6 +951,64 @@ void getSchoolsByTeacherId_shouldReturnSchools_whenTeacherExists() { }
 void createSchool_shouldThrowValidationException_whenNameIsEmpty() { }
 ```
 
+### Tests Parametrizados (`@ParameterizedTest`)
+
+**OBLIGATORIO**: Siempre que varios tests ejecuten la misma lógica con distintos valores de entrada, se DEBE usar
+`@ParameterizedTest` en lugar de múltiples `@Test` individuales. Esto reduce duplicación y mejora la legibilidad.
+
+**Cuándo usar `@ParameterizedTest`:**
+
+- Validaciones con múltiples valores inválidos (fechas, formatos, rangos, etc.)
+- Misma aserción con distintos inputs que producen el mismo tipo de resultado
+- Cualquier caso donde el cuerpo del test sería idéntico salvo el valor de entrada
+
+**Ejemplos:**
+
+```java
+
+@ParameterizedTest
+@ValueSource(strings = {"2026-03-15", "32/03/2026", "15/13/2026", "not-a-date"})
+void toDomain_shouldThrowValidationException_whenDateIsInvalid(String invalidDate) {
+    CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
+    dto.setDate(invalidDate);
+
+    CalendarAlertValidationException exception = assertThrows(CalendarAlertValidationException.class, () ->
+            mapper.toDomain(dto));
+
+    assertFalse(exception.getErrors().isEmpty());
+    assertEquals("date", exception.getErrors().get(0).getParam());
+}
+```
+
+```java
+
+@ParameterizedTest
+@ValueSource(ints = {0, -1, 101, 200})
+void createExercise_shouldThrowValidationException_whenPercentageGradeIsOutOfRange(int invalidPercentage) {
+    Exercise exercise = Exercise.builder().percentageGrade(invalidPercentage).build();
+
+    assertThrows(ExerciseValidationException.class, () -> exerciseService.createExercise(exercise));
+}
+```
+
+**Para casos con múltiples parámetros por fila, usar `@MethodSource` o `@CsvSource`:**
+
+```java
+
+@ParameterizedTest
+@CsvSource({
+        "null,  name is required",
+        "'',   name is required",
+        "' ',  name is required"
+})
+void createSchool_shouldThrowValidationException_whenNameIsInvalid(String name, String expectedMessage) {
+    ...
+}
+```
+
+**NUNCA** crear tests individuales repetitivos cuando se puede usar `@ParameterizedTest`. SonarQube detecta y penaliza
+este patrón como código duplicado.
+
 ### Test de Service
 
 ```java
