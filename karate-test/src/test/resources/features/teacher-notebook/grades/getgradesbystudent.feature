@@ -9,7 +9,7 @@ Feature: Get Grades by Class and Student
     * def exerciseGradeSchema = { gradeId: '#number', exerciseId: '#number', exerciseTitle: '#string', maxGrade: '#number', percentageGrade: '#number', grade: '#number', description: '##string' }
     * def subjectGradeSchema = { subjectId: '#number', subjectName: '#string', exercises: '#[] exerciseGradeSchema' }
     * def quarterGradeSchema = { quarter: '#number', subjects: '#[] subjectGradeSchema' }
-    Given path '/teacher-notebook/v1/classes/1/students/1/grades'
+    Given path '/teacher-notebook/v1/classes/1/students/4/grades'
     When method GET
     Then status 200
     And match each response == quarterGradeSchema
