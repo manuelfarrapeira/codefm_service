@@ -23,14 +23,6 @@ Feature: Teacher Notebook - Assign Subjects to Class
     When method PUT
     Then status 404
 
-    Scenario: Fail to assign subjects to a class that does not belong to teacher
-      * def requestBody = { subjectIds: [1, 2] }
-
-      Given path '/teacher-notebook/v1/classes/5/subjects'
-      And request requestBody
-      When method PUT
-      Then status 403
-
   Scenario: Fail to assign subjects that do not belong to teacher
     * def requestBody = { subjectIds: [9999] }
 

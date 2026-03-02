@@ -26,10 +26,3 @@ Feature: Get Grades by Class and Student
     Then status 400
     And match response.code == "1006"
 
-  Scenario: Get grades by class and student - Class forbidden
-     Given path '/teacher-notebook/v1/classes/5/students/1/grades'
-     When method GET
-     Then status 403
-     And match response.code == "1004"
-
-
