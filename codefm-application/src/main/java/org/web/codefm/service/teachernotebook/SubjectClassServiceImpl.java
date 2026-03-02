@@ -14,8 +14,9 @@ import org.web.codefm.domain.exception.teachernotebook.ClassForbiddenException;
 import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectClassValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.*;
-import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
+import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
+import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
+import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
 import org.web.codefm.domain.service.teachernotebook.SubjectClassService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
@@ -34,9 +35,6 @@ public class SubjectClassServiceImpl implements SubjectClassService {
     private final SubjectClassRepository subjectClassRepository;
     private final ClassRepository classRepository;
     private final SubjectRepository subjectRepository;
-    private final ExerciseRepository exerciseRepository;
-    private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
-    private final ExerciseDocumentService exerciseDocumentService;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -90,8 +88,12 @@ public class SubjectClassServiceImpl implements SubjectClassService {
     }
 
     @Override
-    @Transactional
     public void removeSubjectsFromClass(Integer classId, List<Integer> subjectIds) {
+        subjectClassRepository.softDeleteAll(classId, subjectIds);
+    }
+
+    @Override
+    public List<Integer> findActiveSubjectClassIds(Integer classId, List<Integer> subjectIds) {
         Integer teacherId = getTeacherId();
         Locale locale = sessionUser.getLocale();
         List<ErrorMessage> errors = new ArrayList<>();
@@ -108,22 +110,12 @@ public class SubjectClassServiceImpl implements SubjectClassService {
             throw new SubjectClassValidationException(errors);
         }
 
-        List<Integer> subjectClassIdsToDelete = new ArrayList<>();
+        List<Integer> subjectClassIds = new ArrayList<>();
         for (Integer subjectId : subjectIds) {
             subjectClassRepository.findIdBySubjectIdAndClassId(subjectId, classId)
-                    .ifPresent(subjectClassIdsToDelete::add);
+                    .ifPresent(subjectClassIds::add);
         }
-
-        if (!subjectClassIdsToDelete.isEmpty()) {
-            List<Integer> exerciseIds = exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIdsToDelete);
-            if (!exerciseIds.isEmpty()) {
-                exerciseStudentGradeRepository.softDeleteByExerciseIds(exerciseIds);
-                exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
-            }
-            exerciseRepository.softDeleteBySubjectClassIds(subjectClassIdsToDelete);
-        }
-
-        subjectClassRepository.softDeleteAll(classId, subjectIds);
+        return subjectClassIds;
     }
 
     private Integer getTeacherId() {

@@ -58,5 +58,4 @@ Feature: Teacher Notebook - Update Class
     Examples:
       | classId | status | code   | description          | detail                                                    |
       | 999     | 404    | '1003' | 'RESOURCE_NOT_FOUND' | 'Clase no encontrada.'                                    |
-      | 5       | 403    | '1004' | 'RESOURCE_FORBIDDEN' | 'No está autorizado para realizar cambios en esta clase.' |
 

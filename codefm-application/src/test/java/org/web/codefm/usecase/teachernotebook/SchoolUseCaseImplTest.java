@@ -1,21 +1,5 @@
 package org.web.codefm.usecase.teachernotebook;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,15 +9,26 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.School;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SchoolUseCaseImplTest {
 
     @Mock
     private SchoolService schoolService;
+
+    @Mock
+    private CascadeSoftDeleteService cascadeSoftDeleteService;
 
     @Mock
     private SessionUser sessionUser;
@@ -184,13 +179,15 @@ class SchoolUseCaseImplTest {
     @Test
     void softDeleteSchool_shouldGetTeacherIdFromSessionAndCallService() {
         Integer schoolId = 1;
-      Integer teacherId = 1;
+        Integer teacherId = 1;
 
+        doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfSchool(schoolId);
         doNothing().when(schoolService).softDeleteSchool(schoolId, teacherId);
 
         schoolUseCase.softDeleteSchool(schoolId);
 
-      verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        verify(cascadeSoftDeleteService, times(1)).cascadeDeleteChildrenOfSchool(schoolId);
         verify(schoolService, times(1)).softDeleteSchool(schoolId, teacherId);
     }
 

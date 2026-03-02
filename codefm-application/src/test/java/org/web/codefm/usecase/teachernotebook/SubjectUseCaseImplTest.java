@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Subject;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.SubjectService;
 
 import java.util.Arrays;
@@ -21,6 +22,9 @@ class SubjectUseCaseImplTest {
 
     @Mock
     private SubjectService subjectService;
+
+    @Mock
+    private CascadeSoftDeleteService cascadeSoftDeleteService;
 
     @InjectMocks
     private SubjectUseCaseImpl subjectUseCase;
@@ -82,10 +86,12 @@ class SubjectUseCaseImplTest {
     void softDeleteSubject_shouldCallServiceWithSubjectId() {
         Integer subjectId = 1;
 
+        doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfSubject(subjectId);
         doNothing().when(subjectService).softDeleteSubject(subjectId);
 
         subjectUseCase.softDeleteSubject(subjectId);
 
+        verify(cascadeSoftDeleteService, times(1)).cascadeDeleteChildrenOfSubject(subjectId);
         verify(subjectService, times(1)).softDeleteSubject(subjectId);
     }
 

@@ -1,11 +1,9 @@
 package org.web.codefm.service.teachernotebook;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
 import org.web.codefm.domain.entity.teachernotebook.Subject;
@@ -13,8 +11,7 @@ import org.web.codefm.domain.exception.teachernotebook.SubjectForbiddenException
 import org.web.codefm.domain.exception.teachernotebook.SubjectNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.*;
-import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
+import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 
@@ -31,16 +28,6 @@ class SubjectServiceImplTest {
     @Mock
     private SubjectRepository subjectRepository;
     @Mock
-    private SubjectClassRepository subjectClassRepository;
-    @Mock
-    private ScheduleRepository scheduleRepository;
-    @Mock
-    private ExerciseRepository exerciseRepository;
-    @Mock
-    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
-    @Mock
-    private ExerciseDocumentService exerciseDocumentService;
-    @Mock
     private MessageSource messageSource;
     @Mock
     private SessionUser sessionUser;
@@ -50,14 +37,6 @@ class SubjectServiceImplTest {
 
     private static final Integer TEACHER_ID = 1;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        subjectService = new SubjectServiceImpl(subjectRepository, subjectClassRepository,
-                scheduleRepository, exerciseRepository, exerciseStudentGradeRepository, exerciseDocumentService, messageSource, sessionUser);
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
-    }
-
     @Test
     void getSubjectsByTeacher_shouldReturnSubjects_whenFound() {
         List<Subject> expectedSubjects = Arrays.asList(
@@ -65,6 +44,7 @@ class SubjectServiceImplTest {
                 Subject.builder().id(2).name("Science").teacherId(TEACHER_ID).build()
         );
 
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
         when(subjectRepository.findByTeacherId(TEACHER_ID)).thenReturn(expectedSubjects);
 
         List<Subject> actualSubjects = subjectService.getSubjectsByTeacher();
@@ -77,6 +57,7 @@ class SubjectServiceImplTest {
 
     @Test
     void getSubjectsByTeacher_shouldReturnEmptyList_whenNoSubjectsFound() {
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
         when(subjectRepository.findByTeacherId(TEACHER_ID)).thenReturn(Collections.emptyList());
 
         List<Subject> actualSubjects = subjectService.getSubjectsByTeacher();
@@ -88,10 +69,9 @@ class SubjectServiceImplTest {
 
     @Test
     void createSubject_shouldSaveSubjectAndSetTeacherId_whenDataIsValid() {
-        Subject subjectToCreate = Subject.builder()
-                .name("Valid Subject")
-                .build();
+        Subject subjectToCreate = Subject.builder().name("Valid Subject").build();
 
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
         when(subjectRepository.save(any(Subject.class))).thenAnswer(invocation -> {
             Subject s = invocation.getArgument(0);
             return Subject.builder().id(1).name(s.getName()).teacherId(s.getTeacherId()).build();
@@ -107,15 +87,13 @@ class SubjectServiceImplTest {
 
     @Test
     void createSubject_shouldThrowException_whenNameIsNull() {
-        Subject subjectWithNullName = Subject.builder()
-                .name(null)
-                .build();
+        Subject subjectWithNullName = Subject.builder().name(null).build();
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class)))
                 .thenReturn("Subject name is required.");
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
-        SubjectValidationException exception = assertThrows(SubjectValidationException.class, () ->
-                subjectService.createSubject(subjectWithNullName));
+        SubjectValidationException exception = assertThrows(SubjectValidationException.class,
+                () -> subjectService.createSubject(subjectWithNullName));
 
         assertEquals(1, exception.getErrors().size());
         assertEquals("name", exception.getErrors().get(0).getParam());
@@ -126,15 +104,13 @@ class SubjectServiceImplTest {
 
     @Test
     void createSubject_shouldThrowException_whenNameIsEmpty() {
-        Subject subjectWithEmptyName = Subject.builder()
-                .name("")
-                .build();
+        Subject subjectWithEmptyName = Subject.builder().name("").build();
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class)))
                 .thenReturn("Subject name is required.");
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
-        SubjectValidationException exception = assertThrows(SubjectValidationException.class, () ->
-                subjectService.createSubject(subjectWithEmptyName));
+        SubjectValidationException exception = assertThrows(SubjectValidationException.class,
+                () -> subjectService.createSubject(subjectWithEmptyName));
 
         assertEquals(1, exception.getErrors().size());
         assertEquals("name", exception.getErrors().get(0).getParam());
@@ -143,15 +119,13 @@ class SubjectServiceImplTest {
 
     @Test
     void createSubject_shouldThrowException_whenNameIsBlank() {
-        Subject subjectWithBlankName = Subject.builder()
-                .name("   ")
-                .build();
+        Subject subjectWithBlankName = Subject.builder().name("   ").build();
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class)))
                 .thenReturn("Subject name is required.");
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
-        SubjectValidationException exception = assertThrows(SubjectValidationException.class, () ->
-                subjectService.createSubject(subjectWithBlankName));
+        SubjectValidationException exception = assertThrows(SubjectValidationException.class,
+                () -> subjectService.createSubject(subjectWithBlankName));
 
         assertEquals(1, exception.getErrors().size());
         assertEquals("name", exception.getErrors().get(0).getParam());
@@ -187,32 +161,14 @@ class SubjectServiceImplTest {
         Integer subjectId = 1;
         Subject subject = Subject.builder().id(subjectId).teacherId(TEACHER_ID).name("Subject A").build();
 
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(subject));
-        when(subjectClassRepository.findActiveIdsBySubjectId(subjectId)).thenReturn(Collections.emptyList());
         when(subjectRepository.softDeleteSubject(subjectId, TEACHER_ID)).thenReturn(subject);
 
         subjectService.softDeleteSubject(subjectId);
 
         verify(subjectRepository, times(1)).findById(subjectId);
-        verify(subjectClassRepository, times(1)).softDeleteBySubjectId(subjectId);
-        verify(scheduleRepository, times(1)).softDeleteBySubjectId(subjectId);
-        verify(subjectRepository, times(1)).softDeleteSubject(subjectId, TEACHER_ID);
-    }
-
-    @Test
-    void softDeleteSubject_shouldCascadeDeleteAllDependencies() {
-        Integer subjectId = 1;
-        Subject subject = Subject.builder().id(subjectId).teacherId(TEACHER_ID).name("Subject A").build();
-
-        when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(subject));
-        when(subjectClassRepository.findActiveIdsBySubjectId(subjectId)).thenReturn(Arrays.asList(100, 101));
-        when(subjectRepository.softDeleteSubject(subjectId, TEACHER_ID)).thenReturn(subject);
-
-        subjectService.softDeleteSubject(subjectId);
-
-        verify(exerciseRepository, times(1)).softDeleteBySubjectClassIds(Arrays.asList(100, 101));
-        verify(subjectClassRepository, times(1)).softDeleteBySubjectId(subjectId);
-        verify(scheduleRepository, times(1)).softDeleteBySubjectId(subjectId);
         verify(subjectRepository, times(1)).softDeleteSubject(subjectId, TEACHER_ID);
     }
 
@@ -221,13 +177,14 @@ class SubjectServiceImplTest {
         Integer subjectId = 1;
         String expectedErrorMessage = "Subject not found.";
 
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.empty());
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_NOT_FOUND), any(), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
-        SubjectNotFoundException exception = assertThrows(SubjectNotFoundException.class, () ->
-                subjectService.softDeleteSubject(subjectId));
+        SubjectNotFoundException exception = assertThrows(SubjectNotFoundException.class,
+                () -> subjectService.softDeleteSubject(subjectId));
 
         assertEquals(expectedErrorMessage, exception.getErrorDescription());
         verify(subjectRepository, times(1)).findById(subjectId);
@@ -242,13 +199,14 @@ class SubjectServiceImplTest {
         Subject subject = Subject.builder().id(subjectId).teacherId(otherTeacherId).name("Subject A").build();
         String expectedErrorMessage = "You are not authorized to make changes to this subject.";
 
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(subject));
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_FORBIDDEN), any(), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
-        SubjectForbiddenException exception = assertThrows(SubjectForbiddenException.class, () ->
-                subjectService.softDeleteSubject(subjectId));
+        SubjectForbiddenException exception = assertThrows(SubjectForbiddenException.class,
+                () -> subjectService.softDeleteSubject(subjectId));
 
         assertEquals(expectedErrorMessage, exception.getErrorDescription());
         verify(subjectRepository, times(1)).findById(subjectId);
@@ -263,6 +221,8 @@ class SubjectServiceImplTest {
         Subject updatedSubjectData = Subject.builder().name("New Name").build();
         Subject savedSubject = Subject.builder().id(subjectId).teacherId(TEACHER_ID).name("New Name").build();
 
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(existingSubject));
         when(subjectRepository.save(any(Subject.class))).thenReturn(savedSubject);
 
@@ -281,12 +241,12 @@ class SubjectServiceImplTest {
         Subject updatedSubjectData = Subject.builder().name(null).build();
         String expectedErrorMessage = "Subject name is required.";
 
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
-        SubjectValidationException exception = assertThrows(SubjectValidationException.class, () ->
-                subjectService.updateSubject(subjectId, updatedSubjectData));
+        SubjectValidationException exception = assertThrows(SubjectValidationException.class,
+                () -> subjectService.updateSubject(subjectId, updatedSubjectData));
 
         assertEquals(1, exception.getErrors().size());
         assertEquals("name", exception.getErrors().get(0).getParam());
@@ -302,13 +262,14 @@ class SubjectServiceImplTest {
         Subject updatedSubjectData = Subject.builder().name("New Name").build();
         String expectedErrorMessage = "Subject not found.";
 
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.empty());
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_NOT_FOUND), any(), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
-        SubjectNotFoundException exception = assertThrows(SubjectNotFoundException.class, () ->
-                subjectService.updateSubject(subjectId, updatedSubjectData));
+        SubjectNotFoundException exception = assertThrows(SubjectNotFoundException.class,
+                () -> subjectService.updateSubject(subjectId, updatedSubjectData));
 
         assertEquals(expectedErrorMessage, exception.getErrorDescription());
         verify(subjectRepository, times(1)).findById(subjectId);
@@ -324,13 +285,14 @@ class SubjectServiceImplTest {
         Subject updatedSubjectData = Subject.builder().name("New Name").build();
         String expectedErrorMessage = "You are not authorized to make changes to this subject.";
 
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(existingSubject));
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_FORBIDDEN), any(), any(Locale.class)))
                 .thenReturn(expectedErrorMessage);
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
-        SubjectForbiddenException exception = assertThrows(SubjectForbiddenException.class, () ->
-                subjectService.updateSubject(subjectId, updatedSubjectData));
+        SubjectForbiddenException exception = assertThrows(SubjectForbiddenException.class,
+                () -> subjectService.updateSubject(subjectId, updatedSubjectData));
 
         assertEquals(expectedErrorMessage, exception.getErrorDescription());
         verify(subjectRepository, times(1)).findById(subjectId);
@@ -343,18 +305,20 @@ class SubjectServiceImplTest {
         Integer subjectId = 1;
         Subject updatedSubjectData = Subject.builder().name(null).build();
         String expectedSpanishMessage = "El nombre de la asignatura es obligatorio.";
-        when(sessionUser.getLocale()).thenReturn(new Locale("es"));
-        when(messageSource.getMessage(MessageKeys.SUBJECT_VALIDATION_NAME_REQUIRED, null, new Locale("es")))
+        Locale spanish = new Locale("es");
+
+        when(sessionUser.getLocale()).thenReturn(spanish);
+        when(messageSource.getMessage(MessageKeys.SUBJECT_VALIDATION_NAME_REQUIRED, null, spanish))
                 .thenReturn(expectedSpanishMessage);
 
-        SubjectValidationException exception = assertThrows(SubjectValidationException.class, () ->
-                subjectService.updateSubject(subjectId, updatedSubjectData));
+        SubjectValidationException exception = assertThrows(SubjectValidationException.class,
+                () -> subjectService.updateSubject(subjectId, updatedSubjectData));
 
         assertEquals(1, exception.getErrors().size());
         assertEquals("name", exception.getErrors().get(0).getParam());
         assertEquals(expectedSpanishMessage, exception.getErrors().get(0).getMessage());
         verify(subjectRepository, never()).findById(any());
         verify(subjectRepository, never()).save(any());
-        verify(messageSource, times(1)).getMessage(MessageKeys.SUBJECT_VALIDATION_NAME_REQUIRED, null, new Locale("es"));
+        verify(messageSource, times(1)).getMessage(MessageKeys.SUBJECT_VALIDATION_NAME_REQUIRED, null, spanish);
     }
 }

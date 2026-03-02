@@ -10,7 +10,6 @@ import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.Student;
 import org.web.codefm.domain.exception.teachernotebook.*;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepository;
 import org.web.codefm.domain.repository.teachernotebook.StudentClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.StudentRepository;
 import org.web.codefm.domain.service.teachernotebook.StudentService;
@@ -30,7 +29,6 @@ public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository studentRepository;
     private final StudentClassRepository studentClassRepository;
-    private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -80,8 +78,6 @@ public class StudentServiceImpl implements StudentService {
             );
         }
 
-        exerciseStudentGradeRepository.softDeleteByStudentId(id);
-        studentClassRepository.softDeleteByStudentId(id);
 
         studentRepository.softDelete(id, teacherId);
     }

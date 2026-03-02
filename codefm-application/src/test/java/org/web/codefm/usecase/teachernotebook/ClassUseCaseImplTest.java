@@ -1,17 +1,5 @@
 package org.web.codefm.usecase.teachernotebook;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,15 +7,27 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Class;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.ClassService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ClassUseCaseImplTest {
 
     @Mock
     private ClassService classService;
+
+    @Mock
+    private CascadeSoftDeleteService cascadeSoftDeleteService;
 
     @Mock
     private SessionUser sessionUser;
@@ -117,17 +117,16 @@ class ClassUseCaseImplTest {
 
     @Test
     void softDeleteClass_shouldGetTeacherIdFromSessionAndCallService() {
-        // Given
         Integer classId = 1;
         Integer teacherId = 1;
 
+        doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfClass(classId);
         doNothing().when(classService).softDeleteClass(classId, teacherId);
 
-        // When
         classUseCase.softDeleteClass(classId);
 
-        // Then
-      verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        verify(cascadeSoftDeleteService, times(1)).cascadeDeleteChildrenOfClass(classId);
         verify(classService, times(1)).softDeleteClass(classId, teacherId);
     }
 

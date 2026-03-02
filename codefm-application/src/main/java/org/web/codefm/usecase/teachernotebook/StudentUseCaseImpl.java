@@ -2,8 +2,10 @@ package org.web.codefm.usecase.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.web.codefm.domain.entity.teachernotebook.Student;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.StudentService;
 import org.web.codefm.domain.usecase.teachernotebook.StudentUseCase;
 
@@ -14,6 +16,7 @@ import java.util.List;
 public class StudentUseCaseImpl implements StudentUseCase {
 
     private final StudentService studentService;
+    private final CascadeSoftDeleteService cascadeSoftDeleteService;
 
     @Override
     public Student createStudent(Student student) {
@@ -26,7 +29,9 @@ public class StudentUseCaseImpl implements StudentUseCase {
     }
 
     @Override
+    @Transactional
     public void softDeleteStudent(Integer id) {
+        cascadeSoftDeleteService.cascadeDeleteChildrenOfStudent(id);
         studentService.softDeleteStudent(id);
     }
 

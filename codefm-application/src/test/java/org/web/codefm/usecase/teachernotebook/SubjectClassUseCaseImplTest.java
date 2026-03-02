@@ -1,21 +1,21 @@
 package org.web.codefm.usecase.teachernotebook;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.SubjectClassService;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,18 +24,15 @@ class SubjectClassUseCaseImplTest {
     @Mock
     private SubjectClassService subjectClassService;
 
+    @Mock
+    private CascadeSoftDeleteService cascadeSoftDeleteService;
+
     @InjectMocks
     private SubjectClassUseCaseImpl subjectClassUseCase;
 
     private static final Integer CLASS_ID = 10;
     private static final Integer SUBJECT_ID_1 = 100;
     private static final Integer SUBJECT_ID_2 = 101;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        subjectClassUseCase = new SubjectClassUseCaseImpl(subjectClassService);
-    }
 
     @Test
     void getSubjectsByClassId_shouldDelegateToService() {
@@ -89,14 +86,33 @@ class SubjectClassUseCaseImplTest {
     }
 
     @Test
-    void removeSubjectsFromClass_shouldDelegateToService() {
+    void removeSubjectsFromClass_shouldCallCascadeBeforeService() {
         List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2);
+        List<Integer> subjectClassIds = Arrays.asList(200, 201);
 
+        when(subjectClassService.findActiveSubjectClassIds(CLASS_ID, subjectIds)).thenReturn(subjectClassIds);
+        doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfSubjectClass(anyInt());
         doNothing().when(subjectClassService).removeSubjectsFromClass(CLASS_ID, subjectIds);
 
-        assertDoesNotThrow(() -> subjectClassUseCase.removeSubjectsFromClass(CLASS_ID, subjectIds));
+        subjectClassUseCase.removeSubjectsFromClass(CLASS_ID, subjectIds);
 
-        verify(subjectClassService).removeSubjectsFromClass(CLASS_ID, subjectIds);
+        var order = inOrder(cascadeSoftDeleteService, subjectClassService);
+        order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfSubjectClass(200);
+        order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfSubjectClass(201);
+        order.verify(subjectClassService).removeSubjectsFromClass(CLASS_ID, subjectIds);
+    }
+
+    @Test
+    void removeSubjectsFromClass_shouldCallFindActiveSubjectClassIdsFirst() {
+        List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2);
+        List<Integer> subjectClassIds = Arrays.asList(200, 201);
+
+        when(subjectClassService.findActiveSubjectClassIds(CLASS_ID, subjectIds)).thenReturn(subjectClassIds);
+
+        subjectClassUseCase.removeSubjectsFromClass(CLASS_ID, subjectIds);
+
+        verify(subjectClassService, times(1)).findActiveSubjectClassIds(CLASS_ID, subjectIds);
+        verify(cascadeSoftDeleteService, times(2)).cascadeDeleteChildrenOfSubjectClass(anyInt());
+        verify(subjectClassService, times(1)).removeSubjectsFromClass(CLASS_ID, subjectIds);
     }
 }
-

@@ -6,20 +6,23 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Exercise;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.ExerciseService;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ExerciseUseCaseImplTest {
 
     @Mock
     private ExerciseService exerciseService;
+
+    @Mock
+    private CascadeSoftDeleteService cascadeSoftDeleteService;
 
     @InjectMocks
     private ExerciseUseCaseImpl exerciseUseCase;
@@ -69,12 +72,16 @@ class ExerciseUseCaseImplTest {
     }
 
     @Test
-    void deleteExercise_shouldDelegateToService() {
+    void deleteExercise_shouldCallCascadeBeforeService() {
         Integer id = 1;
+
+        doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfExercise(id);
+        doNothing().when(exerciseService).deleteExercise(id);
 
         exerciseUseCase.deleteExercise(id);
 
-        verify(exerciseService).deleteExercise(id);
+        var order = inOrder(cascadeSoftDeleteService, exerciseService);
+        order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfExercise(id);
+        order.verify(exerciseService).deleteExercise(id);
     }
 }
-

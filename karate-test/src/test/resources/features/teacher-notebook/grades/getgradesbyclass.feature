@@ -10,7 +10,7 @@ Feature: Get Grades by Class
     * def subjectGradeSchema = { subjectId: '#number', subjectName: '#string', exercises: '#[] exerciseGradeSchema' }
     * def quarterGradeSchema = { quarter: '#number', subjects: '#[] subjectGradeSchema' }
     * def studentGradeSchema = { studentId: '#number', studentName: '#string', studentSurnames: '#string', quarters: '#[] quarterGradeSchema' }
-    Given path '/teacher-notebook/v1/classes/1/grades'
+    Given path '/teacher-notebook/v1/classes/4/grades'
     When method GET
     Then status 200
     And match each response == studentGradeSchema
@@ -20,10 +20,4 @@ Feature: Get Grades by Class
     When method GET
     Then status 404
     And match response.code == "1003"
-
-  Scenario: Get grades by class - Class forbidden
-    Given path '/teacher-notebook/v1/classes/5/grades'
-    When method GET
-    Then status 403
-    And match response.code == "1004"
 

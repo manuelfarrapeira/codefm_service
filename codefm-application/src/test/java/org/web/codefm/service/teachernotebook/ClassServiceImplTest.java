@@ -11,17 +11,17 @@ import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.domain.exception.teachernotebook.*;
 import org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.*;
-import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
+import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionUser;
 
-import java.util.*;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-
 
 @ExtendWith(MockitoExtension.class)
 class ClassServiceImplTest {
@@ -31,24 +31,6 @@ class ClassServiceImplTest {
 
     @Mock
     private SchoolService schoolService;
-
-    @Mock
-    private SubjectClassRepository subjectClassRepository;
-
-    @Mock
-    private ScheduleRepository scheduleRepository;
-
-    @Mock
-    private StudentClassRepository studentClassRepository;
-
-    @Mock
-    private ExerciseRepository exerciseRepository;
-
-    @Mock
-    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
-
-    @Mock
-    private ExerciseDocumentService exerciseDocumentService;
 
     @Mock
     private MessageSource messageSource;
@@ -67,7 +49,7 @@ class ClassServiceImplTest {
         School school = School.builder().id(schoolId).teacherId(teacherId).name("School A").build();
 
         Class class1 = Class.builder().id(1).schoolId(schoolId).name("Math Class").schoolYear("24/25").build();
-        List<Class> expectedClasses = Arrays.asList(class1);
+        List<Class> expectedClasses = List.of(class1);
 
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(schoolService.getSchoolById(schoolId)).thenReturn(Optional.of(school));
@@ -343,70 +325,12 @@ class ClassServiceImplTest {
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(classId)).thenReturn(Optional.of(clazz));
         when(schoolService.getSchoolById(schoolId)).thenReturn(Optional.of(school));
-        when(subjectClassRepository.findActiveIdsByClassId(classId)).thenReturn(Collections.emptyList());
         when(classRepository.softDeleteClass(classId, teacherId)).thenReturn(clazz);
 
         classService.softDeleteClass(classId, teacherId);
 
         verify(classRepository, times(1)).findById(classId);
         verify(schoolService, times(1)).getSchoolById(schoolId);
-        verify(studentClassRepository, times(1)).softDeleteByClassId(classId);
-        verify(subjectClassRepository, times(1)).softDeleteByClassId(classId);
-        verify(scheduleRepository, times(1)).softDeleteByClassId(classId);
-        verify(classRepository, times(1)).softDeleteClass(classId, teacherId);
-    }
-
-    @Test
-    void softDeleteClass_shouldCascadeDeleteAllDependencies() {
-        Integer classId = 1;
-        Integer teacherId = 1;
-        Integer schoolId = 10;
-
-        Class clazz = Class.builder().id(classId).schoolId(schoolId).name("Test Class").schoolYear("24/25").build();
-        School school = School.builder().id(schoolId).teacherId(teacherId).name("Test School").build();
-
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
-        when(classRepository.findById(classId)).thenReturn(Optional.of(clazz));
-        when(schoolService.getSchoolById(schoolId)).thenReturn(Optional.of(school));
-        when(subjectClassRepository.findActiveIdsByClassId(classId)).thenReturn(Arrays.asList(100, 101));
-        when(exerciseRepository.findActiveIdsBySubjectClassIds(Arrays.asList(100, 101))).thenReturn(Collections.emptyList());
-        when(classRepository.softDeleteClass(classId, teacherId)).thenReturn(clazz);
-
-        classService.softDeleteClass(classId, teacherId);
-
-        verify(exerciseRepository, times(1)).softDeleteBySubjectClassIds(Arrays.asList(100, 101));
-        verify(exerciseDocumentService, never()).deleteDocumentsByExerciseIds(any());
-        verify(studentClassRepository, times(1)).softDeleteByClassId(classId);
-        verify(subjectClassRepository, times(1)).softDeleteByClassId(classId);
-        verify(scheduleRepository, times(1)).softDeleteByClassId(classId);
-        verify(classRepository, times(1)).softDeleteClass(classId, teacherId);
-    }
-
-    @Test
-    void softDeleteClass_shouldDeleteDocuments_whenExercisesExist() {
-        Integer classId = 1;
-        Integer teacherId = 1;
-        Integer schoolId = 10;
-        List<Integer> subjectClassIds = Arrays.asList(100, 101);
-        List<Integer> exerciseIds = Arrays.asList(200, 201, 202);
-
-        Class clazz = Class.builder().id(classId).schoolId(schoolId).name("Test Class").schoolYear("24/25").build();
-        School school = School.builder().id(schoolId).teacherId(teacherId).name("Test School").build();
-
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
-        when(classRepository.findById(classId)).thenReturn(Optional.of(clazz));
-        when(schoolService.getSchoolById(schoolId)).thenReturn(Optional.of(school));
-        when(subjectClassRepository.findActiveIdsByClassId(classId)).thenReturn(subjectClassIds);
-        when(exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIds)).thenReturn(exerciseIds);
-        when(classRepository.softDeleteClass(classId, teacherId)).thenReturn(clazz);
-
-        classService.softDeleteClass(classId, teacherId);
-
-        verify(exerciseDocumentService, times(1)).deleteDocumentsByExerciseIds(exerciseIds);
-        verify(exerciseRepository, times(1)).softDeleteBySubjectClassIds(subjectClassIds);
-        verify(studentClassRepository, times(1)).softDeleteByClassId(classId);
-        verify(subjectClassRepository, times(1)).softDeleteByClassId(classId);
-        verify(scheduleRepository, times(1)).softDeleteByClassId(classId);
         verify(classRepository, times(1)).softDeleteClass(classId, teacherId);
     }
 

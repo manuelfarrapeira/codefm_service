@@ -1,0 +1,141 @@
+{
+  "info": {
+    "_postman_id": "calendar-alerts-collection",
+    "name": "Teacher Notebook - Calendar Alerts",
+    "description": "Colección para gestionar alertas de calendario del profesor",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Calendar Alerts",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/calendar-alerts",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "calendar-alerts"
+          ]
+        },
+        "description": "Obtiene todas las alertas de calendario del profesor autenticado ordenadas por fecha ascendente."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Calendar Alert",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"date\": \"15/03/2026\",\n    \"title\": \"Reunión de padres\",\n    \"description\": \"Reunión trimestral con los padres\",\n    \"startTime\": \"09:00\",\n    \"endTime\": \"10:00\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/calendar-alerts",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "calendar-alerts"
+          ]
+        },
+        "description": "Crea una nueva alerta de calendario. El campo title es obligatorio (máx 100 caracteres) y el campo date es obligatorio en formato dd/MM/yyyy. El campo description es opcional. Los campos startTime y endTime son opcionales en formato HH:mm. Si se indica endTime debe existir startTime y ser anterior."
+      },
+      "response": []
+    },
+    {
+      "name": "Update Calendar Alert",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"date\": \"20/04/2026\",\n    \"title\": \"Reunión de padres actualizada\",\n    \"description\": \"Descripción actualizada\",\n    \"startTime\": \"14:00\",\n    \"endTime\": \"15:30\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/calendar-alerts/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "calendar-alerts",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID de la alerta de calendario"
+            }
+          ]
+        },
+        "description": "Actualiza una alerta de calendario existente. Solo el profesor propietario puede modificarla."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Calendar Alert",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es",
+            "description": "Idioma para mensajes de error (es/en)"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/calendar-alerts/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "calendar-alerts",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1",
+              "description": "ID de la alerta de calendario"
+            }
+          ]
+        },
+        "description": "Elimina permanentemente una alerta de calendario (hard delete). Solo el profesor propietario puede eliminarla."
+      },
+      "response": []
+    }
+  ]
+}
+

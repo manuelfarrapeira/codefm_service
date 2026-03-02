@@ -11,8 +11,7 @@ import org.web.codefm.domain.exception.teachernotebook.SubjectForbiddenException
 import org.web.codefm.domain.exception.teachernotebook.SubjectNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.*;
-import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
+import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
 import org.web.codefm.domain.service.teachernotebook.SubjectService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
@@ -28,11 +27,6 @@ import java.util.Optional;
 public class SubjectServiceImpl implements SubjectService {
 
     private final SubjectRepository subjectRepository;
-    private final SubjectClassRepository subjectClassRepository;
-    private final ScheduleRepository scheduleRepository;
-    private final ExerciseRepository exerciseRepository;
-    private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
-    private final ExerciseDocumentService exerciseDocumentService;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -70,21 +64,6 @@ public class SubjectServiceImpl implements SubjectService {
         Integer teacherId = getTeacherId();
         Locale locale = sessionUser.getLocale();
         validateSubjectOwnership(subjectId, teacherId, locale);
-
-        List<Integer> subjectClassIds = subjectClassRepository.findActiveIdsBySubjectId(subjectId);
-
-        if (!subjectClassIds.isEmpty()) {
-            List<Integer> exerciseIds = exerciseRepository.findActiveIdsBySubjectClassIds(subjectClassIds);
-            if (!exerciseIds.isEmpty()) {
-                exerciseStudentGradeRepository.softDeleteByExerciseIds(exerciseIds);
-                exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
-            }
-            exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);
-        }
-
-        subjectClassRepository.softDeleteBySubjectId(subjectId);
-        scheduleRepository.softDeleteBySubjectId(subjectId);
-
         subjectRepository.softDeleteSubject(subjectId, teacherId);
     }
 

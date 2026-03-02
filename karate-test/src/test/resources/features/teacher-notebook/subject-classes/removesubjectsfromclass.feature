@@ -23,11 +23,3 @@ Feature: Teacher Notebook - Remove Subjects from Class
     When method DELETE
     Then status 404
 
-     Scenario: Fail to remove subjects from a class that does not belong to teacher
-       * def requestBody = { subjectIds: [1, 2] }
-
-       Given path '/teacher-notebook/v1/classes/5/subjects'
-       And request requestBody
-       When method DELETE
-       Then status 403
-

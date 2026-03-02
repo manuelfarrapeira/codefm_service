@@ -216,4 +216,24 @@ public class IndividualKarateTestRunner {
     return Karate.run("features/teacher-notebook/grades/deletegrade").relativeTo(getClass());
   }
 
+  @Karate.Test
+  Karate testTeacherNotebookGetCalendarAlerts() {
+    return Karate.run("features/teacher-notebook/calendar-alerts/getcalendaralerts").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookCreateCalendarAlert() {
+    return Karate.run("features/teacher-notebook/calendar-alerts/createcalendaralert").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookUpdateCalendarAlert() {
+    return Karate.run("features/teacher-notebook/calendar-alerts/updatecalendaralert").relativeTo(getClass());
+  }
+
+  @Karate.Test
+  Karate testTeacherNotebookDeleteCalendarAlert() {
+    return Karate.run("features/teacher-notebook/calendar-alerts/deletecalendaralert").relativeTo(getClass());
+  }
+
 }

@@ -46,5 +46,17 @@ public interface SubjectClassService {
      * @param subjectIds The list of subject IDs to remove from the class
      */
     void removeSubjectsFromClass(Integer classId, List<Integer> subjectIds);
+
+    /**
+     * Validates ownership and returns the active subject-class association IDs for the given subjects and class.
+     * Throws an exception if the class is not found or any association does not exist.
+     *
+     * @param classId    The unique identifier of the class
+     * @param subjectIds The list of subject IDs
+     * @return List of active subject-class association IDs
+     * @throws org.web.codefm.domain.exception.teachernotebook.ClassNotFoundException          if the class is not found
+     * @throws org.web.codefm.domain.exception.teachernotebook.SubjectClassValidationException if any association does not exist
+     */
+    List<Integer> findActiveSubjectClassIds(Integer classId, List<Integer> subjectIds);
 }
 
