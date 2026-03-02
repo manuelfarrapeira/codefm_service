@@ -41,7 +41,9 @@ public enum ExceptionStatusEnum {
     EXERCISE_DOCUMENT_UPLOAD_ERROR(ExerciseDocumentUploadException.class, HttpStatus.INTERNAL_SERVER_ERROR),
     EXERCISE_DOCUMENT_VALIDATION_ERROR(ExerciseDocumentValidationException.class, HttpStatus.BAD_REQUEST),
     EXERCISE_STUDENT_GRADE_NOT_FOUND(ExerciseStudentGradeNotFoundException.class, HttpStatus.NOT_FOUND),
-    EXERCISE_STUDENT_GRADE_VALIDATION_ERROR(ExerciseStudentGradeValidationException.class, HttpStatus.BAD_REQUEST);
+    EXERCISE_STUDENT_GRADE_VALIDATION_ERROR(ExerciseStudentGradeValidationException.class, HttpStatus.BAD_REQUEST),
+    CALENDAR_ALERT_NOT_FOUND(CalendarAlertNotFoundException.class, HttpStatus.NOT_FOUND),
+    CALENDAR_ALERT_VALIDATION_ERROR(CalendarAlertValidationException.class, HttpStatus.BAD_REQUEST);
 
     private final Class<?> exceptionClazz;
 

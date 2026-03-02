@@ -687,6 +687,7 @@ entidades dependientes** y las dependientes de estas, recursivamente, hasta el f
 School
   └── Classes (school_id)
         ├── StudentClasses (id_class)
+        │     └── ExerciseStudentGrades (id_student + exercises de la clase) [soft delete]
         ├── SubjectClasses (id_class)
         │     └── Exercises (id_subject_class)
         │           ├── ExerciseStudentGrades (id_exercise) [soft delete]
@@ -701,7 +702,9 @@ Subject
   └── Schedules (subject_id)
 
 Student
+  ├── ExerciseStudentGrades (id_student) [soft delete]
   └── StudentClasses (student_id)
+        └── ExerciseStudentGrades (id_student + exercises de la clase) [soft delete]
 ```
 
 #### Implementación obligatoria

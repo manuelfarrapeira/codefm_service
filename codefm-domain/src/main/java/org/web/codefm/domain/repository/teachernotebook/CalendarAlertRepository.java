@@ -1,0 +1,46 @@
+package org.web.codefm.domain.repository.teachernotebook;
+
+import org.web.codefm.domain.entity.teachernotebook.CalendarAlert;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * Repository interface for calendar alert data access operations.
+ * Provides methods to retrieve and manage calendar alert information.
+ */
+public interface CalendarAlertRepository {
+
+    /**
+     * Finds all calendar alerts associated with a specific teacher.
+     *
+     * @param teacherId The unique identifier of the teacher
+     * @return List of calendar alerts belonging to the specified teacher, ordered by date ascending
+     */
+    List<CalendarAlert> findByTeacherId(Integer teacherId);
+
+    /**
+     * Finds a calendar alert by its ID and validates teacher ownership.
+     *
+     * @param id        The unique identifier of the calendar alert
+     * @param teacherId The unique identifier of the teacher
+     * @return An Optional containing the calendar alert if found and owned by the teacher
+     */
+    Optional<CalendarAlert> findByIdAndTeacherId(Integer id, Integer teacherId);
+
+    /**
+     * Saves a new calendar alert or updates an existing one.
+     *
+     * @param calendarAlert The calendar alert object to save
+     * @return The saved calendar alert object with generated ID
+     */
+    CalendarAlert save(CalendarAlert calendarAlert);
+
+    /**
+     * Permanently deletes a calendar alert by its ID (hard delete).
+     *
+     * @param id The unique identifier of the calendar alert to delete
+     */
+    void deleteById(Integer id);
+}
+

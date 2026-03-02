@@ -86,4 +86,11 @@ public class MessageKeys {
     public static final String EXERCISE_STUDENT_GRADE_ALREADY_EXISTS = "exercise.student.grade.already.exists";
     public static final String EXERCISE_STUDENT_GRADE_EXERCISE_NOT_FOUND = "exercise.student.grade.exercise.not.found";
 
+    public static final String CALENDAR_ALERT_NOT_FOUND = "calendar.alert.not.found";
+    public static final String CALENDAR_ALERT_VALIDATION_TITLE_REQUIRED = "calendar.alert.validation.title.required";
+    public static final String CALENDAR_ALERT_VALIDATION_TITLE_MAX_LENGTH = "calendar.alert.validation.title.maxLength";
+    public static final String CALENDAR_ALERT_VALIDATION_DATE_REQUIRED = "calendar.alert.validation.date.required";
+    public static final String CALENDAR_ALERT_VALIDATION_END_TIME_WITHOUT_START_TIME = "calendar.alert.validation.endTime.withoutStartTime";
+    public static final String CALENDAR_ALERT_VALIDATION_END_TIME_BEFORE_START_TIME = "calendar.alert.validation.endTime.beforeStartTime";
+
 }

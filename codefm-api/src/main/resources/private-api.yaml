@@ -27,6 +27,8 @@ tags:
     description: Operations related to Teacher Notebook Exercises
   - name: TeacherNoteBookExerciseDocuments
     description: Operations related to Teacher Notebook Exercise Documents
+  - name: TeacherNoteBookCalendarAlerts
+    description: Operations related to Teacher Notebook Calendar Alerts
 
 paths:
   /greeting:
@@ -2058,6 +2060,155 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/calendar-alerts:
+    get:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: calendarAlerts
+      summary: Get all calendar alerts for the authenticated teacher
+      description: Returns all calendar alerts belonging to the authenticated teacher ordered by date ascending.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarAlertDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: createCalendarAlert
+      summary: Create a new calendar alert
+      description: Creates a new calendar alert for the authenticated teacher
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarAlertRequestDTO'
+      responses:
+        '201':
+          description: Calendar alert created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarAlertDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/calendar-alerts/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: updateCalendarAlert
+      summary: Update an existing calendar alert
+      description: Updates an existing calendar alert for the authenticated teacher
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the calendar alert to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarAlertRequestDTO'
+      responses:
+        '200':
+          description: Calendar alert updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarAlertDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Calendar alert does not exist or does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: deleteCalendarAlert
+      summary: Delete a calendar alert
+      description: Permanently deletes a calendar alert (hard delete). Only the owning teacher can delete an alert.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the calendar alert to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Calendar alert successfully deleted (No Content)
+        '404':
+          description: Not Found - Calendar alert does not exist or does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
 components:
   schemas:
     ErrorResponseDTO:
@@ -2471,3 +2622,45 @@ components:
           format: 'double'
         description:
           type: 'string'
+    CalendarAlertDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        date:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2026'
+        title:
+          type: 'string'
+        description:
+          type: 'string'
+        startTime:
+          type: 'string'
+          description: 'Start time in format HH:mm'
+          example: '09:00'
+        endTime:
+          type: 'string'
+          description: 'End time in format HH:mm'
+          example: '10:00'
+    CalendarAlertRequestDTO:
+      type: 'object'
+      properties:
+        date:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2026'
+        title:
+          type: 'string'
+          example: 'Parent meeting'
+        description:
+          type: 'string'
+          example: 'Meeting with parents about grades'
+        startTime:
+          type: 'string'
+          description: 'Start time in format HH:mm'
+          example: '09:00'
+        endTime:
+          type: 'string'
+          description: 'End time in format HH:mm'
+          example: '10:00'
