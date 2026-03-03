@@ -1,7 +1,11 @@
 package org.web.codefm.api.controller.teacher_notebook;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,6 +16,7 @@ import org.web.codefm.api.utils.Locale;
 import org.web.codefm.api.utils.Logged;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentGrade;
 import org.web.codefm.domain.usecase.teachernotebook.ExerciseStudentGradeUseCase;
+import org.web.codefm.domain.usecase.teachernotebook.GradeExportUseCase;
 import org.web.codefm.model.*;
 
 import java.util.List;
@@ -21,8 +26,26 @@ import java.util.List;
 public class PrivateExerciseStudentGrades implements TeacherNoteBookExerciseStudentGradesApi {
 
     private final ExerciseStudentGradeUseCase exerciseStudentGradeUseCase;
+    private final GradeExportUseCase gradeExportUseCase;
     private final ExerciseStudentGradeDTOMapper exerciseStudentGradeDTOMapper;
     private final ExerciseStudentGradeRequestMapper exerciseStudentGradeRequestMapper;
+
+    @Logged
+    @Override
+    @Locale(1)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<Resource> exportGradesByClass(Integer classId, String acceptLanguage) {
+        byte[] excelBytes = gradeExportUseCase.exportGradesByClassId(classId);
+        ByteArrayResource resource = new ByteArrayResource(excelBytes);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"notas_" + classId + ".xlsx\"")
+                .contentLength(excelBytes.length)
+                .body(resource);
+    }
 
     @Logged
     @Override

@@ -95,4 +95,12 @@ public class MessageKeys {
     public static final String CALENDAR_ALERT_VALIDATION_MONTH_INVALID = "calendar.alert.validation.month.invalid";
     public static final String CALENDAR_ALERT_VALIDATION_YEAR_INVALID = "calendar.alert.validation.year.invalid";
 
+    public static final String GRADE_EXPORT_STUDENT = "grade.export.student";
+    public static final String GRADE_EXPORT_QUARTER = "grade.export.quarter";
+    public static final String GRADE_EXPORT_QUARTER_GRADE = "grade.export.quarter.grade";
+    public static final String GRADE_EXPORT_FINAL_GRADE = "grade.export.final.grade";
+    public static final String GRADE_EXPORT_MAX_GRADE = "grade.export.max.grade";
+    public static final String GRADE_EXPORT_PERCENTAGE = "grade.export.percentage";
+    public static final String GRADE_EXPORT_ERROR = "grade.export.error";
+
 }
