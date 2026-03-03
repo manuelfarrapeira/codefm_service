@@ -54,6 +54,7 @@ public class GradeExportServiceImpl implements GradeExportService {
         List<ExerciseStudentGrade> grades = exerciseStudentGradeRepository.findByClassId(classId);
 
         Map<String, Double> gradeMap = buildGradeMap(grades);
+        Map<String, String> descriptionMap = buildDescriptionMap(grades);
         Map<Integer, Map<Integer, List<Exercise>>> exercisesBySubjectAndQuarter = groupExercises(exercises);
         Set<Integer> subjectsWithGrades = findSubjectsWithGrades(exercises, gradeMap);
 
@@ -72,7 +73,7 @@ public class GradeExportServiceImpl implements GradeExportService {
                 String sheetName = sanitizeSheetName(subjectName);
 
                 Worksheet ws = workbook.newWorksheet(sheetName);
-                buildSheet(ws, students, quarterMap, gradeMap, locale);
+                buildSheet(ws, students, quarterMap, gradeMap, descriptionMap, locale);
                 ws.finish();
                 hasSheets = true;
             }
@@ -95,14 +96,13 @@ public class GradeExportServiceImpl implements GradeExportService {
 
     private void buildSheet(Worksheet ws, List<Student> students,
                             Map<Integer, List<Exercise>> quarterMap, Map<String, Double> gradeMap,
-                            Locale locale) {
+                            Map<String, String> descriptionMap, Locale locale) {
         List<Integer> sortedQuarters = new TreeMap<>(quarterMap).keySet().stream().toList();
         List<ColumnInfo> columns = buildColumnLayout(sortedQuarters, quarterMap, locale);
 
-
         writeGroupRow(ws, columns, sortedQuarters, locale);
         writeHeaderRow(ws, columns);
-        writeDataRows(ws, students, columns, gradeMap);
+        writeDataRows(ws, students, columns, gradeMap, descriptionMap);
         setColumnWidths(ws, columns);
     }
 
@@ -174,7 +174,7 @@ public class GradeExportServiceImpl implements GradeExportService {
     }
 
     private void writeDataRows(Worksheet ws, List<Student> students, List<ColumnInfo> columns,
-                               Map<String, Double> gradeMap) {
+                               Map<String, Double> gradeMap, Map<String, String> descriptionMap) {
         for (int rowIdx = 0; rowIdx < students.size(); rowIdx++) {
             Student student = students.get(rowIdx);
             int excelRow = rowIdx + 2;
@@ -186,7 +186,7 @@ public class GradeExportServiceImpl implements GradeExportService {
                 ColumnInfo col = columns.get(colIdx);
 
                 if (col.type == ColumnType.EXERCISE) {
-                    writeExerciseCell(ws, excelRow, colIdx, student, col, gradeMap);
+                    writeExerciseCell(ws, excelRow, colIdx, student, col, gradeMap, descriptionMap);
                 } else if (col.type == ColumnType.QUARTER_GRADE) {
                     writeQuarterGradeCell(ws, excelRow, colIdx, columns, col.quarter, student, gradeMap);
                 } else if (col.type == ColumnType.FINAL_GRADE) {
@@ -197,7 +197,8 @@ public class GradeExportServiceImpl implements GradeExportService {
     }
 
     private void writeExerciseCell(Worksheet ws, int row, int col, Student student,
-                                   ColumnInfo colInfo, Map<String, Double> gradeMap) {
+                                   ColumnInfo colInfo, Map<String, Double> gradeMap,
+                                   Map<String, String> descriptionMap) {
         String key = student.getId() + "_" + colInfo.exerciseId;
         Double grade = gradeMap.get(key);
 
@@ -210,6 +211,11 @@ public class GradeExportServiceImpl implements GradeExportService {
             }
         } else {
             ws.style(row, col).borderStyle("thin").set();
+        }
+
+        String description = descriptionMap.get(key);
+        if (description != null && !description.isBlank()) {
+            ws.comment(row, col, description);
         }
     }
 
@@ -354,6 +360,17 @@ public class GradeExportServiceImpl implements GradeExportService {
         for (ExerciseStudentGrade grade : grades) {
             String key = grade.getStudentId() + "_" + grade.getExerciseId();
             map.put(key, grade.getGrade());
+        }
+        return map;
+    }
+
+    private Map<String, String> buildDescriptionMap(List<ExerciseStudentGrade> grades) {
+        Map<String, String> map = new HashMap<>();
+        for (ExerciseStudentGrade grade : grades) {
+            if (grade.getDescription() != null && !grade.getDescription().isBlank()) {
+                String key = grade.getStudentId() + "_" + grade.getExerciseId();
+                map.put(key, grade.getDescription());
+            }
         }
         return map;
     }
