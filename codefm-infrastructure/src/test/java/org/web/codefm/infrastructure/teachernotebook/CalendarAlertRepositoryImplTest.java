@@ -128,5 +128,43 @@ class CalendarAlertRepositoryImplTest {
 
         verify(calendarAlertJPARepository).deleteById(id);
     }
+
+    @Test
+    void findByTeacherIdAndYearAndMonth_shouldReturnAlerts_whenFound() {
+        Integer teacherId = 1;
+        Integer year = 2026;
+        Integer month = 3;
+        CalendarAlertEntity entity1 = new CalendarAlertEntity(1, teacherId, LocalDate.of(2026, 3, 15), "Meeting", null, null, null);
+        List<CalendarAlertEntity> entities = List.of(entity1);
+
+        CalendarAlert alert1 = CalendarAlert.builder().id(1).teacherId(teacherId).date(LocalDate.of(2026, 3, 15)).title("Meeting").build();
+        List<CalendarAlert> expectedAlerts = List.of(alert1);
+
+        when(calendarAlertJPARepository.findByTeacherIdAndYearAndMonth(teacherId, year, month)).thenReturn(entities);
+        when(calendarAlertMapper.toModelList(entities)).thenReturn(expectedAlerts);
+
+        List<CalendarAlert> result = calendarAlertRepository.findByTeacherIdAndYearAndMonth(teacherId, year, month);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(calendarAlertJPARepository).findByTeacherIdAndYearAndMonth(teacherId, year, month);
+        verify(calendarAlertMapper).toModelList(entities);
+    }
+
+    @Test
+    void findByTeacherIdAndYearAndMonth_shouldReturnEmptyList_whenNoAlertsFound() {
+        Integer teacherId = 1;
+        Integer year = 2026;
+        Integer month = 6;
+
+        when(calendarAlertJPARepository.findByTeacherIdAndYearAndMonth(teacherId, year, month)).thenReturn(Collections.emptyList());
+        when(calendarAlertMapper.toModelList(Collections.emptyList())).thenReturn(Collections.emptyList());
+
+        List<CalendarAlert> result = calendarAlertRepository.findByTeacherIdAndYearAndMonth(teacherId, year, month);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(calendarAlertJPARepository).findByTeacherIdAndYearAndMonth(teacherId, year, month);
+    }
 }
 

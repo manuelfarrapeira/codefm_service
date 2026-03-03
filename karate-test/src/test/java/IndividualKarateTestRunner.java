@@ -236,4 +236,9 @@ public class IndividualKarateTestRunner {
     return Karate.run("features/teacher-notebook/calendar-alerts/deletecalendaralert").relativeTo(getClass());
   }
 
+  @Karate.Test
+  Karate testTeacherNotebookGetCalendarAlertsByMonth() {
+    return Karate.run("features/teacher-notebook/calendar-alerts/getcalendaralertsbymonth").relativeTo(getClass());
+  }
+
 }

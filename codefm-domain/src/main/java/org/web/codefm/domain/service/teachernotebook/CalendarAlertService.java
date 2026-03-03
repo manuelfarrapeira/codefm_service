@@ -18,6 +18,16 @@ public interface CalendarAlertService {
     List<CalendarAlert> getCalendarAlerts();
 
     /**
+     * Retrieves calendar alerts for the authenticated teacher filtered by year and month.
+     *
+     * @param year  The year to filter by
+     * @param month The month to filter by (1-12)
+     * @return List of calendar alerts matching the criteria
+     * @throws org.web.codefm.domain.exception.teachernotebook.CalendarAlertValidationException if year or month are invalid
+     */
+    List<CalendarAlert> getCalendarAlertsByYearAndMonth(Integer year, Integer month);
+
+    /**
      * Creates a new calendar alert for the authenticated teacher.
      *
      * @param calendarAlert The calendar alert object to create

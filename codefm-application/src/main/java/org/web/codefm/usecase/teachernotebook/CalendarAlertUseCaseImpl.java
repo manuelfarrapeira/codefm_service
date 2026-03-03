@@ -22,6 +22,11 @@ public class CalendarAlertUseCaseImpl implements CalendarAlertUseCase {
     }
 
     @Override
+    public List<CalendarAlert> getCalendarAlertsByYearAndMonth(Integer year, Integer month) {
+        return calendarAlertService.getCalendarAlertsByYearAndMonth(year, month);
+    }
+
+    @Override
     public CalendarAlert createCalendarAlert(CalendarAlert calendarAlert) {
         return calendarAlertService.createCalendarAlert(calendarAlert);
     }
