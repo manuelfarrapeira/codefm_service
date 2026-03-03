@@ -244,5 +244,55 @@ class StudentClassRepositoryImplTest {
         verify(studentClassJPARepository).findByClassIdAndStudentId(classId, studentId);
         verify(studentClassJPARepository, never()).save(any());
     }
+
+    @Test
+    void findById_shouldReturnStudentClass_whenExists() {
+        Integer id = 1;
+        StudentClassEntity entity = new StudentClassEntity(id, classId, studentId, null);
+        StudentClass studentClass = StudentClass.builder()
+                .id(id)
+                .classId(classId)
+                .studentId(studentId)
+                .build();
+
+        when(studentClassJPARepository.findById(id)).thenReturn(Optional.of(entity));
+        when(studentClassMapper.toModel(entity)).thenReturn(studentClass);
+
+        Optional<StudentClass> result = studentClassRepository.findById(id);
+
+        assertTrue(result.isPresent());
+        assertEquals(id, result.get().getId());
+        assertEquals(classId, result.get().getClassId());
+        assertEquals(studentId, result.get().getStudentId());
+        verify(studentClassJPARepository).findById(id);
+        verify(studentClassMapper).toModel(entity);
+    }
+
+    @Test
+    void findById_shouldReturnEmpty_whenNotExists() {
+        Integer id = 999;
+
+        when(studentClassJPARepository.findById(id)).thenReturn(Optional.empty());
+
+        Optional<StudentClass> result = studentClassRepository.findById(id);
+
+        assertFalse(result.isPresent());
+        verify(studentClassJPARepository).findById(id);
+        verify(studentClassMapper, never()).toModel(any());
+    }
+
+    @Test
+    void softDeleteByClassId_shouldCallJpaRepository() {
+        studentClassRepository.softDeleteByClassId(classId);
+
+        verify(studentClassJPARepository).softDeleteByClassId(classId);
+    }
+
+    @Test
+    void softDeleteByStudentId_shouldCallJpaRepository() {
+        studentClassRepository.softDeleteByStudentId(studentId);
+
+        verify(studentClassJPARepository).softDeleteByStudentId(studentId);
+    }
 }
 

@@ -5,12 +5,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.web.codefm.domain.entity.teachernotebook.StudentClass;
 import org.web.codefm.domain.repository.teachernotebook.*;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.Mockito.*;
 
@@ -191,6 +193,31 @@ class CascadeSoftDeleteServiceImplTest {
         var order = inOrder(exerciseStudentGradeRepository, studentClassRepository);
         order.verify(exerciseStudentGradeRepository).softDeleteByStudentId(studentId);
         order.verify(studentClassRepository).softDeleteByStudentId(studentId);
+    }
+
+    @Test
+    void cascadeDeleteChildrenOfStudentClass_shouldSoftDeleteGradesByStudentIdAndClassId_whenStudentClassExists() {
+        Integer studentClassId = 50;
+        StudentClass studentClass = StudentClass.builder().id(studentClassId).studentId(7).classId(10).build();
+
+        when(studentClassRepository.findById(studentClassId)).thenReturn(Optional.of(studentClass));
+
+        cascadeSoftDeleteService.cascadeDeleteChildrenOfStudentClass(studentClassId);
+
+        verify(studentClassRepository).findById(studentClassId);
+        verify(exerciseStudentGradeRepository).softDeleteByStudentIdAndClassId(7, 10);
+    }
+
+    @Test
+    void cascadeDeleteChildrenOfStudentClass_shouldDoNothing_whenStudentClassDoesNotExist() {
+        Integer studentClassId = 999;
+
+        when(studentClassRepository.findById(studentClassId)).thenReturn(Optional.empty());
+
+        cascadeSoftDeleteService.cascadeDeleteChildrenOfStudentClass(studentClassId);
+
+        verify(studentClassRepository).findById(studentClassId);
+        verifyNoInteractions(exerciseStudentGradeRepository);
     }
 }
 
