@@ -184,6 +184,39 @@
         },
         "description": "Elimina (soft delete) una nota de estudiante."
       }
+    },
+    {
+      "name": "Export grades by class",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/grades/export",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "grades",
+            "export"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Exporta las notas de los estudiantes de una clase en formato Excel (.xlsx). Se genera una hoja por cada asignatura que tenga al menos una nota."
+      }
     }
   ]
 }

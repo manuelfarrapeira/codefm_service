@@ -79,4 +79,9 @@ public class StudentClassRepositoryImpl implements StudentClassRepository {
     public void softDeleteByStudentId(Integer studentId) {
         studentClassJPARepository.softDeleteByStudentId(studentId);
     }
+
+    @Override
+    public List<Integer> findActiveStudentIdsByClassId(Integer classId) {
+        return studentClassJPARepository.findActiveStudentIdsByClassId(classId);
+    }
 }

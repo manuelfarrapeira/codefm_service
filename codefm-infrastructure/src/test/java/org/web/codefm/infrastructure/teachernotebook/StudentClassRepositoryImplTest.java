@@ -294,5 +294,26 @@ class StudentClassRepositoryImplTest {
 
         verify(studentClassJPARepository).softDeleteByStudentId(studentId);
     }
+
+    @Test
+    void findActiveStudentIdsByClassId_shouldReturnStudentIds() {
+        List<Integer> expected = List.of(1, 2, 3);
+        when(studentClassJPARepository.findActiveStudentIdsByClassId(classId)).thenReturn(expected);
+
+        List<Integer> result = studentClassRepository.findActiveStudentIdsByClassId(classId);
+
+        assertEquals(expected, result);
+        verify(studentClassJPARepository).findActiveStudentIdsByClassId(classId);
+    }
+
+    @Test
+    void findActiveStudentIdsByClassId_shouldReturnEmptyList_whenNoStudents() {
+        when(studentClassJPARepository.findActiveStudentIdsByClassId(classId)).thenReturn(List.of());
+
+        List<Integer> result = studentClassRepository.findActiveStudentIdsByClassId(classId);
+
+        assertTrue(result.isEmpty());
+        verify(studentClassJPARepository).findActiveStudentIdsByClassId(classId);
+    }
 }
 
