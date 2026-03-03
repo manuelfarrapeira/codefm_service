@@ -1,20 +1,15 @@
 package org.web.codefm.domain.session;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
-import java.util.Locale;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import java.util.List;
+import java.util.Locale;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class SessionUserTest {
 
@@ -31,122 +26,28 @@ class SessionUserTest {
 
   @Test
   void getParameter_shouldReturnNull_whenParameterDoesNotExist() {
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
     assertNull(result);
   }
 
   @Test
-  void getParameter_shouldReturnString_whenTypeIsString() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "testValue");
-
-    String result = sessionUser.getParameter(SessionParameter.TEACHER_ID, String.class);
-
-    assertEquals("testValue", result);
-  }
-
-  @Test
-  void getParameter_shouldReturnInteger_whenTypeIsInteger() {
+  void getParameter_shouldReturnInteger_whenValueIsValid() {
     sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "42");
 
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
     assertEquals(42, result);
   }
 
   @Test
-  void getParameter_shouldReturnLong_whenTypeIsLong() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "9999999999");
-
-    Long result = sessionUser.getParameter(SessionParameter.TEACHER_ID, Long.class);
-
-    assertEquals(9999999999L, result);
-  }
-
-  @Test
-  void getParameter_shouldReturnBoolean_whenTypeIsBoolean() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "true");
-
-    Boolean result = sessionUser.getParameter(SessionParameter.TEACHER_ID, Boolean.class);
-
-    assertTrue(result);
-  }
-
-  @Test
-  void getParameter_shouldReturnFalseBoolean_whenValueIsFalse() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "false");
-
-    Boolean result = sessionUser.getParameter(SessionParameter.TEACHER_ID, Boolean.class);
-
-    assertFalse(result);
-  }
-
-  @Test
-  void getParameter_shouldReturnDouble_whenTypeIsDouble() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "3.14");
-
-    Double result = sessionUser.getParameter(SessionParameter.TEACHER_ID, Double.class);
-
-    assertEquals(3.14, result);
-  }
-
-  @Test
-  void getParameter_shouldReturnFloat_whenTypeIsFloat() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "2.5");
-
-    Float result = sessionUser.getParameter(SessionParameter.TEACHER_ID, Float.class);
-
-    assertEquals(2.5f, result, 0.001f);
-  }
-
-  @Test
-  void getParameter_shouldThrowIllegalArgumentException_whenIntegerValueIsInvalid() {
+  void getParameter_shouldThrowIllegalArgumentException_whenValueIsInvalid() {
     sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "notANumber");
 
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-        () -> sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class));
+            () -> sessionUser.getParameter(SessionParameter.TEACHER_ID));
 
     assertTrue(exception.getMessage().contains("Cannot convert parameter"));
     assertTrue(exception.getMessage().contains("teacher_id"));
-  }
-
-  @Test
-  void getParameter_shouldThrowIllegalArgumentException_whenLongValueIsInvalid() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "abc123");
-
-    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-        () -> sessionUser.getParameter(SessionParameter.TEACHER_ID, Long.class));
-
-    assertTrue(exception.getMessage().contains("Cannot convert parameter"));
-  }
-
-  @Test
-  void getParameter_shouldThrowIllegalArgumentException_whenDoubleValueIsInvalid() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "3.14.15");
-
-    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-        () -> sessionUser.getParameter(SessionParameter.TEACHER_ID, Double.class));
-
-    assertTrue(exception.getMessage().contains("Cannot convert parameter"));
-  }
-
-  @Test
-  void getParameter_shouldThrowIllegalArgumentException_whenFloatValueIsInvalid() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "notFloat");
-
-    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-        () -> sessionUser.getParameter(SessionParameter.TEACHER_ID, Float.class));
-
-    assertTrue(exception.getMessage().contains("Cannot convert parameter"));
-  }
-
-  @Test
-  void getParameter_shouldThrowIllegalArgumentException_whenTypeIsUnsupported() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "value");
-
-    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-        () -> sessionUser.getParameter(SessionParameter.TEACHER_ID, java.time.LocalDate.class));
-
-    assertTrue(exception.getMessage().contains("Cannot convert parameter"));
   }
 
   @ParameterizedTest
@@ -154,7 +55,7 @@ class SessionUserTest {
   void getParameter_shouldConvertMultipleIntegerValues(String intValue) {
     sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), intValue);
 
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
     assertEquals(Integer.parseInt(intValue), result);
   }
@@ -163,7 +64,7 @@ class SessionUserTest {
   void getParameter_shouldHandleNegativeNumbers() {
     sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "-42");
 
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
     assertEquals(-42, result);
   }
@@ -172,7 +73,7 @@ class SessionUserTest {
   void getParameter_shouldHandleZero() {
     sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "0");
 
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
     assertEquals(0, result);
   }
@@ -182,7 +83,7 @@ class SessionUserTest {
     sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "123");
     sessionUser.setLocale(Locale.FRENCH);
 
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
     assertEquals(123, result);
     assertEquals(Locale.FRENCH, sessionUser.getLocale());
@@ -190,7 +91,7 @@ class SessionUserTest {
   }
 
   @Test
-  void getParameterAsList_shouldReturnNull_whenParameterDoesNotExist() {
+  void getParameterAsList_shouldReturnEmptyList_whenParameterDoesNotExist() {
     List<String> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, String.class);
 
     assertTrue(result.isEmpty());

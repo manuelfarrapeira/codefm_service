@@ -44,7 +44,7 @@ class CalendarAlertServiceImplTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         calendarAlertService = new CalendarAlertServiceImpl(calendarAlertRepository, messageSource, sessionUser);
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
     }
 

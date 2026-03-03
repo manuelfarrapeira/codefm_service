@@ -25,7 +25,9 @@ import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 
-import java.util.*;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -67,9 +69,7 @@ class ExerciseServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), TEACHER_ID.toString());
-        when(sessionUser.getParameters()).thenReturn(parameters);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         when(messageSource.getMessage(eq(MessageKeys.CLASS_FORBIDDEN), isNull(), any(Locale.class)))

@@ -44,7 +44,7 @@ class SubjectServiceImplTest {
                 Subject.builder().id(2).name("Science").teacherId(TEACHER_ID).build()
         );
 
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(subjectRepository.findByTeacherId(TEACHER_ID)).thenReturn(expectedSubjects);
 
         List<Subject> actualSubjects = subjectService.getSubjectsByTeacher();
@@ -57,7 +57,7 @@ class SubjectServiceImplTest {
 
     @Test
     void getSubjectsByTeacher_shouldReturnEmptyList_whenNoSubjectsFound() {
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(subjectRepository.findByTeacherId(TEACHER_ID)).thenReturn(Collections.emptyList());
 
         List<Subject> actualSubjects = subjectService.getSubjectsByTeacher();
@@ -71,7 +71,7 @@ class SubjectServiceImplTest {
     void createSubject_shouldSaveSubjectAndSetTeacherId_whenDataIsValid() {
         Subject subjectToCreate = Subject.builder().name("Valid Subject").build();
 
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(subjectRepository.save(any(Subject.class))).thenAnswer(invocation -> {
             Subject s = invocation.getArgument(0);
             return Subject.builder().id(1).name(s.getName()).teacherId(s.getTeacherId()).build();
@@ -161,7 +161,7 @@ class SubjectServiceImplTest {
         Integer subjectId = 1;
         Subject subject = Subject.builder().id(subjectId).teacherId(TEACHER_ID).name("Subject A").build();
 
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(subject));
         when(subjectRepository.softDeleteSubject(subjectId, TEACHER_ID)).thenReturn(subject);
@@ -177,7 +177,7 @@ class SubjectServiceImplTest {
         Integer subjectId = 1;
         String expectedErrorMessage = "Subject not found.";
 
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.empty());
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_NOT_FOUND), any(), any(Locale.class)))
@@ -199,7 +199,7 @@ class SubjectServiceImplTest {
         Subject subject = Subject.builder().id(subjectId).teacherId(otherTeacherId).name("Subject A").build();
         String expectedErrorMessage = "You are not authorized to make changes to this subject.";
 
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(subject));
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_FORBIDDEN), any(), any(Locale.class)))
@@ -221,7 +221,7 @@ class SubjectServiceImplTest {
         Subject updatedSubjectData = Subject.builder().name("New Name").build();
         Subject savedSubject = Subject.builder().id(subjectId).teacherId(TEACHER_ID).name("New Name").build();
 
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(existingSubject));
         when(subjectRepository.save(any(Subject.class))).thenReturn(savedSubject);
@@ -262,7 +262,7 @@ class SubjectServiceImplTest {
         Subject updatedSubjectData = Subject.builder().name("New Name").build();
         String expectedErrorMessage = "Subject not found.";
 
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.empty());
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_NOT_FOUND), any(), any(Locale.class)))
@@ -285,7 +285,7 @@ class SubjectServiceImplTest {
         Subject updatedSubjectData = Subject.builder().name("New Name").build();
         String expectedErrorMessage = "You are not authorized to make changes to this subject.";
 
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(existingSubject));
         when(messageSource.getMessage(eq(MessageKeys.SUBJECT_FORBIDDEN), any(), any(Locale.class)))

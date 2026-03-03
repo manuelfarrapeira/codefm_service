@@ -36,10 +36,10 @@ class SchoolUseCaseImplTest {
     @InjectMocks
     private SchoolUseCaseImpl schoolUseCase;
 
-  @BeforeEach
-  void setUp() {
-    lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(1);
-  }
+    @BeforeEach
+    void setUp() {
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(1);
+    }
 
     @Test
     void getSchoolsByTeacher_shouldSortSchoolsByMaxSchoolYearAndClassesInternallyDescending() {
@@ -157,7 +157,7 @@ class SchoolUseCaseImplTest {
 
     @Test
     void createSchool_shouldSetTeacherIdAndCallService() {
-      Integer teacherId = 1;
+        Integer teacherId = 1;
 
         School schoolToCreate = School.builder()
                 .name("New School")
@@ -186,7 +186,7 @@ class SchoolUseCaseImplTest {
 
         schoolUseCase.softDeleteSchool(schoolId);
 
-        verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID);
         verify(cascadeSoftDeleteService, times(1)).cascadeDeleteChildrenOfSchool(schoolId);
         verify(schoolService, times(1)).softDeleteSchool(schoolId, teacherId);
     }
@@ -195,7 +195,7 @@ class SchoolUseCaseImplTest {
     void updateSchool_shouldGetTeacherIdFromSessionAndCallService() {
         // Given
         Integer schoolId = 1;
-      Integer teacherId = 1;
+        Integer teacherId = 1;
 
         School schoolToUpdate = School.builder()
                 .name("Updated School Name")
@@ -222,7 +222,7 @@ class SchoolUseCaseImplTest {
         assertEquals("Updated School Name", result.getName());
         assertEquals("Updated Town", result.getTown());
         assertEquals(987654321, result.getTlf());
-      verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID);
         verify(schoolService, times(1)).updateSchool(eq(schoolId), any(School.class), eq(teacherId));
     }
 }

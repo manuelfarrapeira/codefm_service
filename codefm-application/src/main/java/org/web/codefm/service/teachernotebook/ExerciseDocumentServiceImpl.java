@@ -43,7 +43,7 @@ public class ExerciseDocumentServiceImpl implements ExerciseDocumentService {
 
     @Override
     public ExerciseDocument uploadDocument(Integer exerciseId, MultipartFile file, String description) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
         exerciseRepository.findByIdAndTeacherId(exerciseId, teacherId)
                 .orElseThrow(() -> new ExerciseNotFoundException(
@@ -109,7 +109,7 @@ public class ExerciseDocumentServiceImpl implements ExerciseDocumentService {
 
     @Override
     public byte[] downloadDocument(Integer exerciseId, Integer documentId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
         exerciseRepository.findByIdAndTeacherId(exerciseId, teacherId)
                 .orElseThrow(() -> new ExerciseNotFoundException(
@@ -140,7 +140,7 @@ public class ExerciseDocumentServiceImpl implements ExerciseDocumentService {
 
     @Override
     public String getDocumentFilename(Integer exerciseId, Integer documentId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
         exerciseRepository.findByIdAndTeacherId(exerciseId, teacherId)
                 .orElseThrow(() -> new ExerciseNotFoundException(
@@ -158,7 +158,7 @@ public class ExerciseDocumentServiceImpl implements ExerciseDocumentService {
 
     @Override
     public ExerciseDocument updateDescription(Integer exerciseId, Integer documentId, String description) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
         exerciseRepository.findByIdAndTeacherId(exerciseId, teacherId)
                 .orElseThrow(() -> new ExerciseNotFoundException(
@@ -178,7 +178,7 @@ public class ExerciseDocumentServiceImpl implements ExerciseDocumentService {
     @Override
     @Transactional
     public void deleteDocument(Integer exerciseId, Integer documentId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
         exerciseRepository.findByIdAndTeacherId(exerciseId, teacherId)
                 .orElseThrow(() -> new ExerciseNotFoundException(
@@ -248,11 +248,4 @@ public class ExerciseDocumentServiceImpl implements ExerciseDocumentService {
         }
         return filename.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
-
-    private Integer getTeacherId() {
-        return Integer.valueOf(
-                sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
-        );
-    }
 }
-

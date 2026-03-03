@@ -56,7 +56,7 @@ class SubjectClassServiceImplTest {
                 SubjectClassDetail.builder().subjectClassId(201).subjectId(SUBJECT_ID_2).subjectName("Science").build()
         );
 
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
@@ -73,7 +73,7 @@ class SubjectClassServiceImplTest {
 
     @Test
     void getSubjectsByClassId_shouldThrowNotFoundException_whenClassNotExists() {
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.empty());
         when(messageSource.getMessage(eq(MessageKeys.CLASS_NOT_FOUND), any(), any(Locale.class)))
@@ -87,7 +87,7 @@ class SubjectClassServiceImplTest {
     @Test
     void getSubjectsByClassId_shouldThrowClassForbidden_whenClassDoesNotBelongToTeacher() {
         Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").build();
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
@@ -102,7 +102,7 @@ class SubjectClassServiceImplTest {
 
     @Test
     void getAllClassesWithSubjects_shouldReturnAllClassesWithSubjects() {
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         List<ClassWithSubjects> expectedResult = List.of(
                 ClassWithSubjects.builder()
                         .classData(Class.builder().id(CLASS_ID).name("1A").build())
@@ -128,7 +128,7 @@ class SubjectClassServiceImplTest {
                 SubjectClassDetail.builder().subjectClassId(201).subjectId(SUBJECT_ID_2).subjectName("Science").build()
         );
 
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
@@ -178,7 +178,7 @@ class SubjectClassServiceImplTest {
         Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").build();
         List<Integer> subjectIds = List.of(SUBJECT_ID_1);
 
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
@@ -200,7 +200,7 @@ class SubjectClassServiceImplTest {
         Subject subject = Subject.builder().id(SUBJECT_ID_1).name("Math").teacherId(TEACHER_ID).build();
         List<Integer> subjectIds = List.of(SUBJECT_ID_1);
 
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
@@ -232,7 +232,7 @@ class SubjectClassServiceImplTest {
     void removeSubjectsFromClass_shouldThrowNotFoundException_whenClassNotExists() {
         List<Integer> subjectIds = List.of(SUBJECT_ID_1);
 
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.empty());
         when(messageSource.getMessage(eq(MessageKeys.CLASS_NOT_FOUND), any(), any(Locale.class)))
@@ -249,7 +249,7 @@ class SubjectClassServiceImplTest {
         Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").build();
         List<Integer> subjectIds = List.of(SUBJECT_ID_1);
 
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
@@ -280,7 +280,7 @@ class SubjectClassServiceImplTest {
         Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").build();
         List<Integer> subjectIds = List.of(SUBJECT_ID_1);
 
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
@@ -301,7 +301,7 @@ class SubjectClassServiceImplTest {
         Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").build();
         List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2);
 
-        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
         when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))

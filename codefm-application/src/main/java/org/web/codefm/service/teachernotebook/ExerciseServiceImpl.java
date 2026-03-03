@@ -36,7 +36,7 @@ public class ExerciseServiceImpl implements ExerciseService {
 
     @Override
     public List<Exercise> getExercisesByClassId(Integer classId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
 
         classRepository.findById(classId)
@@ -54,7 +54,7 @@ public class ExerciseServiceImpl implements ExerciseService {
 
     @Override
     public Exercise createExercise(Integer subjectClassId, Exercise exercise) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         List<ErrorMessage> errors = new ArrayList<>();
 
         validateSubjectClassOwnership(subjectClassId, teacherId);
@@ -79,7 +79,7 @@ public class ExerciseServiceImpl implements ExerciseService {
 
     @Override
     public Exercise updateExercise(Integer id, Exercise exercise) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         List<ErrorMessage> errors = new ArrayList<>();
 
         Exercise existingExercise = exerciseRepository.findByIdAndTeacherId(id, teacherId)
@@ -105,7 +105,7 @@ public class ExerciseServiceImpl implements ExerciseService {
 
     @Override
     public void deleteExercise(Integer id) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
         Exercise exercise = exerciseRepository.findByIdAndTeacherId(id, teacherId)
                 .orElseThrow(() -> new ExerciseNotFoundException(
@@ -157,12 +157,6 @@ public class ExerciseServiceImpl implements ExerciseService {
             String message = messageSource.getMessage(MessageKeys.EXERCISE_VALIDATION_MAX_GRADE_INVALID, null, sessionUser.getLocale());
             errors.add(new ErrorMessage("maxGrade", message));
         }
-    }
-
-    private Integer getTeacherId() {
-        return Integer.valueOf(
-                sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
-        );
     }
 
     private void validatePercentageGradeSum(Integer subjectClassId, Integer quarter, Integer percentageGrade, Integer excludeExerciseId, List<ErrorMessage> errors) {

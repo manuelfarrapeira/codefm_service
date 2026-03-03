@@ -29,7 +29,7 @@ public class CalendarAlertServiceImpl implements CalendarAlertService {
 
     @Override
     public List<CalendarAlert> getCalendarAlerts() {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         return calendarAlertRepository.findByTeacherId(teacherId);
     }
 
@@ -52,7 +52,7 @@ public class CalendarAlertServiceImpl implements CalendarAlertService {
             throw new CalendarAlertValidationException(errors);
         }
 
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         return calendarAlertRepository.findByTeacherIdAndYearAndMonth(teacherId, year, month);
     }
 
@@ -67,13 +67,13 @@ public class CalendarAlertServiceImpl implements CalendarAlertService {
             throw new CalendarAlertValidationException(errors);
         }
 
-        calendarAlert.setTeacherId(getTeacherId());
+        calendarAlert.setTeacherId(sessionUser.getParameter(SessionParameter.TEACHER_ID));
         return calendarAlertRepository.save(calendarAlert);
     }
 
     @Override
     public CalendarAlert updateCalendarAlert(Integer id, CalendarAlert calendarAlert) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
         List<ErrorMessage> errors = new ArrayList<>();
 
@@ -98,7 +98,7 @@ public class CalendarAlertServiceImpl implements CalendarAlertService {
 
     @Override
     public void deleteCalendarAlert(Integer id) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
 
         calendarAlertRepository.findByIdAndTeacherId(id, teacherId)
@@ -106,10 +106,6 @@ public class CalendarAlertServiceImpl implements CalendarAlertService {
                         messageSource.getMessage(MessageKeys.CALENDAR_ALERT_NOT_FOUND, null, locale)));
 
         calendarAlertRepository.deleteById(id);
-    }
-
-    private Integer getTeacherId() {
-        return sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
     }
 
     private void validateCalendarAlert(CalendarAlert calendarAlert, List<ErrorMessage> errors, Locale locale) {
@@ -138,4 +134,3 @@ public class CalendarAlertServiceImpl implements CalendarAlertService {
         }
     }
 }
-

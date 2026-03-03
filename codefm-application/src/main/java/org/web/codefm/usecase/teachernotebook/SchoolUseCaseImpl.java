@@ -28,7 +28,7 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
 
     @Override
     public List<School> getSchoolsByTeacher() {
-      Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         List<School> schools = schoolService.getSchoolsByTeacherId(teacherId);
 
         schools.forEach(school ->
@@ -44,7 +44,7 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
 
     @Override
     public School createSchool(School school) {
-      Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         school.setTeacherId(teacherId);
         return schoolService.createSchool(school);
     }
@@ -52,14 +52,14 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
     @Override
     @Transactional
     public void softDeleteSchool(Integer schoolId) {
-        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(schoolId);
         schoolService.softDeleteSchool(schoolId, teacherId);
     }
 
     @Override
     public School updateSchool(Integer schoolId, School school) {
-      Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         return schoolService.updateSchool(schoolId, school, teacherId);
     }
 

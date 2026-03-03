@@ -37,7 +37,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public List<Schedule> getSchedulesByClassId(Integer classId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
         classRepository.findById(classId)
                 .orElseThrow(() -> new ClassNotFoundException(
@@ -54,7 +54,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public List<Schedule> createSchedules(Integer classId, Integer day, List<Schedule> schedules) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         List<ErrorMessage> errors = new ArrayList<>();
 
         classRepository.findById(classId)
@@ -106,7 +106,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public Schedule updateSchedule(Integer scheduleId, Schedule schedule) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         List<ErrorMessage> errors = new ArrayList<>();
 
         Schedule existingSchedule = scheduleRepository.findByIdAndTeacherId(scheduleId, teacherId)
@@ -131,7 +131,7 @@ public class ScheduleServiceImpl implements ScheduleService {
 
     @Override
     public void softDeleteSchedules(List<Integer> ids) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         List<ErrorMessage> errors = new ArrayList<>();
 
         if (ids == null || ids.isEmpty()) {
@@ -230,11 +230,5 @@ public class ScheduleServiceImpl implements ScheduleService {
             String message = messageSource.getMessage(MessageKeys.SCHEDULE_VALIDATION_TIME_OVERLAP, null, sessionUser.getLocale());
             errors.add(new ErrorMessage("time", message));
         }
-    }
-
-    private Integer getTeacherId() {
-        return Integer.valueOf(
-                sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
-        );
     }
 }

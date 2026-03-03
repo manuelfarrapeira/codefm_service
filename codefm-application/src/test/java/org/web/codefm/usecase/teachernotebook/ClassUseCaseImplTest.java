@@ -37,7 +37,7 @@ class ClassUseCaseImplTest {
 
   @BeforeEach
   void setUp() {
-    lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(1);
+      lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(1);
   }
 
     @Test
@@ -125,7 +125,7 @@ class ClassUseCaseImplTest {
 
         classUseCase.softDeleteClass(classId);
 
-        verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID);
         verify(cascadeSoftDeleteService, times(1)).cascadeDeleteChildrenOfClass(classId);
         verify(classService, times(1)).softDeleteClass(classId, teacherId);
     }
@@ -157,7 +157,7 @@ class ClassUseCaseImplTest {
     assertNotNull(result);
     assertEquals("New Name", result.getName());
     assertEquals("24/25", result.getSchoolYear());
-    verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID, Integer.class);
+      verify(sessionUser, times(1)).getParameter(SessionParameter.TEACHER_ID);
     verify(classService, times(1)).updateClass(classId, updateData, teacherId);
   }
 }

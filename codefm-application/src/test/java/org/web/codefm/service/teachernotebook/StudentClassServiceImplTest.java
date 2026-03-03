@@ -21,9 +21,7 @@ import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,9 +55,7 @@ class StudentClassServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        Map<String, String> sessionParameters = new HashMap<>();
-        sessionParameters.put(SessionParameter.TEACHER_ID.getClaimName(), teacherId.toString());
-        lenient().when(sessionUser.getParameters()).thenReturn(sessionParameters);
+        lenient().when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(teacherId);
     }
 
     @Test
