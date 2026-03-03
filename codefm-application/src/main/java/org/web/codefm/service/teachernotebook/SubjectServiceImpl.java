@@ -32,7 +32,7 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     public List<Subject> getSubjectsByTeacher() {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         return subjectRepository.findByTeacherId(teacherId);
     }
 
@@ -47,7 +47,7 @@ public class SubjectServiceImpl implements SubjectService {
             throw new SubjectValidationException(errors);
         }
 
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         subject.setTeacherId(teacherId);
 
         return subjectRepository.save(subject);
@@ -61,7 +61,7 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     @Transactional
     public void softDeleteSubject(Integer subjectId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
         validateSubjectOwnership(subjectId, teacherId, locale);
         subjectRepository.softDeleteSubject(subjectId, teacherId);
@@ -70,7 +70,7 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     @Transactional
     public Subject updateSubject(Integer subjectId, Subject subject) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
         List<ErrorMessage> errors = new ArrayList<>();
 
@@ -85,10 +85,6 @@ public class SubjectServiceImpl implements SubjectService {
         existingSubject.setName(subject.getName());
 
         return subjectRepository.save(existingSubject);
-    }
-
-    private Integer getTeacherId() {
-        return sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
     }
 
     private void validateSubject(Subject subject, List<ErrorMessage> errors, Locale locale) {

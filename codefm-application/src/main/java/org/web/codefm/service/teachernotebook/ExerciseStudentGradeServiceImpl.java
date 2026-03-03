@@ -38,7 +38,7 @@ public class ExerciseStudentGradeServiceImpl implements ExerciseStudentGradeServ
 
     @Override
     public List<ExerciseStudentGrade> getGradesByClassId(Integer classId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
 
         validateClassOwnership(classId, teacherId, locale);
@@ -48,7 +48,7 @@ public class ExerciseStudentGradeServiceImpl implements ExerciseStudentGradeServ
 
     @Override
     public List<ExerciseStudentGrade> getGradesByClassIdAndStudentId(Integer classId, Integer studentId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
 
         validateClassOwnership(classId, teacherId, locale);
@@ -59,7 +59,7 @@ public class ExerciseStudentGradeServiceImpl implements ExerciseStudentGradeServ
 
     @Override
     public ExerciseStudentGrade createGrade(Integer exerciseId, ExerciseStudentGrade grade) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
         List<ErrorMessage> errors = new ArrayList<>();
 
@@ -94,7 +94,7 @@ public class ExerciseStudentGradeServiceImpl implements ExerciseStudentGradeServ
 
     @Override
     public ExerciseStudentGrade updateGrade(Integer id, ExerciseStudentGrade grade) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
         List<ErrorMessage> errors = new ArrayList<>();
 
@@ -122,7 +122,7 @@ public class ExerciseStudentGradeServiceImpl implements ExerciseStudentGradeServ
 
     @Override
     public void deleteGrade(Integer id) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
 
         exerciseStudentGradeRepository.findByIdAndTeacherId(id, teacherId)
@@ -226,9 +226,4 @@ public class ExerciseStudentGradeServiceImpl implements ExerciseStudentGradeServ
                 .map(s -> s.getName() + " " + s.getSurnames())
                 .orElse(String.valueOf(studentId));
     }
-
-    private Integer getTeacherId() {
-        return sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
-    }
 }
-

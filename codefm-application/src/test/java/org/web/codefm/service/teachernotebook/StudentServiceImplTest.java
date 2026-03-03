@@ -60,9 +60,7 @@ class StudentServiceImplTest {
     void setUp() {
         ReflectionTestUtils.setField(studentService, "photosDirectory", tempDir.toString());
 
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), "1");
-        when(sessionUser.getParameters()).thenReturn(parameters);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(1);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         when(messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_NAME_REQUIRED), eq(null), any(Locale.class)))

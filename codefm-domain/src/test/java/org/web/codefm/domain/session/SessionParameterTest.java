@@ -12,6 +12,11 @@ class SessionParameterTest {
     }
 
     @Test
+    void testTeacherIdType() {
+        assertEquals(Integer.class, SessionParameter.TEACHER_ID.getType());
+    }
+
+    @Test
     void testAllEnumValues() {
         assertEquals(1, SessionParameter.values().length, "Expected 1 enum value");
     }

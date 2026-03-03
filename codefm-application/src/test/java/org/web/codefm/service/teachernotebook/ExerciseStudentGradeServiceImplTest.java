@@ -69,7 +69,7 @@ class ExerciseStudentGradeServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(TEACHER_ID);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("error message");
     }

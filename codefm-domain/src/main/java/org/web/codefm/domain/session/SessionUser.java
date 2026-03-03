@@ -1,20 +1,16 @@
 package org.web.codefm.domain.session;
 
-import static java.util.Arrays.stream;
-
-import java.io.Serializable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
 import lombok.Data;
 import lombok.Generated;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
+
+import java.io.Serializable;
+import java.util.*;
+
+import static java.util.Arrays.stream;
 
 @Data
 @Scope(value = WebApplicationContext.SCOPE_SESSION, proxyMode = ScopedProxyMode.TARGET_CLASS)
@@ -37,28 +33,23 @@ public class SessionUser implements Serializable {
   private Locale locale;
 
   /**
-   * Retrieves a parameter value and converts it to the specified type. Supports primitive types, String, and List collections.
+   * Retrieves a parameter value and converts it to the type defined in the SessionParameter enum.
    *
-   * @param parameter the session parameter to retrieve
-   * @param type the class type to convert the value to
+   * @param parameter the session parameter to retrieve (type is defined in the enum)
    * @param <T> the generic type
-   * @return the parameter value converted to the specified type, or null if not found
+   * @return the parameter value converted to the type defined in the enum, or null if not found
    * @throws IllegalArgumentException if the parameter cannot be converted to the specified type
-   *     <p>
-   *     Examples: - getParameter(SessionParameter.TEACHER_ID, Integer.Class) -> returns Integer - getParameter(SessionParameter.ROLES,
-   *     List.Class) -> returns List<String> (comma-separated values split)
-   *
-   *     Note: For List type, use getParameterAsList() to specify the element type explicitly
    */
-  public <T> T getParameter(SessionParameter parameter, Class<T> type) {
+  @SuppressWarnings("unchecked")
+  public <T> T getParameter(SessionParameter parameter) {
     try {
       String value = parameters.get(parameter.getClaimName());
       if (value == null) {
         return null;
       }
-      return convertValue(value, type);
+      return (T) convertValue(value, parameter.getType());
     } catch (Exception e) {
-      throw new IllegalArgumentException("Cannot convert parameter " + parameter.getClaimName() + " to type " + type.getSimpleName(), e);
+      throw new IllegalArgumentException("Cannot convert parameter " + parameter.getClaimName() + " to type " + parameter.getType().getSimpleName(), e);
     }
   }
 

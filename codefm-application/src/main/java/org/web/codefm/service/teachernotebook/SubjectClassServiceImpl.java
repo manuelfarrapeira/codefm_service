@@ -40,7 +40,7 @@ public class SubjectClassServiceImpl implements SubjectClassService {
 
     @Override
     public List<SubjectClassDetail> getSubjectsByClassId(Integer classId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
 
         validateClassOwnership(classId, teacherId, locale);
@@ -50,14 +50,14 @@ public class SubjectClassServiceImpl implements SubjectClassService {
 
     @Override
     public List<ClassWithSubjects> getAllClassesWithSubjects() {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         return subjectClassRepository.findAllClassesWithSubjectsByTeacherId(teacherId);
     }
 
     @Override
     @Transactional
     public List<SubjectClassDetail> assignSubjectsToClass(Integer classId, List<Integer> subjectIds) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
         List<ErrorMessage> errors = new ArrayList<>();
 
@@ -94,7 +94,7 @@ public class SubjectClassServiceImpl implements SubjectClassService {
 
     @Override
     public List<Integer> findActiveSubjectClassIds(Integer classId, List<Integer> subjectIds) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
         List<ErrorMessage> errors = new ArrayList<>();
 
@@ -116,10 +116,6 @@ public class SubjectClassServiceImpl implements SubjectClassService {
                     .ifPresent(subjectClassIds::add);
         }
         return subjectClassIds;
-    }
-
-    private Integer getTeacherId() {
-        return sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
     }
 
     private void validateClassOwnership(Integer classId, Integer teacherId, Locale locale) {
@@ -177,4 +173,3 @@ public class SubjectClassServiceImpl implements SubjectClassService {
         }
     }
 }
-

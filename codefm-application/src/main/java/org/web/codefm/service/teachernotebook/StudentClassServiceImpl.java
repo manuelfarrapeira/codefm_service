@@ -30,7 +30,7 @@ public class StudentClassServiceImpl implements StudentClassService {
 
     @Override
     public void addStudentToClass(Integer classId, Integer studentId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
         validateClassOwnership(classId, teacherId);
         validateStudentOwnership(studentId, teacherId);
@@ -59,7 +59,7 @@ public class StudentClassServiceImpl implements StudentClassService {
 
     @Override
     public StudentClass findActiveAssociation(Integer classId, Integer studentId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
         validateClassOwnership(classId, teacherId);
         validateStudentOwnership(studentId, teacherId);
@@ -97,11 +97,5 @@ public class StudentClassServiceImpl implements StudentClassService {
                     messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
             );
         }
-    }
-
-    private Integer getTeacherId() {
-        return Integer.valueOf(
-                sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
-        );
     }
 }

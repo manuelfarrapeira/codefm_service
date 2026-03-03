@@ -63,9 +63,7 @@ class ScheduleServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), TEACHER_ID.toString());
-        when(sessionUser.getParameters()).thenReturn(parameters);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         when(messageSource.getMessage(eq(MessageKeys.SCHEDULE_VALIDATION_CLASS_NOT_FOUND), isNull(), any(Locale.class)))

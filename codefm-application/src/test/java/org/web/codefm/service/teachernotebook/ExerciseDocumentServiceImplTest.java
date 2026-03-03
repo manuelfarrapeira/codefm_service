@@ -25,7 +25,9 @@ import org.web.codefm.domain.session.SessionUser;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,9 +64,7 @@ class ExerciseDocumentServiceImplTest {
     void setUp() {
         ReflectionTestUtils.setField(exerciseDocumentService, "documentsDirectory", tempDir.toString());
 
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(SessionParameter.TEACHER_ID.getClaimName(), TEACHER_ID.toString());
-        when(sessionUser.getParameters()).thenReturn(parameters);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
 
         when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
