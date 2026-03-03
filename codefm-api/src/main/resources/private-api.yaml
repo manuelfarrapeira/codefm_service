@@ -2121,6 +2121,58 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/calendar-alerts/{year}/{month}:
+    get:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: calendarAlertsByYearAndMonth
+      summary: Get calendar alerts for a specific year and month
+      description: Returns all calendar alerts belonging to the authenticated teacher for the specified year and month, ordered by date ascending.
+      parameters:
+        - name: year
+          in: path
+          required: true
+          description: The year to filter calendar alerts
+          schema:
+            type: integer
+            format: int32
+            example: 2026
+        - name: month
+          in: path
+          required: true
+          description: The month to filter calendar alerts (1-12)
+          schema:
+            type: integer
+            format: int32
+            example: 3
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarAlertDTO'
+        '400':
+          description: Validation error - invalid year or month
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
   /teacher-notebook/v1/calendar-alerts/{id}:
     patch:
       tags:

@@ -3,6 +3,8 @@ package org.web.codefm.service.teachernotebook;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -396,6 +398,86 @@ class CalendarAlertServiceImplTest {
         assertNotNull(result);
         assertEquals(LocalTime.of(14, 0), result.getStartTime());
         assertEquals(LocalTime.of(15, 30), result.getEndTime());
+    }
+
+    @Test
+    void getCalendarAlertsByYearAndMonth_shouldReturnAlerts_whenYearAndMonthAreValid() {
+        Integer year = 2026;
+        Integer month = 3;
+        List<CalendarAlert> expectedAlerts = Arrays.asList(
+                CalendarAlert.builder().id(1).teacherId(TEACHER_ID).date(LocalDate.of(2026, 3, 15)).title("Meeting").build()
+        );
+
+        when(calendarAlertRepository.findByTeacherIdAndYearAndMonth(TEACHER_ID, year, month)).thenReturn(expectedAlerts);
+
+        List<CalendarAlert> result = calendarAlertService.getCalendarAlertsByYearAndMonth(year, month);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(calendarAlertRepository).findByTeacherIdAndYearAndMonth(TEACHER_ID, year, month);
+    }
+
+    @Test
+    void getCalendarAlertsByYearAndMonth_shouldReturnEmptyList_whenNoAlertsFound() {
+        Integer year = 2026;
+        Integer month = 6;
+
+        when(calendarAlertRepository.findByTeacherIdAndYearAndMonth(TEACHER_ID, year, month)).thenReturn(Collections.emptyList());
+
+        List<CalendarAlert> result = calendarAlertService.getCalendarAlertsByYearAndMonth(year, month);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(calendarAlertRepository).findByTeacherIdAndYearAndMonth(TEACHER_ID, year, month);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, -1, 13, 14, 100})
+    void getCalendarAlertsByYearAndMonth_shouldThrowValidationException_whenMonthIsInvalid(int invalidMonth) {
+        when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("Error message");
+
+        assertThrows(CalendarAlertValidationException.class,
+                () -> calendarAlertService.getCalendarAlertsByYearAndMonth(2026, invalidMonth));
+        verify(calendarAlertRepository, never()).findByTeacherIdAndYearAndMonth(any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, -1, -100})
+    void getCalendarAlertsByYearAndMonth_shouldThrowValidationException_whenYearIsInvalid(int invalidYear) {
+        when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("Error message");
+
+        assertThrows(CalendarAlertValidationException.class,
+                () -> calendarAlertService.getCalendarAlertsByYearAndMonth(invalidYear, 3));
+        verify(calendarAlertRepository, never()).findByTeacherIdAndYearAndMonth(any(), any(), any());
+    }
+
+    @Test
+    void getCalendarAlertsByYearAndMonth_shouldThrowValidationException_whenBothYearAndMonthAreInvalid() {
+        when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("Error message");
+
+        CalendarAlertValidationException exception = assertThrows(CalendarAlertValidationException.class,
+                () -> calendarAlertService.getCalendarAlertsByYearAndMonth(-1, 13));
+
+        assertEquals(2, exception.getErrors().size());
+        verify(calendarAlertRepository, never()).findByTeacherIdAndYearAndMonth(any(), any(), any());
+    }
+
+    @Test
+    void getCalendarAlertsByYearAndMonth_shouldThrowValidationException_whenYearIsNull() {
+        when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("Error message");
+
+        assertThrows(CalendarAlertValidationException.class,
+                () -> calendarAlertService.getCalendarAlertsByYearAndMonth(null, 3));
+        verify(calendarAlertRepository, never()).findByTeacherIdAndYearAndMonth(any(), any(), any());
+    }
+
+    @Test
+    void getCalendarAlertsByYearAndMonth_shouldThrowValidationException_whenMonthIsNull() {
+        when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("Error message");
+
+        assertThrows(CalendarAlertValidationException.class,
+                () -> calendarAlertService.getCalendarAlertsByYearAndMonth(2026, null));
+        verify(calendarAlertRepository, never()).findByTeacherIdAndYearAndMonth(any(), any(), any());
     }
 }
 

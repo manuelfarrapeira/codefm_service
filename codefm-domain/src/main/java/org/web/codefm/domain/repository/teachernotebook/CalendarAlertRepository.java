@@ -20,6 +20,16 @@ public interface CalendarAlertRepository {
     List<CalendarAlert> findByTeacherId(Integer teacherId);
 
     /**
+     * Finds all calendar alerts for a specific teacher, year and month.
+     *
+     * @param teacherId The unique identifier of the teacher
+     * @param year      The year to filter by
+     * @param month     The month to filter by (1-12)
+     * @return List of calendar alerts matching the criteria, ordered by date ascending
+     */
+    List<CalendarAlert> findByTeacherIdAndYearAndMonth(Integer teacherId, Integer year, Integer month);
+
+    /**
      * Finds a calendar alert by its ID and validates teacher ownership.
      *
      * @param id        The unique identifier of the calendar alert

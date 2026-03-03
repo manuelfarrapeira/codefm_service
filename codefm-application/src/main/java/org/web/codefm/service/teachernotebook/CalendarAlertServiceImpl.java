@@ -34,6 +34,29 @@ public class CalendarAlertServiceImpl implements CalendarAlertService {
     }
 
     @Override
+    public List<CalendarAlert> getCalendarAlertsByYearAndMonth(Integer year, Integer month) {
+        List<ErrorMessage> errors = new ArrayList<>();
+        Locale locale = sessionUser.getLocale();
+
+        if (year == null || year <= 0) {
+            String message = messageSource.getMessage(MessageKeys.CALENDAR_ALERT_VALIDATION_YEAR_INVALID, null, locale);
+            errors.add(new ErrorMessage("year", message));
+        }
+
+        if (month == null || month < 1 || month > 12) {
+            String message = messageSource.getMessage(MessageKeys.CALENDAR_ALERT_VALIDATION_MONTH_INVALID, null, locale);
+            errors.add(new ErrorMessage("month", message));
+        }
+
+        if (!errors.isEmpty()) {
+            throw new CalendarAlertValidationException(errors);
+        }
+
+        Integer teacherId = getTeacherId();
+        return calendarAlertRepository.findByTeacherIdAndYearAndMonth(teacherId, year, month);
+    }
+
+    @Override
     public CalendarAlert createCalendarAlert(CalendarAlert calendarAlert) {
         List<ErrorMessage> errors = new ArrayList<>();
         Locale locale = sessionUser.getLocale();
