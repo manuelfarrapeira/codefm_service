@@ -19,205 +19,225 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CascadeSoftDeleteServiceImplTest {
 
-    @Mock
-    private ClassRepository classRepository;
-    @Mock
-    private SubjectClassRepository subjectClassRepository;
-    @Mock
-    private ScheduleRepository scheduleRepository;
-    @Mock
-    private StudentClassRepository studentClassRepository;
-    @Mock
-    private ExerciseRepository exerciseRepository;
-    @Mock
-    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
-    @Mock
-    private ExerciseDocumentService exerciseDocumentService;
+	@Mock
+	private ClassRepository classRepository;
+	@Mock
+	private SubjectClassRepository subjectClassRepository;
+	@Mock
+	private ScheduleRepository scheduleRepository;
+	@Mock
+	private StudentClassRepository studentClassRepository;
+	@Mock
+	private ExerciseRepository exerciseRepository;
+	@Mock
+	private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
+	@Mock
+	private ExerciseDocumentService exerciseDocumentService;
+	@Mock
+	private StudentAbsenceRepository studentAbsenceRepository;
 
-    @InjectMocks
-    private CascadeSoftDeleteServiceImpl cascadeSoftDeleteService;
+	@InjectMocks
+	private CascadeSoftDeleteServiceImpl cascadeSoftDeleteService;
 
-    @Test
-    void cascadeDeleteChildrenOfSchool_shouldCascadeToClassesAndSoftDeleteThem() {
-        Integer schoolId = 1;
-        Integer classId1 = 10;
-        Integer classId2 = 20;
+	@Test
+	void cascadeDeleteChildrenOfSchool_shouldCascadeToClassesAndSoftDeleteThem() {
+		final Integer schoolId = 1;
+		final Integer classId1 = 10;
+		final Integer classId2 = 20;
 
-        when(classRepository.findActiveIdsBySchoolId(schoolId)).thenReturn(Arrays.asList(classId1, classId2));
-        when(subjectClassRepository.findActiveIdsByClassId(classId1)).thenReturn(Collections.emptyList());
-        when(subjectClassRepository.findActiveIdsByClassId(classId2)).thenReturn(Collections.emptyList());
+		when(this.classRepository.findActiveIdsBySchoolId(schoolId)).thenReturn(Arrays.asList(classId1, classId2));
+		when(this.subjectClassRepository.findActiveIdsByClassId(classId1)).thenReturn(Collections.emptyList());
+		when(this.subjectClassRepository.findActiveIdsByClassId(classId2)).thenReturn(Collections.emptyList());
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(schoolId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(schoolId);
 
-        verify(classRepository).findActiveIdsBySchoolId(schoolId);
-        verify(subjectClassRepository).findActiveIdsByClassId(classId1);
-        verify(subjectClassRepository).softDeleteByClassId(classId1);
-        verify(studentClassRepository).softDeleteByClassId(classId1);
-        verify(scheduleRepository).softDeleteByClassId(classId1);
-        verify(subjectClassRepository).findActiveIdsByClassId(classId2);
-        verify(subjectClassRepository).softDeleteByClassId(classId2);
-        verify(studentClassRepository).softDeleteByClassId(classId2);
-        verify(scheduleRepository).softDeleteByClassId(classId2);
-        verify(classRepository).softDeleteBySchoolId(schoolId);
-    }
+		verify(this.classRepository).findActiveIdsBySchoolId(schoolId);
+		verify(this.subjectClassRepository).findActiveIdsByClassId(classId1);
+		verify(this.subjectClassRepository).softDeleteByClassId(classId1);
+		verify(this.studentAbsenceRepository).hardDeleteByClassId(classId1);
+		verify(this.studentClassRepository).softDeleteByClassId(classId1);
+		verify(this.scheduleRepository).softDeleteByClassId(classId1);
+		verify(this.subjectClassRepository).findActiveIdsByClassId(classId2);
+		verify(this.subjectClassRepository).softDeleteByClassId(classId2);
+		verify(this.studentAbsenceRepository).hardDeleteByClassId(classId2);
+		verify(this.studentClassRepository).softDeleteByClassId(classId2);
+		verify(this.scheduleRepository).softDeleteByClassId(classId2);
+		verify(this.classRepository).softDeleteBySchoolId(schoolId);
+	}
 
-    @Test
-    void cascadeDeleteChildrenOfSchool_shouldDoNothingForClasses_whenSchoolHasNone() {
-        Integer schoolId = 1;
+	@Test
+	void cascadeDeleteChildrenOfSchool_shouldDoNothingForClasses_whenSchoolHasNone() {
+		final Integer schoolId = 1;
 
-        when(classRepository.findActiveIdsBySchoolId(schoolId)).thenReturn(Collections.emptyList());
+		when(this.classRepository.findActiveIdsBySchoolId(schoolId)).thenReturn(Collections.emptyList());
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(schoolId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(schoolId);
 
-        verify(classRepository).findActiveIdsBySchoolId(schoolId);
-        verify(classRepository).softDeleteBySchoolId(schoolId);
-        verifyNoInteractions(subjectClassRepository, studentClassRepository, scheduleRepository,
-                exerciseRepository, exerciseStudentGradeRepository, exerciseDocumentService);
-    }
+		verify(this.classRepository).findActiveIdsBySchoolId(schoolId);
+		verify(this.classRepository).softDeleteBySchoolId(schoolId);
+		verifyNoInteractions(this.subjectClassRepository, this.studentClassRepository, this.scheduleRepository, this.exerciseRepository,
+                this.exerciseStudentGradeRepository, this.exerciseDocumentService, this.studentAbsenceRepository);
+	}
 
-    @Test
-    void cascadeDeleteChildrenOfClass_shouldCascadeToSubjectClassesAndSoftDeleteAll() {
-        Integer classId = 10;
-        Integer subjectClassId1 = 100;
-        Integer subjectClassId2 = 200;
-        List<Integer> exerciseIds = Arrays.asList(1000, 1001);
+	@Test
+	void cascadeDeleteChildrenOfClass_shouldCascadeToSubjectClassesAndSoftDeleteAll() {
+		final Integer classId = 10;
+		final Integer subjectClassId1 = 100;
+		final Integer subjectClassId2 = 200;
+		final List<Integer> exerciseIds = Arrays.asList(1000, 1001);
 
-        when(subjectClassRepository.findActiveIdsByClassId(classId)).thenReturn(Arrays.asList(subjectClassId1, subjectClassId2));
-        when(exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId1))).thenReturn(exerciseIds);
-        when(exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId2))).thenReturn(Collections.emptyList());
+		when(this.subjectClassRepository.findActiveIdsByClassId(classId))
+				.thenReturn(Arrays.asList(subjectClassId1, subjectClassId2));
+		when(this.exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId1))).thenReturn(exerciseIds);
+		when(this.exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId2)))
+				.thenReturn(Collections.emptyList());
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfClass(classId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfClass(classId);
 
-        verify(exerciseStudentGradeRepository).softDeleteByExerciseIds(exerciseIds);
-        verify(exerciseDocumentService).deleteDocumentsByExerciseIds(exerciseIds);
-        verify(exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId1));
-        verify(exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId2));
-        verify(subjectClassRepository).softDeleteByClassId(classId);
-        verify(studentClassRepository).softDeleteByClassId(classId);
-        verify(scheduleRepository).softDeleteByClassId(classId);
-    }
+		verify(this.exerciseStudentGradeRepository).softDeleteByExerciseIds(exerciseIds);
+		verify(this.exerciseDocumentService).deleteDocumentsByExerciseIds(exerciseIds);
+		verify(this.exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId1));
+		verify(this.exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId2));
+		verify(this.subjectClassRepository).softDeleteByClassId(classId);
+		verify(this.studentAbsenceRepository).hardDeleteByClassId(classId);
+		verify(this.studentClassRepository).softDeleteByClassId(classId);
+		verify(this.scheduleRepository).softDeleteByClassId(classId);
+	}
 
-    @Test
-    void cascadeDeleteChildrenOfClass_shouldSoftDeleteChildrenWithoutExercises_whenNoSubjectClasses() {
-        Integer classId = 10;
+	@Test
+	void cascadeDeleteChildrenOfClass_shouldSoftDeleteChildrenWithoutExercises_whenNoSubjectClasses() {
+		final Integer classId = 10;
 
-        when(subjectClassRepository.findActiveIdsByClassId(classId)).thenReturn(Collections.emptyList());
+		when(this.subjectClassRepository.findActiveIdsByClassId(classId)).thenReturn(Collections.emptyList());
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfClass(classId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfClass(classId);
 
-        verify(subjectClassRepository).findActiveIdsByClassId(classId);
-        verify(subjectClassRepository).softDeleteByClassId(classId);
-        verify(studentClassRepository).softDeleteByClassId(classId);
-        verify(scheduleRepository).softDeleteByClassId(classId);
-        verifyNoInteractions(exerciseRepository, exerciseStudentGradeRepository, exerciseDocumentService);
-    }
+		verify(this.subjectClassRepository).findActiveIdsByClassId(classId);
+		verify(this.subjectClassRepository).softDeleteByClassId(classId);
+		verify(this.studentAbsenceRepository).hardDeleteByClassId(classId);
+		verify(this.studentClassRepository).softDeleteByClassId(classId);
+		verify(this.scheduleRepository).softDeleteByClassId(classId);
+		verifyNoInteractions(this.exerciseRepository, this.exerciseStudentGradeRepository, this.exerciseDocumentService);
+	}
 
-    @Test
-    void cascadeDeleteChildrenOfSubjectClass_shouldSoftDeleteExercisesGradesAndDocuments() {
-        Integer subjectClassId = 100;
-        List<Integer> exerciseIds = Arrays.asList(1000, 1001);
+	@Test
+	void cascadeDeleteChildrenOfSubjectClass_shouldSoftDeleteExercisesGradesAndDocuments() {
+		final Integer subjectClassId = 100;
+		final List<Integer> exerciseIds = Arrays.asList(1000, 1001);
 
-        when(exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId))).thenReturn(exerciseIds);
+		when(this.exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId))).thenReturn(exerciseIds);
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfSubjectClass(subjectClassId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSubjectClass(subjectClassId);
 
-        var order = inOrder(exerciseStudentGradeRepository, exerciseDocumentService, exerciseRepository);
-        order.verify(exerciseStudentGradeRepository).softDeleteByExerciseIds(exerciseIds);
-        order.verify(exerciseDocumentService).deleteDocumentsByExerciseIds(exerciseIds);
-        order.verify(exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId));
-    }
+		final var order = inOrder(this.exerciseStudentGradeRepository, this.exerciseDocumentService, this.exerciseRepository,
+                this.studentAbsenceRepository);
+		order.verify(this.exerciseStudentGradeRepository).softDeleteByExerciseIds(exerciseIds);
+		order.verify(this.exerciseDocumentService).deleteDocumentsByExerciseIds(exerciseIds);
+		order.verify(this.exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId));
+		order.verify(this.studentAbsenceRepository).hardDeleteBySubjectClassId(subjectClassId);
+	}
 
-    @Test
-    void cascadeDeleteChildrenOfSubjectClass_shouldOnlySoftDeleteExercises_whenNoExercisesExist() {
-        Integer subjectClassId = 100;
+	@Test
+	void cascadeDeleteChildrenOfSubjectClass_shouldOnlySoftDeleteExercises_whenNoExercisesExist() {
+		final Integer subjectClassId = 100;
 
-        when(exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId))).thenReturn(Collections.emptyList());
+		when(this.exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId)))
+				.thenReturn(Collections.emptyList());
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfSubjectClass(subjectClassId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSubjectClass(subjectClassId);
 
-        verify(exerciseRepository).findActiveIdsBySubjectClassIds(List.of(subjectClassId));
-        verify(exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId));
-        verifyNoInteractions(exerciseStudentGradeRepository, exerciseDocumentService);
-    }
+		verify(this.exerciseRepository).findActiveIdsBySubjectClassIds(List.of(subjectClassId));
+		verify(this.exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId));
+		verify(this.studentAbsenceRepository).hardDeleteBySubjectClassId(subjectClassId);
+		verifyNoInteractions(this.exerciseStudentGradeRepository, this.exerciseDocumentService);
+	}
 
-    @Test
-    void cascadeDeleteChildrenOfSubject_shouldCascadeToSubjectClassesAndSoftDeleteSchedules() {
-        Integer subjectId = 5;
-        Integer subjectClassId1 = 100;
-        Integer subjectClassId2 = 200;
+	@Test
+	void cascadeDeleteChildrenOfSubject_shouldCascadeToSubjectClassesAndSoftDeleteSchedules() {
+		final Integer subjectId = 5;
+		final Integer subjectClassId1 = 100;
+		final Integer subjectClassId2 = 200;
 
-        when(subjectClassRepository.findActiveIdsBySubjectId(subjectId)).thenReturn(Arrays.asList(subjectClassId1, subjectClassId2));
-        when(exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId1))).thenReturn(Collections.emptyList());
-        when(exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId2))).thenReturn(Collections.emptyList());
+		when(this.subjectClassRepository.findActiveIdsBySubjectId(subjectId))
+				.thenReturn(Arrays.asList(subjectClassId1, subjectClassId2));
+		when(this.exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId1)))
+				.thenReturn(Collections.emptyList());
+		when(this.exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId2)))
+				.thenReturn(Collections.emptyList());
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfSubject(subjectId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSubject(subjectId);
 
-        verify(subjectClassRepository).findActiveIdsBySubjectId(subjectId);
-        verify(exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId1));
-        verify(exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId2));
-        verify(subjectClassRepository).softDeleteBySubjectId(subjectId);
-        verify(scheduleRepository).softDeleteBySubjectId(subjectId);
-    }
+		verify(this.subjectClassRepository).findActiveIdsBySubjectId(subjectId);
+		verify(this.exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId1));
+		verify(this.studentAbsenceRepository).hardDeleteBySubjectClassId(subjectClassId1);
+		verify(this.exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId2));
+		verify(this.studentAbsenceRepository).hardDeleteBySubjectClassId(subjectClassId2);
+		verify(this.subjectClassRepository).softDeleteBySubjectId(subjectId);
+		verify(this.scheduleRepository).softDeleteBySubjectId(subjectId);
+	}
 
-    @Test
-    void cascadeDeleteChildrenOfSubject_shouldSoftDeleteSchedules_whenNoSubjectClassesExist() {
-        Integer subjectId = 5;
+	@Test
+	void cascadeDeleteChildrenOfSubject_shouldSoftDeleteSchedules_whenNoSubjectClassesExist() {
+		final Integer subjectId = 5;
 
-        when(subjectClassRepository.findActiveIdsBySubjectId(subjectId)).thenReturn(Collections.emptyList());
+		when(this.subjectClassRepository.findActiveIdsBySubjectId(subjectId)).thenReturn(Collections.emptyList());
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfSubject(subjectId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSubject(subjectId);
 
-        verify(subjectClassRepository).findActiveIdsBySubjectId(subjectId);
-        verify(subjectClassRepository).softDeleteBySubjectId(subjectId);
-        verify(scheduleRepository).softDeleteBySubjectId(subjectId);
-        verifyNoInteractions(exerciseRepository, exerciseStudentGradeRepository, exerciseDocumentService);
-    }
+		verify(this.subjectClassRepository).findActiveIdsBySubjectId(subjectId);
+		verify(this.subjectClassRepository).softDeleteBySubjectId(subjectId);
+		verify(this.scheduleRepository).softDeleteBySubjectId(subjectId);
+		verifyNoInteractions(this.exerciseRepository, this.exerciseStudentGradeRepository, this.exerciseDocumentService,
+                this.studentAbsenceRepository);
+	}
 
-    @Test
-    void cascadeDeleteChildrenOfExercise_shouldSoftDeleteGradesAndDocuments() {
-        Integer exerciseId = 1000;
+	@Test
+	void cascadeDeleteChildrenOfExercise_shouldSoftDeleteGradesAndDocuments() {
+		final Integer exerciseId = 1000;
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfExercise(exerciseId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfExercise(exerciseId);
 
-        var order = inOrder(exerciseStudentGradeRepository, exerciseDocumentService);
-        order.verify(exerciseStudentGradeRepository).softDeleteByExerciseIds(List.of(exerciseId));
-        order.verify(exerciseDocumentService).deleteDocumentsByExerciseIds(List.of(exerciseId));
-    }
+		final var order = inOrder(this.exerciseStudentGradeRepository, this.exerciseDocumentService);
+		order.verify(this.exerciseStudentGradeRepository).softDeleteByExerciseIds(List.of(exerciseId));
+		order.verify(this.exerciseDocumentService).deleteDocumentsByExerciseIds(List.of(exerciseId));
+	}
 
-    @Test
-    void cascadeDeleteChildrenOfStudent_shouldSoftDeleteGradesAndStudentClasses() {
-        Integer studentId = 7;
+	@Test
+	void cascadeDeleteChildrenOfStudent_shouldSoftDeleteGradesAndStudentClasses() {
+		final Integer studentId = 7;
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfStudent(studentId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfStudent(studentId);
 
-        var order = inOrder(exerciseStudentGradeRepository, studentClassRepository);
-        order.verify(exerciseStudentGradeRepository).softDeleteByStudentId(studentId);
-        order.verify(studentClassRepository).softDeleteByStudentId(studentId);
-    }
+		final var order = inOrder(this.exerciseStudentGradeRepository, this.studentAbsenceRepository, this.studentClassRepository);
+		order.verify(this.exerciseStudentGradeRepository).softDeleteByStudentId(studentId);
+		order.verify(this.studentAbsenceRepository).hardDeleteByStudentId(studentId);
+		order.verify(this.studentClassRepository).softDeleteByStudentId(studentId);
+	}
 
-    @Test
-    void cascadeDeleteChildrenOfStudentClass_shouldSoftDeleteGradesByStudentIdAndClassId_whenStudentClassExists() {
-        Integer studentClassId = 50;
-        StudentClass studentClass = StudentClass.builder().id(studentClassId).studentId(7).classId(10).build();
+	@Test
+	void cascadeDeleteChildrenOfStudentClass_shouldSoftDeleteGradesByStudentIdAndClassId_whenStudentClassExists() {
+		final Integer studentClassId = 50;
+		final StudentClass studentClass = StudentClass.builder().id(studentClassId).studentId(7).classId(10).build();
 
-        when(studentClassRepository.findById(studentClassId)).thenReturn(Optional.of(studentClass));
+		when(this.studentClassRepository.findById(studentClassId)).thenReturn(Optional.of(studentClass));
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfStudentClass(studentClassId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfStudentClass(studentClassId);
 
-        verify(studentClassRepository).findById(studentClassId);
-        verify(exerciseStudentGradeRepository).softDeleteByStudentIdAndClassId(7, 10);
-    }
+		verify(this.studentClassRepository).findById(studentClassId);
+		verify(this.exerciseStudentGradeRepository).softDeleteByStudentIdAndClassId(7, 10);
+		verify(this.studentAbsenceRepository).deleteByStudentClassId(studentClassId);
+	}
 
-    @Test
-    void cascadeDeleteChildrenOfStudentClass_shouldDoNothing_whenStudentClassDoesNotExist() {
-        Integer studentClassId = 999;
+	@Test
+	void cascadeDeleteChildrenOfStudentClass_shouldDoNothing_whenStudentClassDoesNotExist() {
+		final Integer studentClassId = 999;
 
-        when(studentClassRepository.findById(studentClassId)).thenReturn(Optional.empty());
+		when(this.studentClassRepository.findById(studentClassId)).thenReturn(Optional.empty());
 
-        cascadeSoftDeleteService.cascadeDeleteChildrenOfStudentClass(studentClassId);
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfStudentClass(studentClassId);
 
-        verify(studentClassRepository).findById(studentClassId);
-        verifyNoInteractions(exerciseStudentGradeRepository);
-    }
+		verify(this.studentClassRepository).findById(studentClassId);
+		verifyNoInteractions(this.exerciseStudentGradeRepository);
+		verify(this.studentAbsenceRepository).deleteByStudentClassId(studentClassId);
+	}
 }
-

@@ -1,0 +1,280 @@
+{
+  "info": {
+    "name": "StudentAbsences",
+    "description": "Endpoints for managing student absences in the Teacher Notebook module.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Absences (with subject)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"studentId\": 1,\n    \"subjectId\": 1,\n    \"date\": \"15/03/2026\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/absences",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "absences"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Creates absence records for a student in a class. If subjectId is provided, creates a single absence for that subject. If subjectId is omitted, creates absences for all subjects scheduled on that day."
+      }
+    },
+    {
+      "name": "Create Absences (all subjects of the day)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"studentId\": 1,\n    \"date\": \"15/03/2026\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/absences",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "absences"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Creates absences for all subjects that have a schedule on the given day. No subjectId means all scheduled subjects."
+      }
+    },
+    {
+      "name": "Get Absences by Student",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/absences?studentId=1",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "absences"
+          ],
+          "query": [
+            {
+              "key": "studentId",
+              "value": "1"
+            }
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Get all absences for a student in a class."
+      }
+    },
+    {
+      "name": "Get Absences by Date",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/absences?date=15/03/2026",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "absences"
+          ],
+          "query": [
+            {
+              "key": "date",
+              "value": "15/03/2026"
+            }
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Get all absences for a class on a specific date."
+      }
+    },
+    {
+      "name": "Get Absences by Student and Date",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/absences?studentId=1&date=15/03/2026",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "absences"
+          ],
+          "query": [
+            {
+              "key": "studentId",
+              "value": "1"
+            },
+            {
+              "key": "date",
+              "value": "15/03/2026"
+            }
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Get absences for a specific student on a specific date in a class."
+      }
+    },
+    {
+      "name": "Delete Absence by ID",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/absences/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "absences",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Delete a single absence record by its ID."
+      }
+    },
+    {
+      "name": "Delete Absences by Student and Date",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/absences?studentId=1&date=15/03/2026",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "absences"
+          ],
+          "query": [
+            {
+              "key": "studentId",
+              "value": "1"
+            },
+            {
+              "key": "date",
+              "value": "15/03/2026"
+            }
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Delete all absence records for a student in a class on a specific date."
+      }
+    }
+  ]
+}

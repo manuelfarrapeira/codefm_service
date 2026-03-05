@@ -2309,6 +2309,212 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/classes/{classId}/absences:
+    post:
+      tags:
+        - TeacherNoteBookStudentAbsences
+      operationId: createAbsences
+      summary: Create student absences
+      description: Creates one or more absence records for a student in a class. If subjectId is provided, creates a single absence for that subject. If subjectId is omitted, creates absences for all subjects scheduled on the given date.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentAbsenceRequestDTO'
+      responses:
+        '201':
+          description: Absences created successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentAbsenceDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Class does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    get:
+      tags:
+        - TeacherNoteBookStudentAbsences
+      operationId: getAbsences
+      summary: Get student absences for a class
+      description: Retrieves absences filtered by class and at least one of studentId or date. Returns enriched data with student and subject names.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - name: studentId
+          in: query
+          required: false
+          description: Filter by student ID
+          schema:
+            type: integer
+            format: int32
+        - name: date
+          in: query
+          required: false
+          description: Filter by date in format dd/MM/yyyy
+          schema:
+            type: string
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: List of absences
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentAbsenceDTO'
+        '400':
+          description: Validation error - at least studentId or date required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Class does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookStudentAbsences
+      operationId: deleteAbsencesByStudentAndDate
+      summary: Delete all absences for a student in a class on a specific date
+      description: Deletes all absence records for the given student, class, and date combination.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - name: studentId
+          in: query
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - name: date
+          in: query
+          required: true
+          description: The date in format dd/MM/yyyy
+          schema:
+            type: string
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Absences successfully deleted
+        '403':
+          description: Forbidden - Class does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/absences/{id}:
+    delete:
+      tags:
+        - TeacherNoteBookStudentAbsences
+      operationId: deleteAbsence
+      summary: Delete a single absence by ID
+      description: Permanently deletes an absence record by its ID. Only the owning teacher can delete the absence.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the absence to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Absence successfully deleted
+        '404':
+          description: Not Found - Absence does not exist or does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
 components:
   schemas:
     ErrorResponseDTO:
@@ -2764,3 +2970,43 @@ components:
           type: 'string'
           description: 'End time in format HH:mm'
           example: '10:00'
+    StudentAbsenceDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+          format: 'int32'
+        studentId:
+          type: 'integer'
+          format: 'int32'
+        studentName:
+          type: 'string'
+        studentSurnames:
+          type: 'string'
+        classId:
+          type: 'integer'
+          format: 'int32'
+        subjectId:
+          type: 'integer'
+          format: 'int32'
+        subjectName:
+          type: 'string'
+        absenceDate:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2026'
+    StudentAbsenceRequestDTO:
+      type: 'object'
+      required:
+        - studentId
+      properties:
+        studentId:
+          type: 'integer'
+          format: 'int32'
+        subjectId:
+          type: 'integer'
+          format: 'int32'
+        date:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2026'
