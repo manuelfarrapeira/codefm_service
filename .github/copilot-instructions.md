@@ -2,6 +2,48 @@
 
 Este documento proporciona las directrices que debo seguir cada vez que trabajes conmigo en el proyecto CodeFM.
 
+## Tech Stack
+
+- **Java 17** / **Spring Boot 3.2.3** / **Maven** (multi-module)
+- **MariaDB** (JPA/Hibernate) / **Keycloak** (OAuth2 JWT) / **Apache Kafka** (Avro + Schema Registry)
+- **Lombok** / **MapStruct** / **OpenAPI 3** (code generation)
+- **JUnit 5** + **Mockito** (unit) / **Karate** (integration) / **Gatling** (stress)
+- **JaCoCo** (coverage) / **SonarQube** (static analysis)
+
+## Build, Test & Compile Commands
+
+```bash
+# Compile all modules (required after creating/modifying MapStruct mappers or OpenAPI specs)
+mvn clean compile
+
+# Run all unit tests
+mvn test
+
+# Run tests + generate coverage report
+mvn clean verify jacoco:report
+
+# Run tests for a single module
+mvn test -pl codefm-application
+mvn test -pl codefm-infrastructure
+mvn test -pl codefm-api
+
+# Run a single test class
+mvn test -pl codefm-application -Dtest=SchoolServiceImplTest
+
+# Run a single test method
+mvn test -pl codefm-application -Dtest=SchoolServiceImplTest#softDeleteSchool_shouldCallRepository_whenSchoolExistsAndOwnedByTeacher
+
+# Run Karate integration tests (requires running application)
+cd karate-test
+mvn test -Dkarate.options="classpath:features/teacher-notebook/schools/getschools.feature"
+
+# Run Gatling stress tests
+cd gatling-test
+mvn gatling:test -DbaseUrl=http://localhost:8081 -Dusername=user -Dpassword=pass
+```
+
+---
+
 ## Reglas Generales de Código
 
 **CRÍTICO - PROHIBICIÓN ABSOLUTA DE COMENTARIOS EN EL CÓDIGO**:
@@ -16,6 +58,26 @@ Este documento proporciona las directrices que debo seguir cada vez que trabajes
   especifica más adelante
 - Si necesitas separar lógicamente bloques de código, usa líneas en blanco, NO comentarios
 - Los tests deben ser legibles por su estructura y nombres de métodos, NO por comentarios
+
+**OBLIGATORIO - USO DE `this.` EN ACCESOS A INSTANCIA**:
+
+- **SIEMPRE** usar `this.` para acceder a campos de instancia (ej: `this.schoolRepository`, `this.sessionUser`,
+  `this.messageSource`)
+- **SIEMPRE** usar `this.` para invocar métodos privados de la misma clase (ej: `this.validateClassOwnership(...)`,
+  `this.getTeacherId()`)
+- Esto mejora la legibilidad al distinguir claramente entre variables locales y campos de instancia
+
+**OBLIGATORIO - USO DEL MODIFICADOR `final` EN VARIABLES LOCALES**:
+
+- **SIEMPRE** declarar las variables locales como `final` cuando no se reasignan después de su inicialización
+- Esto incluye: variables de método, variables dentro de bloques `if`/`else`, variables en lambdas, etc.
+- Ejemplo: `final Integer teacherId = this.sessionUser.getParameter(SessionParameter.TEACHER_ID);`
+- Ejemplo: `final Locale locale = this.sessionUser.getLocale();`
+- Ejemplo: `final List<ErrorMessage> errors = new ArrayList<>();`
+- Ejemplo: `final String message = this.messageSource.getMessage(MessageKeys.SCHOOL_NOT_FOUND, null, locale);`
+- Si una variable se reasigna condicionalmente (ej: en ramas `if`/`else`), se declara `final` sin inicializar y se
+  asigna en cada rama
+- Los parámetros de métodos NO llevan `final` (Lombok `@RequiredArgsConstructor` ya gestiona la inmutabilidad de campos)
 
 ---
 
@@ -1292,7 +1354,7 @@ Los mensajes de error de validación de asignaturas deben mostrar el **nombre de
 ```java
 var subject = subjectRepository.findById(subjectId);
 String subjectName = subject.map(Subject::getName).orElse(String.valueOf(subjectId));
-String message = messageSource.getMessage(MessageKeys.SUBJECT_CLASS_ALREADY_EXISTS, new Object[]{subjectName}, locale);
+String message = messageSource.getMessage(MessageKeys.SUBJECT_CLASS_ALREADY_EXISTS, new Object[]{this.subjectName}, locale);
 ```
 
 ### Tests de Karate para SubjectClass
@@ -1317,7 +1379,7 @@ Ubicación: `karate-test/src/test/resources/features/teacher-notebook/subject-cl
 
 @Karate.Test
 Karate testNombreDescriptivo() {
-    return Karate.run("features/ruta/al/archivo").relativeTo(getClass());
+    return Karate.run("features/ruta/al/archivo").relativeTo(this.getClass());
 }
 ```
 
@@ -1330,7 +1392,7 @@ debes añadir el siguiente método a `IndividualKarateTestRunner`:
 
 @Karate.Test
 Karate testTeacherNotebookCreateGrades() {
-    return Karate.run("features/teacher-notebook/grades/creategrades").relativeTo(getClass());
+    return Karate.run("features/teacher-notebook/grades/creategrades").relativeTo(this.getClass());
 }
 ```
 
