@@ -53,33 +53,33 @@ class StudentAbsenceRepositoryImplTest {
 
 	@Test
 	void findByStudentClassId_shouldReturnEnrichedAbsences() {
-		LocalDate date = LocalDate.of(2025, 1, 15);
+		final LocalDate date = LocalDate.of(2025, 1, 15);
 
-		StudentAbsenceEntity entity = new StudentAbsenceEntity(1, STUDENT_CLASS_ID, SUBJECT_ID, date);
-		StudentAbsence absence = StudentAbsence.builder().id(1).studentClassId(STUDENT_CLASS_ID).subjectId(SUBJECT_ID)
-				.absenceDate(date).build();
+		final StudentAbsenceEntity entity = new StudentAbsenceEntity(1, STUDENT_CLASS_ID, SUBJECT_ID, date);
+		final StudentAbsence absence = StudentAbsence.builder().id(1).studentClassId(STUDENT_CLASS_ID)
+				.subjectId(SUBJECT_ID).absenceDate(date).build();
 
-		StudentClassEntity studentClassEntity = new StudentClassEntity();
+		final StudentClassEntity studentClassEntity = new StudentClassEntity();
 		studentClassEntity.setId(STUDENT_CLASS_ID);
 		studentClassEntity.setStudentId(STUDENT_ID);
 		studentClassEntity.setClassId(CLASS_ID);
 
-		StudentEntity studentEntity = new StudentEntity();
+		final StudentEntity studentEntity = new StudentEntity();
 		studentEntity.setId(STUDENT_ID);
 		studentEntity.setName("Juan");
 		studentEntity.setSurnames("García López");
 
-		SubjectEntity subjectEntity = new SubjectEntity();
+		final SubjectEntity subjectEntity = new SubjectEntity();
 		subjectEntity.setId(SUBJECT_ID);
 		subjectEntity.setName("Matemáticas");
 
-		when(studentAbsenceJPARepository.findByStudentClassId(STUDENT_CLASS_ID)).thenReturn(List.of(entity));
-		when(studentAbsenceMapper.toModelList(List.of(entity))).thenReturn(List.of(absence));
-		when(studentClassJPARepository.findAllById(any())).thenReturn(List.of(studentClassEntity));
-		when(studentJPARepository.findAllById(any())).thenReturn(List.of(studentEntity));
-		when(subjectJPARepository.findAllById(any())).thenReturn(List.of(subjectEntity));
+		when(this.studentAbsenceJPARepository.findByStudentClassId(STUDENT_CLASS_ID)).thenReturn(List.of(entity));
+		when(this.studentAbsenceMapper.toModelList(List.of(entity))).thenReturn(List.of(absence));
+		when(this.studentClassJPARepository.findAllById(any())).thenReturn(List.of(studentClassEntity));
+		when(this.studentJPARepository.findAllById(any())).thenReturn(List.of(studentEntity));
+		when(this.subjectJPARepository.findAllById(any())).thenReturn(List.of(subjectEntity));
 
-		List<StudentAbsence> result = studentAbsenceRepository.findByStudentClassId(STUDENT_CLASS_ID);
+		final List<StudentAbsence> result = this.studentAbsenceRepository.findByStudentClassId(STUDENT_CLASS_ID);
 
 		assertEquals(1, result.size());
 		assertEquals(STUDENT_ID, result.get(0).getStudentId());
@@ -87,38 +87,38 @@ class StudentAbsenceRepositoryImplTest {
 		assertEquals("Juan", result.get(0).getStudentName());
 		assertEquals("García López", result.get(0).getStudentSurnames());
 		assertEquals("Matemáticas", result.get(0).getSubjectName());
-		verify(studentAbsenceJPARepository).findByStudentClassId(STUDENT_CLASS_ID);
+		verify(this.studentAbsenceJPARepository).findByStudentClassId(STUDENT_CLASS_ID);
 	}
 
 	@Test
 	void findByClassIdAndDate_shouldReturnEnrichedAbsences() {
-		LocalDate date = LocalDate.of(2025, 3, 10);
+		final LocalDate date = LocalDate.of(2025, 3, 10);
 
-		StudentAbsenceEntity entity = new StudentAbsenceEntity(2, STUDENT_CLASS_ID, SUBJECT_ID, date);
-		StudentAbsence absence = StudentAbsence.builder().id(2).studentClassId(STUDENT_CLASS_ID).subjectId(SUBJECT_ID)
-				.absenceDate(date).build();
+		final StudentAbsenceEntity entity = new StudentAbsenceEntity(2, STUDENT_CLASS_ID, SUBJECT_ID, date);
+		final StudentAbsence absence = StudentAbsence.builder().id(2).studentClassId(STUDENT_CLASS_ID)
+				.subjectId(SUBJECT_ID).absenceDate(date).build();
 
-		StudentClassEntity studentClassEntity = new StudentClassEntity();
+		final StudentClassEntity studentClassEntity = new StudentClassEntity();
 		studentClassEntity.setId(STUDENT_CLASS_ID);
 		studentClassEntity.setStudentId(STUDENT_ID);
 		studentClassEntity.setClassId(CLASS_ID);
 
-		StudentEntity studentEntity = new StudentEntity();
+		final StudentEntity studentEntity = new StudentEntity();
 		studentEntity.setId(STUDENT_ID);
 		studentEntity.setName("Ana");
 		studentEntity.setSurnames("Martínez Ruiz");
 
-		SubjectEntity subjectEntity = new SubjectEntity();
+		final SubjectEntity subjectEntity = new SubjectEntity();
 		subjectEntity.setId(SUBJECT_ID);
 		subjectEntity.setName("Lengua");
 
-		when(studentAbsenceJPARepository.findByClassIdAndAbsenceDate(CLASS_ID, date)).thenReturn(List.of(entity));
-		when(studentAbsenceMapper.toModelList(List.of(entity))).thenReturn(List.of(absence));
-		when(studentClassJPARepository.findAllById(any())).thenReturn(List.of(studentClassEntity));
-		when(studentJPARepository.findAllById(any())).thenReturn(List.of(studentEntity));
-		when(subjectJPARepository.findAllById(any())).thenReturn(List.of(subjectEntity));
+		when(this.studentAbsenceJPARepository.findByClassIdAndAbsenceDate(CLASS_ID, date)).thenReturn(List.of(entity));
+		when(this.studentAbsenceMapper.toModelList(List.of(entity))).thenReturn(List.of(absence));
+		when(this.studentClassJPARepository.findAllById(any())).thenReturn(List.of(studentClassEntity));
+		when(this.studentJPARepository.findAllById(any())).thenReturn(List.of(studentEntity));
+		when(this.subjectJPARepository.findAllById(any())).thenReturn(List.of(subjectEntity));
 
-		List<StudentAbsence> result = studentAbsenceRepository.findByClassIdAndDate(CLASS_ID, date);
+		final List<StudentAbsence> result = this.studentAbsenceRepository.findByClassIdAndDate(CLASS_ID, date);
 
 		assertEquals(1, result.size());
 		assertEquals(STUDENT_ID, result.get(0).getStudentId());
@@ -126,76 +126,76 @@ class StudentAbsenceRepositoryImplTest {
 		assertEquals("Ana", result.get(0).getStudentName());
 		assertEquals("Martínez Ruiz", result.get(0).getStudentSurnames());
 		assertEquals("Lengua", result.get(0).getSubjectName());
-		verify(studentAbsenceJPARepository).findByClassIdAndAbsenceDate(CLASS_ID, date);
+		verify(this.studentAbsenceJPARepository).findByClassIdAndAbsenceDate(CLASS_ID, date);
 	}
 
 	@Test
 	void findByIdAndTeacherId_shouldReturnAbsence_whenFound() {
-		Integer id = 1;
-		Integer teacherId = 5;
-		StudentAbsenceEntity entity = new StudentAbsenceEntity(id, STUDENT_CLASS_ID, SUBJECT_ID,
+		final Integer id = 1;
+		final Integer teacherId = 5;
+		final StudentAbsenceEntity entity = new StudentAbsenceEntity(id, STUDENT_CLASS_ID, SUBJECT_ID,
 				LocalDate.of(2025, 2, 1));
-		StudentAbsence absence = StudentAbsence.builder().id(id).studentClassId(STUDENT_CLASS_ID).subjectId(SUBJECT_ID)
-				.absenceDate(LocalDate.of(2025, 2, 1)).build();
+		final StudentAbsence absence = StudentAbsence.builder().id(id).studentClassId(STUDENT_CLASS_ID)
+				.subjectId(SUBJECT_ID).absenceDate(LocalDate.of(2025, 2, 1)).build();
 
-		when(studentAbsenceJPARepository.findByIdAndTeacherId(id, teacherId)).thenReturn(Optional.of(entity));
-		when(studentAbsenceMapper.toModel(entity)).thenReturn(absence);
+		when(this.studentAbsenceJPARepository.findByIdAndTeacherId(id, teacherId)).thenReturn(Optional.of(entity));
+		when(this.studentAbsenceMapper.toModel(entity)).thenReturn(absence);
 
-		Optional<StudentAbsence> result = studentAbsenceRepository.findByIdAndTeacherId(id, teacherId);
+		final Optional<StudentAbsence> result = this.studentAbsenceRepository.findByIdAndTeacherId(id, teacherId);
 
 		assertTrue(result.isPresent());
 		assertEquals(id, result.get().getId());
-		verify(studentAbsenceJPARepository).findByIdAndTeacherId(id, teacherId);
-		verify(studentAbsenceMapper).toModel(entity);
+		verify(this.studentAbsenceJPARepository).findByIdAndTeacherId(id, teacherId);
+		verify(this.studentAbsenceMapper).toModel(entity);
 	}
 
 	@Test
 	void findByIdAndTeacherId_shouldReturnEmpty_whenNotFound() {
-		Integer id = 999;
-		Integer teacherId = 5;
+		final Integer id = 999;
+		final Integer teacherId = 5;
 
-		when(studentAbsenceJPARepository.findByIdAndTeacherId(id, teacherId)).thenReturn(Optional.empty());
+		when(this.studentAbsenceJPARepository.findByIdAndTeacherId(id, teacherId)).thenReturn(Optional.empty());
 
-		Optional<StudentAbsence> result = studentAbsenceRepository.findByIdAndTeacherId(id, teacherId);
+		final Optional<StudentAbsence> result = this.studentAbsenceRepository.findByIdAndTeacherId(id, teacherId);
 
 		assertTrue(result.isEmpty());
-		verify(studentAbsenceJPARepository).findByIdAndTeacherId(id, teacherId);
-		verifyNoInteractions(studentAbsenceMapper);
+		verify(this.studentAbsenceJPARepository).findByIdAndTeacherId(id, teacherId);
+		verifyNoInteractions(this.studentAbsenceMapper);
 	}
 
 	@Test
 	void saveAll_shouldSaveAndEnrich() {
-		LocalDate date = LocalDate.of(2025, 4, 5);
+		final LocalDate date = LocalDate.of(2025, 4, 5);
 
-		StudentAbsence inputAbsence = StudentAbsence.builder().studentClassId(STUDENT_CLASS_ID).subjectId(SUBJECT_ID)
-				.absenceDate(date).build();
-		StudentAbsenceEntity inputEntity = new StudentAbsenceEntity(null, STUDENT_CLASS_ID, SUBJECT_ID, date);
-		StudentAbsenceEntity savedEntity = new StudentAbsenceEntity(3, STUDENT_CLASS_ID, SUBJECT_ID, date);
-		StudentAbsence mappedAbsence = StudentAbsence.builder().id(3).studentClassId(STUDENT_CLASS_ID)
+		final StudentAbsence inputAbsence = StudentAbsence.builder().studentClassId(STUDENT_CLASS_ID)
+				.subjectId(SUBJECT_ID).absenceDate(date).build();
+		final StudentAbsenceEntity inputEntity = new StudentAbsenceEntity(null, STUDENT_CLASS_ID, SUBJECT_ID, date);
+		final StudentAbsenceEntity savedEntity = new StudentAbsenceEntity(3, STUDENT_CLASS_ID, SUBJECT_ID, date);
+		final StudentAbsence mappedAbsence = StudentAbsence.builder().id(3).studentClassId(STUDENT_CLASS_ID)
 				.subjectId(SUBJECT_ID).absenceDate(date).build();
 
-		StudentClassEntity studentClassEntity = new StudentClassEntity();
+		final StudentClassEntity studentClassEntity = new StudentClassEntity();
 		studentClassEntity.setId(STUDENT_CLASS_ID);
 		studentClassEntity.setStudentId(STUDENT_ID);
 		studentClassEntity.setClassId(CLASS_ID);
 
-		StudentEntity studentEntity = new StudentEntity();
+		final StudentEntity studentEntity = new StudentEntity();
 		studentEntity.setId(STUDENT_ID);
 		studentEntity.setName("Pedro");
 		studentEntity.setSurnames("López Sánchez");
 
-		SubjectEntity subjectEntity = new SubjectEntity();
+		final SubjectEntity subjectEntity = new SubjectEntity();
 		subjectEntity.setId(SUBJECT_ID);
 		subjectEntity.setName("Ciencias");
 
-		when(studentAbsenceMapper.toEntityList(List.of(inputAbsence))).thenReturn(List.of(inputEntity));
-		when(studentAbsenceJPARepository.saveAll(List.of(inputEntity))).thenReturn(List.of(savedEntity));
-		when(studentAbsenceMapper.toModelList(List.of(savedEntity))).thenReturn(List.of(mappedAbsence));
-		when(studentClassJPARepository.findAllById(any())).thenReturn(List.of(studentClassEntity));
-		when(studentJPARepository.findAllById(any())).thenReturn(List.of(studentEntity));
-		when(subjectJPARepository.findAllById(any())).thenReturn(List.of(subjectEntity));
+		when(this.studentAbsenceMapper.toEntityList(List.of(inputAbsence))).thenReturn(List.of(inputEntity));
+		when(this.studentAbsenceJPARepository.saveAll(List.of(inputEntity))).thenReturn(List.of(savedEntity));
+		when(this.studentAbsenceMapper.toModelList(List.of(savedEntity))).thenReturn(List.of(mappedAbsence));
+		when(this.studentClassJPARepository.findAllById(any())).thenReturn(List.of(studentClassEntity));
+		when(this.studentJPARepository.findAllById(any())).thenReturn(List.of(studentEntity));
+		when(this.subjectJPARepository.findAllById(any())).thenReturn(List.of(subjectEntity));
 
-		List<StudentAbsence> result = studentAbsenceRepository.saveAll(List.of(inputAbsence));
+		final List<StudentAbsence> result = this.studentAbsenceRepository.saveAll(List.of(inputAbsence));
 
 		assertEquals(1, result.size());
 		assertEquals(3, result.get(0).getId());
@@ -204,39 +204,39 @@ class StudentAbsenceRepositoryImplTest {
 		assertEquals("Pedro", result.get(0).getStudentName());
 		assertEquals("López Sánchez", result.get(0).getStudentSurnames());
 		assertEquals("Ciencias", result.get(0).getSubjectName());
-		verify(studentAbsenceJPARepository).saveAll(List.of(inputEntity));
+		verify(this.studentAbsenceJPARepository).saveAll(List.of(inputEntity));
 	}
 
 	@Test
 	void deleteById_shouldDelegate() {
-		Integer id = 1;
+		final Integer id = 1;
 
-		studentAbsenceRepository.deleteById(id);
+		this.studentAbsenceRepository.deleteById(id);
 
-		verify(studentAbsenceJPARepository).deleteById(id);
+		verify(this.studentAbsenceJPARepository).deleteById(id);
 	}
 
 	@Test
 	void deleteByStudentClassIdAndDate_shouldDelegate() {
-		LocalDate date = LocalDate.of(2025, 5, 20);
+		final LocalDate date = LocalDate.of(2025, 5, 20);
 
-		studentAbsenceRepository.deleteByStudentClassIdAndDate(STUDENT_CLASS_ID, date);
+		this.studentAbsenceRepository.deleteByStudentClassIdAndDate(STUDENT_CLASS_ID, date);
 
-		verify(studentAbsenceJPARepository).deleteByStudentClassIdAndAbsenceDate(STUDENT_CLASS_ID, date);
+		verify(this.studentAbsenceJPARepository).deleteByStudentClassIdAndAbsenceDate(STUDENT_CLASS_ID, date);
 	}
 
 	@Test
 	void existsByStudentClassIdAndSubjectIdAndDate_shouldDelegate() {
-		LocalDate date = LocalDate.of(2025, 6, 1);
+		final LocalDate date = LocalDate.of(2025, 6, 1);
 
-		when(studentAbsenceJPARepository.existsByStudentClassIdAndSubjectIdAndAbsenceDate(STUDENT_CLASS_ID, SUBJECT_ID,
-				date)).thenReturn(true);
+		when(this.studentAbsenceJPARepository.existsByStudentClassIdAndSubjectIdAndAbsenceDate(STUDENT_CLASS_ID,
+				SUBJECT_ID, date)).thenReturn(true);
 
-		boolean result = studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID,
+		final boolean result = this.studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID,
 				SUBJECT_ID, date);
 
 		assertTrue(result);
-		verify(studentAbsenceJPARepository).existsByStudentClassIdAndSubjectIdAndAbsenceDate(STUDENT_CLASS_ID,
+		verify(this.studentAbsenceJPARepository).existsByStudentClassIdAndSubjectIdAndAbsenceDate(STUDENT_CLASS_ID,
 				SUBJECT_ID, date);
 	}
 }
