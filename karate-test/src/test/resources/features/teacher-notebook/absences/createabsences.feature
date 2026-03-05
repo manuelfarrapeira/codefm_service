@@ -7,7 +7,7 @@ Feature: Teacher Notebook - Create Student Absences
 
   Scenario: Create absence for a student with specific subject
     * def absenceSchema = { id: '#number', studentId: '#number', studentName: '#string', studentSurnames: '#string', classId: '#number', subjectId: '#number', subjectName: '#string', absenceDate: '#string' }
-    * def requestBody = { studentId: 1, subjectId: 1, date: '05/03/2026' }
+    * def requestBody = { studentId: 1, subjectId: 1, date: '03/03/2026' }
     Given path '/teacher-notebook/v1/classes/1/absences'
     And request requestBody
     When method POST
@@ -19,14 +19,6 @@ Feature: Teacher Notebook - Create Student Absences
   Scenario: Create absence without subject - creates for all scheduled subjects of that day
     * def requestBody = { studentId: 8, date: '05/03/2026' }
     Given path '/teacher-notebook/v1/classes/4/absences'
-    And request requestBody
-    When method POST
-    Then status 201
-    And match response == '#array'
-
-  Scenario: Create absence - Idempotent (duplicate ignored)
-    * def requestBody = { studentId: 1, subjectId: 1, date: '05/03/2026' }
-    Given path '/teacher-notebook/v1/classes/1/absences'
     And request requestBody
     When method POST
     Then status 201

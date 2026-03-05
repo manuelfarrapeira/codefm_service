@@ -7,8 +7,8 @@ Feature: Teacher Notebook - Get Student Absences
 
   Scenario: Get absences by class and student
     * def absenceSchema = { id: '#number', studentId: '#number', studentName: '#string', studentSurnames: '#string', classId: '#number', subjectId: '#number', subjectName: '#string', absenceDate: '#string' }
-    Given path '/teacher-notebook/v1/classes/1/absences'
-    And param studentId = 1
+    Given path '/teacher-notebook/v1/classes/4/absences'
+    And param studentId = 8
     When method GET
     Then status 200
     And match response == '#array'
@@ -31,7 +31,7 @@ Feature: Teacher Notebook - Get Student Absences
 
   Scenario: Get all absences by class (no filters)
     * def absenceSchema = { id: '#number', studentId: '#number', studentName: '#string', studentSurnames: '#string', classId: '#number', subjectId: '#number', subjectName: '#string', absenceDate: '#string' }
-    Given path '/teacher-notebook/v1/classes/1/absences'
+    Given path '/teacher-notebook/v1/classes/4/absences'
     When method GET
     Then status 200
     And match response == '#array'
