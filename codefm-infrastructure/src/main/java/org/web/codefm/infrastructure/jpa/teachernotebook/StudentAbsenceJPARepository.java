@@ -35,4 +35,28 @@ public interface StudentAbsenceJPARepository extends JpaRepository<StudentAbsenc
 	@Modifying
 	@Transactional
 	void deleteByStudentClassIdAndAbsenceDate(Integer studentClassId, LocalDate absenceDate);
+
+	@Modifying
+	@Transactional
+	void deleteByStudentClassId(Integer studentClassId);
+
+	@Modifying
+	@Transactional
+	@Query("DELETE FROM StudentAbsenceEntity sa WHERE sa.studentClassId IN "
+			+ "(SELECT sc.id FROM StudentClassEntity sc WHERE sc.classId = :classId)")
+	void hardDeleteByClassId(@Param("classId") Integer classId);
+
+	@Modifying
+	@Transactional
+	@Query("DELETE FROM StudentAbsenceEntity sa WHERE sa.studentClassId IN "
+			+ "(SELECT sc.id FROM StudentClassEntity sc WHERE sc.studentId = :studentId)")
+	void hardDeleteByStudentId(@Param("studentId") Integer studentId);
+
+	@Modifying
+	@Transactional
+	@Query("DELETE FROM StudentAbsenceEntity sa "
+			+ "WHERE sa.subjectId = (SELECT scc.subjectId FROM SubjectClassEntity scc WHERE scc.id = :subjectClassId) "
+			+ "AND sa.studentClassId IN " + "(SELECT sc.id FROM StudentClassEntity sc "
+			+ "WHERE sc.classId = (SELECT scc2.classId FROM SubjectClassEntity scc2 WHERE scc2.id = :subjectClassId))")
+	void hardDeleteBySubjectClassId(@Param("subjectClassId") Integer subjectClassId);
 }

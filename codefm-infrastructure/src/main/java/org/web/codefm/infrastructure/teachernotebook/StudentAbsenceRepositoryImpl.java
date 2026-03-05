@@ -91,6 +91,26 @@ public class StudentAbsenceRepositoryImpl implements StudentAbsenceRepository {
 				subjectId, date);
 	}
 
+	@Override
+	public void deleteByStudentClassId(Integer studentClassId) {
+		this.studentAbsenceJPARepository.deleteByStudentClassId(studentClassId);
+	}
+
+	@Override
+	public void hardDeleteByClassId(Integer classId) {
+		this.studentAbsenceJPARepository.hardDeleteByClassId(classId);
+	}
+
+	@Override
+	public void hardDeleteByStudentId(Integer studentId) {
+		this.studentAbsenceJPARepository.hardDeleteByStudentId(studentId);
+	}
+
+	@Override
+	public void hardDeleteBySubjectClassId(Integer subjectClassId) {
+		this.studentAbsenceJPARepository.hardDeleteBySubjectClassId(subjectClassId);
+	}
+
 	private void enrichWithDetails(List<StudentAbsence> absences) {
 		if (absences.isEmpty()) {
 			return;

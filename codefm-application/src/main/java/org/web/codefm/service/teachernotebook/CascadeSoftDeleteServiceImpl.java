@@ -14,73 +14,76 @@ import java.util.List;
 @Transactional
 public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 
-    private final ClassRepository classRepository;
-    private final SubjectClassRepository subjectClassRepository;
-    private final ScheduleRepository scheduleRepository;
-    private final StudentClassRepository studentClassRepository;
-    private final ExerciseRepository exerciseRepository;
-    private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
-    private final ExerciseDocumentService exerciseDocumentService;
+	private final ClassRepository classRepository;
+	private final SubjectClassRepository subjectClassRepository;
+	private final ScheduleRepository scheduleRepository;
+	private final StudentClassRepository studentClassRepository;
+	private final ExerciseRepository exerciseRepository;
+	private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
+	private final ExerciseDocumentService exerciseDocumentService;
+	private final StudentAbsenceRepository studentAbsenceRepository;
 
-    @Override
-    public void cascadeDeleteChildrenOfSchool(Integer schoolId) {
-        List<Integer> classIds = classRepository.findActiveIdsBySchoolId(schoolId);
-        for (Integer classId : classIds) {
-            cascadeDeleteChildrenOfClass(classId);
-        }
-        classRepository.softDeleteBySchoolId(schoolId);
-    }
+	@Override
+	public void cascadeDeleteChildrenOfSchool(Integer schoolId) {
+		final List<Integer> classIds = this.classRepository.findActiveIdsBySchoolId(schoolId);
+		for (final Integer classId : classIds) {
+			this.cascadeDeleteChildrenOfClass(classId);
+		}
+		this.classRepository.softDeleteBySchoolId(schoolId);
+	}
 
-    @Override
-    public void cascadeDeleteChildrenOfClass(Integer classId) {
-        List<Integer> subjectClassIds = subjectClassRepository.findActiveIdsByClassId(classId);
-        for (Integer subjectClassId : subjectClassIds) {
-            cascadeDeleteChildrenOfSubjectClass(subjectClassId);
-        }
-        subjectClassRepository.softDeleteByClassId(classId);
-        studentClassRepository.softDeleteByClassId(classId);
-        scheduleRepository.softDeleteByClassId(classId);
-    }
+	@Override
+	public void cascadeDeleteChildrenOfClass(Integer classId) {
+		final List<Integer> subjectClassIds = this.subjectClassRepository.findActiveIdsByClassId(classId);
+		for (final Integer subjectClassId : subjectClassIds) {
+			this.cascadeDeleteChildrenOfSubjectClass(subjectClassId);
+		}
+		this.subjectClassRepository.softDeleteByClassId(classId);
+		this.studentAbsenceRepository.hardDeleteByClassId(classId);
+		this.studentClassRepository.softDeleteByClassId(classId);
+		this.scheduleRepository.softDeleteByClassId(classId);
+	}
 
-    @Override
-    public void cascadeDeleteChildrenOfSubjectClass(Integer subjectClassId) {
-        List<Integer> exerciseIds = exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId));
-        if (!exerciseIds.isEmpty()) {
-            exerciseStudentGradeRepository.softDeleteByExerciseIds(exerciseIds);
-            exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
-        }
-        exerciseRepository.softDeleteBySubjectClassIds(List.of(subjectClassId));
-    }
+	@Override
+	public void cascadeDeleteChildrenOfSubjectClass(Integer subjectClassId) {
+		final List<Integer> exerciseIds = this.exerciseRepository
+				.findActiveIdsBySubjectClassIds(List.of(subjectClassId));
+		if (!exerciseIds.isEmpty()) {
+			this.exerciseStudentGradeRepository.softDeleteByExerciseIds(exerciseIds);
+			this.exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
+		}
+		this.exerciseRepository.softDeleteBySubjectClassIds(List.of(subjectClassId));
+		this.studentAbsenceRepository.hardDeleteBySubjectClassId(subjectClassId);
+	}
 
-    @Override
-    public void cascadeDeleteChildrenOfSubject(Integer subjectId) {
-        List<Integer> subjectClassIds = subjectClassRepository.findActiveIdsBySubjectId(subjectId);
-        for (Integer subjectClassId : subjectClassIds) {
-            cascadeDeleteChildrenOfSubjectClass(subjectClassId);
-        }
-        subjectClassRepository.softDeleteBySubjectId(subjectId);
-        scheduleRepository.softDeleteBySubjectId(subjectId);
-    }
+	@Override
+	public void cascadeDeleteChildrenOfSubject(Integer subjectId) {
+		final List<Integer> subjectClassIds = this.subjectClassRepository.findActiveIdsBySubjectId(subjectId);
+		for (final Integer subjectClassId : subjectClassIds) {
+			this.cascadeDeleteChildrenOfSubjectClass(subjectClassId);
+		}
+		this.subjectClassRepository.softDeleteBySubjectId(subjectId);
+		this.scheduleRepository.softDeleteBySubjectId(subjectId);
+	}
 
-    @Override
-    public void cascadeDeleteChildrenOfExercise(Integer exerciseId) {
-        exerciseStudentGradeRepository.softDeleteByExerciseIds(List.of(exerciseId));
-        exerciseDocumentService.deleteDocumentsByExerciseIds(List.of(exerciseId));
-    }
+	@Override
+	public void cascadeDeleteChildrenOfExercise(Integer exerciseId) {
+		this.exerciseStudentGradeRepository.softDeleteByExerciseIds(List.of(exerciseId));
+		this.exerciseDocumentService.deleteDocumentsByExerciseIds(List.of(exerciseId));
+	}
 
-    @Override
-    public void cascadeDeleteChildrenOfStudent(Integer studentId) {
-        exerciseStudentGradeRepository.softDeleteByStudentId(studentId);
-        studentClassRepository.softDeleteByStudentId(studentId);
-    }
+	@Override
+	public void cascadeDeleteChildrenOfStudent(Integer studentId) {
+		this.exerciseStudentGradeRepository.softDeleteByStudentId(studentId);
+		this.studentAbsenceRepository.hardDeleteByStudentId(studentId);
+		this.studentClassRepository.softDeleteByStudentId(studentId);
+	}
 
-    @Override
-    public void cascadeDeleteChildrenOfStudentClass(Integer studentClassId) {
-        studentClassRepository.findById(studentClassId).ifPresent(studentClass ->
-                exerciseStudentGradeRepository.softDeleteByStudentIdAndClassId(
-                        studentClass.getStudentId(), studentClass.getClassId()
-                )
-        );
-    }
+	@Override
+	public void cascadeDeleteChildrenOfStudentClass(Integer studentClassId) {
+		this.studentClassRepository.findById(studentClassId)
+				.ifPresent(studentClass -> this.exerciseStudentGradeRepository
+						.softDeleteByStudentIdAndClassId(studentClass.getStudentId(), studentClass.getClassId()));
+		this.studentAbsenceRepository.deleteByStudentClassId(studentClassId);
+	}
 }
-

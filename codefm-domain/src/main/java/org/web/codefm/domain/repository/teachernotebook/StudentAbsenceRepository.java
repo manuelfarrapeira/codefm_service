@@ -95,4 +95,39 @@ public interface StudentAbsenceRepository {
 	 * @return true if the absence already exists, false otherwise
 	 */
 	boolean existsByStudentClassIdAndSubjectIdAndDate(Integer studentClassId, Integer subjectId, LocalDate date);
+
+	/**
+	 * Deletes all absences for a specific student-class association (hard delete).
+	 *
+	 * @param studentClassId
+	 *            The unique identifier of the student-class association
+	 */
+	void deleteByStudentClassId(Integer studentClassId);
+
+	/**
+	 * Deletes all absences for all student-class associations of a class (hard
+	 * delete).
+	 *
+	 * @param classId
+	 *            The unique identifier of the class
+	 */
+	void hardDeleteByClassId(Integer classId);
+
+	/**
+	 * Deletes all absences for all student-class associations of a student (hard
+	 * delete).
+	 *
+	 * @param studentId
+	 *            The unique identifier of the student
+	 */
+	void hardDeleteByStudentId(Integer studentId);
+
+	/**
+	 * Deletes all absences linked to the subject and class of a subject-class
+	 * association (hard delete).
+	 *
+	 * @param subjectClassId
+	 *            The unique identifier of the subject-class association
+	 */
+	void hardDeleteBySubjectClassId(Integer subjectClassId);
 }

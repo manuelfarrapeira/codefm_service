@@ -239,4 +239,34 @@ class StudentAbsenceRepositoryImplTest {
 		verify(this.studentAbsenceJPARepository).existsByStudentClassIdAndSubjectIdAndAbsenceDate(STUDENT_CLASS_ID,
 				SUBJECT_ID, date);
 	}
+
+	@Test
+	void deleteByStudentClassId_shouldDelegate() {
+		this.studentAbsenceRepository.deleteByStudentClassId(STUDENT_CLASS_ID);
+
+		verify(this.studentAbsenceJPARepository).deleteByStudentClassId(STUDENT_CLASS_ID);
+	}
+
+	@Test
+	void hardDeleteByClassId_shouldDelegate() {
+		this.studentAbsenceRepository.hardDeleteByClassId(CLASS_ID);
+
+		verify(this.studentAbsenceJPARepository).hardDeleteByClassId(CLASS_ID);
+	}
+
+	@Test
+	void hardDeleteByStudentId_shouldDelegate() {
+		this.studentAbsenceRepository.hardDeleteByStudentId(STUDENT_ID);
+
+		verify(this.studentAbsenceJPARepository).hardDeleteByStudentId(STUDENT_ID);
+	}
+
+	@Test
+	void hardDeleteBySubjectClassId_shouldDelegate() {
+		Integer subjectClassId = 99;
+
+		this.studentAbsenceRepository.hardDeleteBySubjectClassId(subjectClassId);
+
+		verify(this.studentAbsenceJPARepository).hardDeleteBySubjectClassId(subjectClassId);
+	}
 }
