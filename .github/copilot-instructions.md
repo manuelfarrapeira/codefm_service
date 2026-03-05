@@ -1015,19 +1015,21 @@ void createSchool_shouldThrowValidationException_whenNameIsEmpty() { }
 
 ### Tests Parametrizados (`@ParameterizedTest`)
 
-**OBLIGATORIO**: Siempre que varios tests ejecuten la misma lógica con distintos valores de entrada, se DEBE usar
-`@ParameterizedTest` en lugar de múltiples `@Test` individuales. Esto reduce duplicación y mejora la legibilidad.
+**OBLIGATORIO**: Siempre que varios tests ejecuten la misma lógica con distintos valores de entrada o distintas
+configuraciones de mocks, se DEBE usar `@ParameterizedTest` en lugar de múltiples `@Test` individuales. Esto reduce
+duplicación y mejora la legibilidad.
 
 **Cuándo usar `@ParameterizedTest`:**
 
 - Validaciones con múltiples valores inválidos (fechas, formatos, rangos, etc.)
 - Misma aserción con distintos inputs que producen el mismo tipo de resultado
-- Cualquier caso donde el cuerpo del test sería idéntico salvo el valor de entrada
+- Misma excepción esperada con distintas causas (ej. recurso no encontrado, recurso de otro profesor, recurso eliminado)
+- Misma validación de ownership aplicada a múltiples métodos del servicio
+- Cualquier caso donde el cuerpo del test sería idéntico salvo el valor de entrada o la configuración de mocks
 
-**Ejemplos:**
+**`@ValueSource` — para valores primitivos o strings:**
 
 ```java
-
 @ParameterizedTest
 @ValueSource(strings = {"2026-03-15", "32/03/2026", "15/13/2026", "not-a-date"})
 void toDomain_shouldThrowValidationException_whenDateIsInvalid(String invalidDate) {
@@ -1042,21 +1044,9 @@ void toDomain_shouldThrowValidationException_whenDateIsInvalid(String invalidDat
 }
 ```
 
-```java
-
-@ParameterizedTest
-@ValueSource(ints = {0, -1, 101, 200})
-void createExercise_shouldThrowValidationException_whenPercentageGradeIsOutOfRange(int invalidPercentage) {
-    Exercise exercise = Exercise.builder().percentageGrade(invalidPercentage).build();
-
-    assertThrows(ExerciseValidationException.class, () -> exerciseService.createExercise(exercise));
-}
-```
-
-**Para casos con múltiples parámetros por fila, usar `@MethodSource` o `@CsvSource`:**
+**`@CsvSource` — para múltiples parámetros por fila:**
 
 ```java
-
 @ParameterizedTest
 @CsvSource({
         "null,  name is required",
@@ -1065,6 +1055,93 @@ void createExercise_shouldThrowValidationException_whenPercentageGradeIsOutOfRan
 })
 void createSchool_shouldThrowValidationException_whenNameIsInvalid(String name, String expectedMessage) {
     ...
+}
+```
+
+**`@MethodSource` con `Stream<Consumer<T>>` — para distintas configuraciones de mocks:**
+
+Usar este patrón cuando la misma excepción/comportamiento se puede producir por distintas causas que requieren
+configuraciones de mocks diferentes. Los métodos source deben ser `static` y recibir la instancia del test mediante
+`Consumer<NombreDelTest>`, configurando los mocks al ejecutar `setup.accept(this)` dentro del propio test.
+
+```java
+@ParameterizedTest
+@MethodSource("subjectValidationSetups")
+void createAbsences_shouldThrowValidationException_whenSubjectIsInvalid(
+        Consumer<StudentAbsenceServiceImplTest> setup) {
+    // setup comunes (clase, alumno, etc.)
+    setup.accept(this);
+
+    final StudentAbsenceValidationException exception = assertThrows(StudentAbsenceValidationException.class,
+            () -> this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE));
+
+    assertFalse(exception.getErrors().isEmpty());
+    assertEquals("subjectId", exception.getErrors().get(0).getParam());
+}
+
+static Stream<Consumer<StudentAbsenceServiceImplTest>> subjectValidationSetups() {
+    return Stream.of(
+            t -> when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
+                    .thenReturn(Optional.empty()),
+            t -> {
+                when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
+                        .thenReturn(Optional.of(Subject.builder().id(SUBJECT_ID).build()));
+                when(t.subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID))
+                        .thenReturn(false);
+            },
+            t -> {
+                when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
+                        .thenReturn(Optional.of(Subject.builder().id(SUBJECT_ID).build()));
+                when(t.subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID))
+                        .thenReturn(true);
+                when(t.scheduleRepository.existsByClassIdAndSubjectIdAndDay(CLASS_ID, SUBJECT_ID,
+                        DATE.getDayOfWeek().getValue())).thenReturn(false);
+            }
+    );
+}
+```
+
+**Ventajas de este patrón frente a `@TestInstance(PER_CLASS)` + `Runnable`:**
+- Los métodos source son `static` → compatible con el ciclo de vida por defecto de JUnit (`PER_METHOD`)
+- Cada test recibe mocks frescos → no hay contaminación entre tests
+- No se necesita `reset(...)` manual en `@BeforeEach`
+
+**Cuándo reutilizar el mismo `@MethodSource` en múltiples tests:** Si la misma configuración de mocks aplica a varios
+métodos del servicio (ej. `ClassNotFoundException` en `create`, `get` y `delete`), se define un único método `static`
+de setups y se referencia en todos los tests con el mismo `@MethodSource`.
+
+```java
+@ParameterizedTest
+@MethodSource("classNotFoundSetups")
+void createAbsences_shouldThrowClassNotFoundException_whenClassNotExists(
+        Consumer<StudentAbsenceServiceImplTest> setup) {
+    setup.accept(this);
+    assertThrows(ClassNotFoundException.class,
+            () -> this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE));
+}
+
+@ParameterizedTest
+@MethodSource("classNotFoundSetups")
+void getAbsences_shouldThrowClassNotFoundException_whenClassNotExists(
+        Consumer<StudentAbsenceServiceImplTest> setup) {
+    setup.accept(this);
+    assertThrows(ClassNotFoundException.class,
+            () -> this.studentAbsenceService.getAbsences(CLASS_ID, STUDENT_ID, DATE));
+}
+
+@ParameterizedTest
+@MethodSource("classNotFoundSetups")
+void deleteAbsencesByStudentAndDate_shouldThrowClassNotFoundException_whenClassNotExists(
+        Consumer<StudentAbsenceServiceImplTest> setup) {
+    setup.accept(this);
+    assertThrows(ClassNotFoundException.class,
+            () -> this.studentAbsenceService.deleteAbsencesByStudentAndDate(CLASS_ID, STUDENT_ID, DATE));
+}
+
+static Stream<Consumer<StudentAbsenceServiceImplTest>> classNotFoundSetups() {
+    return Stream.of(
+            t -> when(t.classRepository.findById(CLASS_ID)).thenReturn(Optional.empty())
+    );
 }
 ```
 

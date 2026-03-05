@@ -91,6 +91,45 @@ class StudentAbsenceRepositoryImplTest {
 	}
 
 	@Test
+	void findByClassId_shouldReturnEnrichedAbsences() {
+		final LocalDate date = LocalDate.of(2025, 4, 5);
+
+		final StudentAbsenceEntity entity = new StudentAbsenceEntity(3, STUDENT_CLASS_ID, SUBJECT_ID, date);
+		final StudentAbsence absence = StudentAbsence.builder().id(3).studentClassId(STUDENT_CLASS_ID)
+				.subjectId(SUBJECT_ID).absenceDate(date).build();
+
+		final StudentClassEntity studentClassEntity = new StudentClassEntity();
+		studentClassEntity.setId(STUDENT_CLASS_ID);
+		studentClassEntity.setStudentId(STUDENT_ID);
+		studentClassEntity.setClassId(CLASS_ID);
+
+		final StudentEntity studentEntity = new StudentEntity();
+		studentEntity.setId(STUDENT_ID);
+		studentEntity.setName("Pedro");
+		studentEntity.setSurnames("López Díaz");
+
+		final SubjectEntity subjectEntity = new SubjectEntity();
+		subjectEntity.setId(SUBJECT_ID);
+		subjectEntity.setName("Ciencias");
+
+		when(this.studentAbsenceJPARepository.findByClassId(CLASS_ID)).thenReturn(List.of(entity));
+		when(this.studentAbsenceMapper.toModelList(List.of(entity))).thenReturn(List.of(absence));
+		when(this.studentClassJPARepository.findAllById(any())).thenReturn(List.of(studentClassEntity));
+		when(this.studentJPARepository.findAllById(any())).thenReturn(List.of(studentEntity));
+		when(this.subjectJPARepository.findAllById(any())).thenReturn(List.of(subjectEntity));
+
+		final List<StudentAbsence> result = this.studentAbsenceRepository.findByClassId(CLASS_ID);
+
+		assertEquals(1, result.size());
+		assertEquals(STUDENT_ID, result.get(0).getStudentId());
+		assertEquals(CLASS_ID, result.get(0).getClassId());
+		assertEquals("Pedro", result.get(0).getStudentName());
+		assertEquals("López Díaz", result.get(0).getStudentSurnames());
+		assertEquals("Ciencias", result.get(0).getSubjectName());
+		verify(this.studentAbsenceJPARepository).findByClassId(CLASS_ID);
+	}
+
+	@Test
 	void findByClassIdAndDate_shouldReturnEnrichedAbsences() {
 		final LocalDate date = LocalDate.of(2025, 3, 10);
 

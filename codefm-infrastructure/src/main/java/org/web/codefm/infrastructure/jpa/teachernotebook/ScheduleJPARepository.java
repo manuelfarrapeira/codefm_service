@@ -59,4 +59,7 @@ public interface ScheduleJPARepository extends JpaRepository<ScheduleEntity, Int
 
 	@Query("SELECT DISTINCT s.subjectId FROM ScheduleEntity s WHERE s.classId = :classId AND s.day = :day AND s.deletionDate IS NULL")
 	List<Integer> findDistinctSubjectIdsByClassIdAndDay(@Param("classId") Integer classId, @Param("day") Integer day);
+
+	@Query("SELECT CASE WHEN COUNT(s) > 0 THEN true ELSE false END FROM ScheduleEntity s WHERE s.classId = :classId AND s.subjectId = :subjectId AND s.day = :day AND s.deletionDate IS NULL")
+	boolean existsByClassIdAndSubjectIdAndDay(@Param("classId") Integer classId, @Param("subjectId") Integer subjectId, @Param("day") Integer day);
 }

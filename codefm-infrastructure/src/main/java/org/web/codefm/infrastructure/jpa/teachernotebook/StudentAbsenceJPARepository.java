@@ -20,6 +20,10 @@ public interface StudentAbsenceJPARepository extends JpaRepository<StudentAbsenc
 	List<StudentAbsenceEntity> findByStudentClassIdAndAbsenceDate(Integer studentClassId, LocalDate absenceDate);
 
 	@Query("SELECT sa FROM StudentAbsenceEntity sa " + "JOIN StudentClassEntity sc ON sa.studentClassId = sc.id "
+			+ "WHERE sc.classId = :classId")
+	List<StudentAbsenceEntity> findByClassId(@Param("classId") Integer classId);
+
+	@Query("SELECT sa FROM StudentAbsenceEntity sa " + "JOIN StudentClassEntity sc ON sa.studentClassId = sc.id "
 			+ "WHERE sc.classId = :classId AND sa.absenceDate = :absenceDate")
 	List<StudentAbsenceEntity> findByClassIdAndAbsenceDate(@Param("classId") Integer classId,
 			@Param("absenceDate") LocalDate absenceDate);

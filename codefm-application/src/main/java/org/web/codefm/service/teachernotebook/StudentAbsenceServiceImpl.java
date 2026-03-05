@@ -64,7 +64,8 @@ public class StudentAbsenceServiceImpl implements StudentAbsenceService {
 		final List<Integer> subjectIds;
 
 		if (subjectId != null) {
-			this.validateSubjectInClass(subjectId, classId, teacherId, errors, locale);
+			final int dayOfWeek = date.getDayOfWeek().getValue();
+			this.validateSubjectInClass(subjectId, classId, teacherId, dayOfWeek, errors, locale);
 			if (!errors.isEmpty()) {
 				throw new StudentAbsenceValidationException(errors);
 			}
@@ -123,14 +124,7 @@ public class StudentAbsenceServiceImpl implements StudentAbsenceService {
 			return this.studentAbsenceRepository.findByClassIdAndDate(classId, date);
 		}
 
-		final List<ErrorMessage> errors = new ArrayList<>();
-		final String message = this.messageSource.getMessage(MessageKeys.ABSENCE_VALIDATION_STUDENT_REQUIRED, null,
-				locale);
-		errors.add(new ErrorMessage(FIELD_STUDENT_ID, message));
-		final String dateMessage = this.messageSource.getMessage(MessageKeys.ABSENCE_VALIDATION_DATE_REQUIRED, null,
-				locale);
-		errors.add(new ErrorMessage(FIELD_DATE, dateMessage));
-		throw new StudentAbsenceValidationException(errors);
+		return this.studentAbsenceRepository.findByClassId(classId);
 	}
 
 	@Override
@@ -207,7 +201,7 @@ public class StudentAbsenceServiceImpl implements StudentAbsenceService {
 		}
 	}
 
-	private void validateSubjectInClass(Integer subjectId, Integer classId, Integer teacherId,
+	private void validateSubjectInClass(Integer subjectId, Integer classId, Integer teacherId, Integer dayOfWeek,
 			List<ErrorMessage> errors, Locale locale) {
 		if (this.subjectRepository.findByIdAndTeacherId(subjectId, teacherId).isEmpty()) {
 			final String message = this.messageSource.getMessage(MessageKeys.ABSENCE_VALIDATION_SUBJECT_NOT_FOUND, null,
@@ -219,6 +213,13 @@ public class StudentAbsenceServiceImpl implements StudentAbsenceService {
 		if (!this.subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(subjectId, classId)) {
 			final String message = this.messageSource.getMessage(MessageKeys.ABSENCE_VALIDATION_SUBJECT_NOT_IN_CLASS,
 					null, locale);
+			errors.add(new ErrorMessage(FIELD_SUBJECT_ID, message));
+			return;
+		}
+
+		if (!this.scheduleRepository.existsByClassIdAndSubjectIdAndDay(classId, subjectId, dayOfWeek)) {
+			final String message = this.messageSource.getMessage(
+					MessageKeys.ABSENCE_VALIDATION_SUBJECT_NOT_SCHEDULED_ON_DAY, null, locale);
 			errors.add(new ErrorMessage(FIELD_SUBJECT_ID, message));
 		}
 	}

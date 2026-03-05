@@ -2374,7 +2374,7 @@ paths:
         - TeacherNoteBookStudentAbsences
       operationId: getAbsences
       summary: Get student absences for a class
-      description: Retrieves absences filtered by class and at least one of studentId or date. Returns enriched data with student and subject names.
+      description: Retrieves absences filtered by class. Optionally filter by studentId and/or date. If no filters are provided, returns all absences for the class.
       parameters:
         - name: classId
           in: path
@@ -2412,7 +2412,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/StudentAbsenceDTO'
         '400':
-          description: Validation error - at least studentId or date required
+          description: Validation error
           content:
             application/json:
               schema:
