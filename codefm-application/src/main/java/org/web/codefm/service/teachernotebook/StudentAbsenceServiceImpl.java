@@ -123,6 +123,7 @@ public class StudentAbsenceServiceImpl implements StudentAbsenceService {
 			return this.studentAbsenceRepository.findByClassIdAndDate(classId, date);
 		}
 
+		return this.studentAbsenceRepository.findByClassId(classId);
 	}
 
 	@Override
