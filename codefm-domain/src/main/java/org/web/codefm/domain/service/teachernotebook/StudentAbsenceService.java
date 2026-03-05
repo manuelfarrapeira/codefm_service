@@ -30,7 +30,8 @@ public interface StudentAbsenceService {
 	List<StudentAbsence> createAbsences(Integer classId, Integer studentId, Integer subjectId, LocalDate date);
 
 	/**
-	 * Retrieves absences filtered by class and at least one of studentId or date.
+	 * Retrieves absences filtered by class. Optionally filters by studentId and/or
+	 * date. If neither is provided, returns all absences for the class.
 	 *
 	 * @param classId
 	 *            The unique identifier of the class

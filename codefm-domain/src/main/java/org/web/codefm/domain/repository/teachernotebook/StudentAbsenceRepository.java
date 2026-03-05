@@ -34,6 +34,15 @@ public interface StudentAbsenceRepository {
 	List<StudentAbsence> findByStudentClassIdAndDate(Integer studentClassId, LocalDate date);
 
 	/**
+	 * Finds all absences for a class across all students.
+	 *
+	 * @param classId
+	 *            The unique identifier of the class
+	 * @return List of student absences with enriched student and subject details
+	 */
+	List<StudentAbsence> findByClassId(Integer classId);
+
+	/**
 	 * Finds all absences for a class on a specific date.
 	 *
 	 * @param classId

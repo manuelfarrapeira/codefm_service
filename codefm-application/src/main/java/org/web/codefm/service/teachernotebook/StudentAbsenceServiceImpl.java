@@ -123,14 +123,7 @@ public class StudentAbsenceServiceImpl implements StudentAbsenceService {
 			return this.studentAbsenceRepository.findByClassIdAndDate(classId, date);
 		}
 
-		final List<ErrorMessage> errors = new ArrayList<>();
-		final String message = this.messageSource.getMessage(MessageKeys.ABSENCE_VALIDATION_STUDENT_REQUIRED, null,
-				locale);
-		errors.add(new ErrorMessage(FIELD_STUDENT_ID, message));
-		final String dateMessage = this.messageSource.getMessage(MessageKeys.ABSENCE_VALIDATION_DATE_REQUIRED, null,
-				locale);
-		errors.add(new ErrorMessage(FIELD_DATE, dateMessage));
-		throw new StudentAbsenceValidationException(errors);
+		return this.studentAbsenceRepository.findByClassId(classId);
 	}
 
 	@Override

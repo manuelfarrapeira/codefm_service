@@ -387,18 +387,19 @@ class StudentAbsenceServiceImplTest {
 	}
 
 	@Test
-	void getAbsences_shouldThrowValidationException_whenNeitherStudentIdNorDateProvided() {
+	void getAbsences_shouldReturnAllAbsences_whenNeitherStudentIdNorDateProvided() {
 		final Class clazz = Class.builder().id(CLASS_ID).build();
 		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
 		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
 				.thenReturn(Optional.of(clazz));
 
-		final StudentAbsenceValidationException exception = assertThrows(StudentAbsenceValidationException.class,
-				() -> this.studentAbsenceService.getAbsences(CLASS_ID, null, null));
+		final List<StudentAbsence> expected = List.of(StudentAbsence.builder().id(1).build());
+		when(this.studentAbsenceRepository.findByClassId(CLASS_ID)).thenReturn(expected);
 
-		assertEquals(2, exception.getErrors().size());
-		assertEquals("studentId", exception.getErrors().get(0).getParam());
-		assertEquals("date", exception.getErrors().get(1).getParam());
+		final List<StudentAbsence> result = this.studentAbsenceService.getAbsences(CLASS_ID, null, null);
+
+		assertEquals(expected, result);
+		verify(this.studentAbsenceRepository).findByClassId(CLASS_ID);
 	}
 
 	@Test

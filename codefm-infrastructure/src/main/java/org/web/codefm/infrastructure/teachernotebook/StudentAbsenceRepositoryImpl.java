@@ -51,6 +51,14 @@ public class StudentAbsenceRepositoryImpl implements StudentAbsenceRepository {
 	}
 
 	@Override
+	public List<StudentAbsence> findByClassId(Integer classId) {
+		final List<StudentAbsenceEntity> entities = this.studentAbsenceJPARepository.findByClassId(classId);
+		final List<StudentAbsence> absences = this.studentAbsenceMapper.toModelList(entities);
+		this.enrichWithDetails(absences);
+		return absences;
+	}
+
+	@Override
 	public List<StudentAbsence> findByClassIdAndDate(Integer classId, LocalDate date) {
 		final List<StudentAbsenceEntity> entities = this.studentAbsenceJPARepository
 				.findByClassIdAndAbsenceDate(classId, date);
