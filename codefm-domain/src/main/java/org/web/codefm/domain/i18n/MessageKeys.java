@@ -112,6 +112,7 @@ public class MessageKeys {
 	public static final String ABSENCE_VALIDATION_SUBJECT_NOT_FOUND = "absence.validation.subject.not.found";
 	public static final String ABSENCE_VALIDATION_STUDENT_NOT_IN_CLASS = "absence.validation.student.not.in.class";
 	public static final String ABSENCE_VALIDATION_SUBJECT_NOT_IN_CLASS = "absence.validation.subject.not.in.class";
+	public static final String ABSENCE_VALIDATION_SUBJECT_NOT_SCHEDULED_ON_DAY = "absence.validation.subject.not.scheduled.on.day";
 	public static final String ABSENCE_VALIDATION_NO_SUBJECTS_SCHEDULED = "absence.validation.no.subjects.scheduled";
 	public static final String ABSENCE_VALIDATION_QUERY_FILTER_REQUIRED = "absence.validation.query.filter.required";
 

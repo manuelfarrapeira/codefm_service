@@ -92,4 +92,9 @@ public class ScheduleRepositoryImpl implements ScheduleRepository {
 	public List<Integer> findSubjectIdsByClassIdAndDay(Integer classId, Integer day) {
 		return scheduleJPARepository.findDistinctSubjectIdsByClassIdAndDay(classId, day);
 	}
+
+	@Override
+	public boolean existsByClassIdAndSubjectIdAndDay(Integer classId, Integer subjectId, Integer day) {
+		return scheduleJPARepository.existsByClassIdAndSubjectIdAndDay(classId, subjectId, day);
+	}
 }

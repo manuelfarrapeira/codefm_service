@@ -133,4 +133,15 @@ public interface ScheduleRepository {
 	 * @return List of distinct subject IDs scheduled for that class on that day
 	 */
 	List<Integer> findSubjectIdsByClassIdAndDay(Integer classId, Integer day);
+
+	/**
+	 * Checks whether a subject has any active schedule for a specific class on a
+	 * given day of the week.
+	 *
+	 * @param classId   The unique identifier of the class
+	 * @param subjectId The unique identifier of the subject
+	 * @param day       The day of the week (1=Monday, 5=Friday)
+	 * @return true if the subject is scheduled for that class on that day
+	 */
+	boolean existsByClassIdAndSubjectIdAndDay(Integer classId, Integer subjectId, Integer day);
 }
