@@ -29,6 +29,8 @@ tags:
     description: Operations related to Teacher Notebook Exercise Documents
   - name: TeacherNoteBookCalendarAlerts
     description: Operations related to Teacher Notebook Calendar Alerts
+  - name: TeacherNoteBookSkills
+    description: Operations related to Teacher Notebook Skills
 
 paths:
   /greeting:
@@ -1014,6 +1016,167 @@ paths:
                 $ref: '#/components/schemas/ErrorResponseDTO'
         '404':
           description: Not Found - Subject with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/skills:
+    get:
+      tags:
+        - TeacherNoteBookSkills
+      operationId: skills
+      summary: Get all skills for the authenticated teacher
+      description: Returns all skills belonging to the authenticated teacher that have not been soft-deleted.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSkills
+      operationId: createSkill
+      summary: Create a new skill
+      description: Creates a new skill for the authenticated teacher
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRequestDTO'
+      responses:
+        '201':
+          description: Skill created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/skills/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookSkills
+      operationId: updateSkill
+      summary: Update an existing skill
+      description: Updates an existing skill for the authenticated teacher
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the skill to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRequestDTO'
+      responses:
+        '200':
+          description: Skill updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this skill
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Skill with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSkills
+      operationId: deleteSkill
+      summary: Soft-delete a skill
+      description: Marks a skill as deleted by setting its deletion_date. Only the owning teacher can delete a skill.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the skill to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Skill successfully soft-deleted (No Content)
+        '403':
+          description: Forbidden - Teacher does not own this skill
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Skill with the specified ID does not exist
           content:
             application/json:
               schema:
@@ -3010,3 +3173,21 @@ components:
           type: 'string'
           description: 'Date in format dd/MM/yyyy'
           example: '15/03/2026'
+    SkillDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        title:
+          type: 'string'
+        description:
+          type: 'string'
+    SkillRequestDTO:
+      type: 'object'
+      properties:
+        title:
+          type: 'string'
+          example: 'Critical thinking'
+        description:
+          type: 'string'
+          example: 'Ability to analyze information objectively'

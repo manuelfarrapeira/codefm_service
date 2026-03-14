@@ -116,4 +116,11 @@ public class MessageKeys {
 	public static final String ABSENCE_VALIDATION_NO_SUBJECTS_SCHEDULED = "absence.validation.no.subjects.scheduled";
 	public static final String ABSENCE_VALIDATION_QUERY_FILTER_REQUIRED = "absence.validation.query.filter.required";
 
+	public static final String SKILL_VALIDATION_TITLE_REQUIRED = "skill.validation.title.required";
+	public static final String SKILL_VALIDATION_TITLE_MIN_LENGTH = "skill.validation.title.minLength";
+	public static final String SKILL_VALIDATION_DESCRIPTION_REQUIRED = "skill.validation.description.required";
+	public static final String SKILL_VALIDATION_DESCRIPTION_MIN_LENGTH = "skill.validation.description.minLength";
+	public static final String SKILL_NOT_FOUND = "skill.not.found";
+	public static final String SKILL_FORBIDDEN = "skill.forbidden";
+
 }
