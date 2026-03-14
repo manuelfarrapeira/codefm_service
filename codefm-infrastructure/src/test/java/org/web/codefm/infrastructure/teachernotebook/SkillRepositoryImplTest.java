@@ -80,7 +80,7 @@ class SkillRepositoryImplTest {
 
         assertNotNull(result);
         assertEquals(1, result.getId());
-        assertEquals("Teamwork", result.getDescription());
+        assertEquals("Teamwork skill", result.getDescription());
     }
 
     @Test
