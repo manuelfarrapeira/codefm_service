@@ -70,4 +70,18 @@ public interface CascadeSoftDeleteService {
 	 *            The unique identifier of the student-class association.
 	 */
 	void cascadeDeleteChildrenOfStudentClass(Integer studentClassId);
+
+	/**
+	 * Cascades delete for all children of the given skill: rubrics → criteria.
+	 *
+	 * @param skillId The unique identifier of the skill.
+	 */
+	void cascadeDeleteChildrenOfSkill(Integer skillId);
+
+	/**
+	 * Cascades delete for all children of the given rubric: criteria (hard delete).
+	 *
+	 * @param rubricId The unique identifier of the rubric.
+	 */
+	void cascadeDeleteChildrenOfRubric(Integer rubricId);
 }

@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Skill;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.SkillService;
 
 import java.util.Arrays;
@@ -20,6 +21,9 @@ class SkillUseCaseImplTest {
 
     @Mock
     private SkillService skillService;
+
+    @Mock
+    private CascadeSoftDeleteService cascadeSoftDeleteService;
 
     @InjectMocks
     private SkillUseCaseImpl skillUseCase;
@@ -82,13 +86,16 @@ class SkillUseCaseImplTest {
     }
 
     @Test
-    void softDeleteSkill_shouldCallServiceWithSkillId() {
+    void softDeleteSkill_shouldCallCascadeBeforeService() {
         final Integer skillId = 1;
+        doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfSkill(skillId);
         doNothing().when(skillService).softDeleteSkill(skillId);
 
         skillUseCase.softDeleteSkill(skillId);
 
-        verify(skillService, times(1)).softDeleteSkill(skillId);
+        var order = inOrder(cascadeSoftDeleteService, skillService);
+        order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfSkill(skillId);
+        order.verify(skillService).softDeleteSkill(skillId);
     }
 }
 
