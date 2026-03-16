@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SkillRubricCriteriaEntity;
 
 import java.util.List;
@@ -19,14 +20,17 @@ public interface SkillRubricCriteriaJPARepository extends JpaRepository<SkillRub
     @Query("SELECT c FROM SkillRubricCriteriaEntity c WHERE c.id = :id AND c.deletionDate IS NULL")
     Optional<SkillRubricCriteriaEntity> findActiveById(@Param("id") Integer id);
 
+    @Transactional
     @Modifying
     @Query("UPDATE SkillRubricCriteriaEntity c SET c.deletionDate = CURRENT_DATE WHERE c.id = :id AND c.deletionDate IS NULL")
     void softDeleteById(@Param("id") Integer id);
 
+    @Transactional
     @Modifying
     @Query("UPDATE SkillRubricCriteriaEntity c SET c.deletionDate = CURRENT_DATE WHERE c.rubricId = :rubricId AND c.deletionDate IS NULL")
     void softDeleteByRubricId(@Param("rubricId") Integer rubricId);
 
+    @Transactional
     @Modifying
     @Query("UPDATE SkillRubricCriteriaEntity c SET c.deletionDate = CURRENT_DATE WHERE c.rubricId IN :rubricIds AND c.deletionDate IS NULL")
     void softDeleteByRubricIds(@Param("rubricIds") List<Integer> rubricIds);

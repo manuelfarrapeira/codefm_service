@@ -3,6 +3,8 @@ package org.web.codefm.service.teachernotebook;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -267,6 +269,49 @@ class SkillRubricServiceImplTest {
 
         final SkillRubricCriteria criterion = SkillRubricCriteria.builder().description("").gradeStart(0).gradeEnd(4).build();
         when(this.messageSource.getMessage(eq(MessageKeys.SKILL_RUBRIC_VALIDATION_CRITERIA_DESCRIPTION_REQUIRED), any(), any(Locale.class))).thenReturn("error");
+
+        assertThrows(SkillRubricValidationException.class, () -> this.skillRubricService.createCriterion(RUBRIC_ID, criterion));
+    }
+
+    @ParameterizedTest
+    @MethodSource("nullGradeFieldCriteria")
+    void createCriterion_shouldThrowValidation_whenGradeFieldIsNull(SkillRubricCriteria criterion, String expectedParam) {
+        this.setupTeacherAndLocale();
+        final SkillRubric rubric = SkillRubric.builder().id(RUBRIC_ID).skillId(SKILL_ID).title("R").build();
+        when(this.skillRubricRepository.findById(RUBRIC_ID)).thenReturn(Optional.of(rubric));
+        this.setupSkillOwnership();
+        when(this.messageSource.getMessage(any(String.class), any(), any(Locale.class))).thenReturn("error");
+
+        final SkillRubricValidationException exception = assertThrows(
+                SkillRubricValidationException.class, () -> this.skillRubricService.createCriterion(RUBRIC_ID, criterion));
+
+        assertFalse(exception.getErrors().isEmpty());
+        assertTrue(exception.getErrors().stream().anyMatch(e -> expectedParam.equals(e.getParam())));
+    }
+
+    static Stream<Arguments> nullGradeFieldCriteria() {
+        return Stream.of(
+                Arguments.of(SkillRubricCriteria.builder().description("desc").gradeStart(null).gradeEnd(5).build(), "gradeStart"),
+                Arguments.of(SkillRubricCriteria.builder().description("desc").gradeStart(0).gradeEnd(null).build(), "gradeEnd")
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "-1, 5",
+            "5, 11",
+            "5, 3",
+            "11, 5"
+    })
+    void createCriterion_shouldThrowValidation_whenGradeRangeIsInvalid(int gradeStart, int gradeEnd) {
+        this.setupTeacherAndLocale();
+        final SkillRubric rubric = SkillRubric.builder().id(RUBRIC_ID).skillId(SKILL_ID).title("R").build();
+        when(this.skillRubricRepository.findById(RUBRIC_ID)).thenReturn(Optional.of(rubric));
+        this.setupSkillOwnership();
+        when(this.messageSource.getMessage(eq(MessageKeys.SKILL_RUBRIC_VALIDATION_CRITERIA_GRADE_RANGE_INVALID), any(), any(Locale.class))).thenReturn("error");
+
+        final SkillRubricCriteria criterion = SkillRubricCriteria.builder()
+                .description("desc").gradeStart(gradeStart).gradeEnd(gradeEnd).build();
 
         assertThrows(SkillRubricValidationException.class, () -> this.skillRubricService.createCriterion(RUBRIC_ID, criterion));
     }
