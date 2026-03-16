@@ -22,6 +22,8 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 	private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
 	private final ExerciseDocumentService exerciseDocumentService;
 	private final StudentAbsenceRepository studentAbsenceRepository;
+	private final SkillRubricRepository skillRubricRepository;
+	private final SkillRubricCriteriaRepository skillRubricCriteriaRepository;
 
 	@Override
 	public void cascadeDeleteChildrenOfSchool(Integer schoolId) {
@@ -85,5 +87,19 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 				.ifPresent(studentClass -> this.exerciseStudentGradeRepository
 						.softDeleteByStudentIdAndClassId(studentClass.getStudentId(), studentClass.getClassId()));
 		this.studentAbsenceRepository.deleteByStudentClassId(studentClassId);
+	}
+
+	@Override
+	public void cascadeDeleteChildrenOfSkill(Integer skillId) {
+		final List<Integer> rubricIds = this.skillRubricRepository.findActiveIdsBySkillId(skillId);
+		if (!rubricIds.isEmpty()) {
+			this.skillRubricCriteriaRepository.softDeleteByRubricIds(rubricIds);
+		}
+		this.skillRubricRepository.softDeleteBySkillId(skillId);
+	}
+
+	@Override
+	public void cascadeDeleteChildrenOfRubric(Integer rubricId) {
+		this.skillRubricCriteriaRepository.softDeleteByRubricId(rubricId);
 	}
 }

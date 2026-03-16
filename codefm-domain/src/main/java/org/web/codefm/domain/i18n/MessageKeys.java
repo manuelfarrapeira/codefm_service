@@ -114,7 +114,6 @@ public class MessageKeys {
 	public static final String ABSENCE_VALIDATION_SUBJECT_NOT_IN_CLASS = "absence.validation.subject.not.in.class";
 	public static final String ABSENCE_VALIDATION_SUBJECT_NOT_SCHEDULED_ON_DAY = "absence.validation.subject.not.scheduled.on.day";
 	public static final String ABSENCE_VALIDATION_NO_SUBJECTS_SCHEDULED = "absence.validation.no.subjects.scheduled";
-	public static final String ABSENCE_VALIDATION_QUERY_FILTER_REQUIRED = "absence.validation.query.filter.required";
 
 	public static final String SKILL_VALIDATION_TITLE_REQUIRED = "skill.validation.title.required";
 	public static final String SKILL_VALIDATION_TITLE_MIN_LENGTH = "skill.validation.title.minLength";
@@ -122,5 +121,14 @@ public class MessageKeys {
 	public static final String SKILL_VALIDATION_DESCRIPTION_MIN_LENGTH = "skill.validation.description.minLength";
 	public static final String SKILL_NOT_FOUND = "skill.not.found";
 	public static final String SKILL_FORBIDDEN = "skill.forbidden";
+
+	public static final String SKILL_RUBRIC_NOT_FOUND = "skill.rubric.not.found";
+	public static final String SKILL_RUBRIC_CRITERIA_NOT_FOUND = "skill.rubric.criteria.not.found";
+	public static final String SKILL_RUBRIC_VALIDATION_TITLE_REQUIRED = "skill.rubric.validation.title.required";
+	public static final String SKILL_RUBRIC_VALIDATION_CRITERIA_DESCRIPTION_REQUIRED = "skill.rubric.validation.criteria.description.required";
+	public static final String SKILL_RUBRIC_VALIDATION_CRITERIA_GRADE_START_REQUIRED = "skill.rubric.validation.criteria.gradeStart.required";
+	public static final String SKILL_RUBRIC_VALIDATION_CRITERIA_GRADE_END_REQUIRED = "skill.rubric.validation.criteria.gradeEnd.required";
+	public static final String SKILL_RUBRIC_VALIDATION_CRITERIA_GRADE_RANGE_INVALID = "skill.rubric.validation.criteria.gradeRange.invalid";
+	public static final String SKILL_RUBRIC_VALIDATION_CRITERIA_OVERLAP = "skill.rubric.validation.criteria.overlap";
 
 }

@@ -31,6 +31,8 @@ tags:
     description: Operations related to Teacher Notebook Calendar Alerts
   - name: TeacherNoteBookSkills
     description: Operations related to Teacher Notebook Skills
+  - name: TeacherNoteBookSkillRubrics
+    description: Operations related to Teacher Notebook Skill Rubrics
 
 paths:
   /greeting:
@@ -1177,6 +1179,368 @@ paths:
                 $ref: '#/components/schemas/ErrorResponseDTO'
         '404':
           description: Not Found - Skill with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/skills/{skillId}/rubrics:
+    get:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: getRubricsBySkill
+      summary: Get all rubrics for a skill
+      description: Returns all active rubrics with their criteria for the specified skill.
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          description: The ID of the skill
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillRubricDTO'
+        '404':
+          description: Skill not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: createRubric
+      summary: Create a new rubric for a skill
+      description: Creates a new rubric (title only) for the specified skill.
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          description: The ID of the skill
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRubricRequestDTO'
+      responses:
+        '201':
+          description: Rubric created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillRubricDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Skill not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/rubrics/{rubricId}:
+    patch:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: updateRubric
+      summary: Update an existing rubric title
+      description: Updates the title of a rubric.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          description: The ID of the rubric to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRubricRequestDTO'
+      responses:
+        '200':
+          description: Rubric updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillRubricDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Rubric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: deleteRubric
+      summary: Delete a rubric
+      description: Soft-deletes a rubric and hard-deletes all its criteria.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          description: The ID of the rubric to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Rubric successfully deleted (No Content)
+        '404':
+          description: Rubric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/rubrics/{rubricId}/criteria:
+    get:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: getCriteriaByRubric
+      summary: Get all active criteria for a rubric
+      description: Returns all active evaluation criteria for the specified rubric.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          description: The ID of the rubric
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillRubricCriteriaDTO'
+        '404':
+          description: Rubric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: createCriterion
+      summary: Create a single criterion for a rubric
+      description: Creates one evaluation criterion. Validates that the grade range does not overlap with existing active criteria.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          description: The ID of the rubric
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRubricCriteriaRequestDTO'
+      responses:
+        '201':
+          description: Criterion created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillRubricCriteriaDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Rubric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/rubrics/{rubricId}/criteria/{criterionId}:
+    patch:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: updateCriterion
+      summary: Update a single criterion
+      description: Updates one evaluation criterion. Validates that the new grade range does not overlap with other active criteria.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: criterionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRubricCriteriaRequestDTO'
+      responses:
+        '200':
+          description: Criterion updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillRubricCriteriaDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Criterion not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: deleteCriterion
+      summary: Soft-delete a single criterion
+      description: Soft-deletes one evaluation criterion.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: criterionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Criterion successfully deleted (No Content)
+        '404':
+          description: Criterion not found
           content:
             application/json:
               schema:
@@ -3191,3 +3555,45 @@ components:
         description:
           type: 'string'
           example: 'Ability to analyze information objectively'
+    SkillRubricDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        title:
+          type: 'string'
+        skillId:
+          type: 'integer'
+        criteria:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/SkillRubricCriteriaDTO'
+    SkillRubricCriteriaDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        description:
+          type: 'string'
+        gradeStart:
+          type: 'integer'
+        gradeEnd:
+          type: 'integer'
+    SkillRubricRequestDTO:
+      type: 'object'
+      properties:
+        title:
+          type: 'string'
+          example: 'Rubric for critical thinking'
+    SkillRubricCriteriaRequestDTO:
+      type: 'object'
+      properties:
+        description:
+          type: 'string'
+          example: 'Performs poorly'
+        gradeStart:
+          type: 'integer'
+          example: 0
+        gradeEnd:
+          type: 'integer'
+          example: 4
