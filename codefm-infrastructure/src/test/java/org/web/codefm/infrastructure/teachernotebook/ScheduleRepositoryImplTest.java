@@ -171,4 +171,107 @@ class ScheduleRepositoryImplTest {
 
         verify(scheduleJPARepository, times(1)).softDeleteByIds(ids);
     }
+
+    @Test
+    void existsOverlappingSchedule_shouldDelegateWithExclude_whenExcludeIdIsNotNull() {
+        final Integer classId = 1;
+        final Integer day = 2;
+        final LocalTime start = LocalTime.of(8, 30);
+        final LocalTime end = LocalTime.of(9, 30);
+        final Integer excludeId = 10;
+
+        when(scheduleJPARepository.existsOverlappingScheduleExcluding(classId, day, start, end, excludeId)).thenReturn(true);
+
+        final boolean result = scheduleRepository.existsOverlappingSchedule(classId, day, start, end, excludeId);
+
+        assertTrue(result);
+        verify(scheduleJPARepository).existsOverlappingScheduleExcluding(classId, day, start, end, excludeId);
+        verify(scheduleJPARepository, never()).existsOverlappingSchedule(any(), any(), any(), any());
+    }
+
+    @Test
+    void existsOverlappingSchedule_shouldDelegateWithoutExclude_whenExcludeIdIsNull() {
+        final Integer classId = 1;
+        final Integer day = 2;
+        final LocalTime start = LocalTime.of(8, 30);
+        final LocalTime end = LocalTime.of(9, 30);
+
+        when(scheduleJPARepository.existsOverlappingSchedule(classId, day, start, end)).thenReturn(false);
+
+        final boolean result = scheduleRepository.existsOverlappingSchedule(classId, day, start, end, null);
+
+        assertFalse(result);
+        verify(scheduleJPARepository).existsOverlappingSchedule(classId, day, start, end);
+        verify(scheduleJPARepository, never()).existsOverlappingScheduleExcluding(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void existsOverlappingSchedule_shouldReturnFalse_whenNoOverlap() {
+        final Integer classId = 1;
+        final Integer day = 3;
+        final LocalTime start = LocalTime.of(10, 0);
+        final LocalTime end = LocalTime.of(11, 0);
+
+        when(scheduleJPARepository.existsOverlappingSchedule(classId, day, start, end)).thenReturn(false);
+
+        final boolean result = scheduleRepository.existsOverlappingSchedule(classId, day, start, end, null);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void softDeleteByClassId_shouldDelegate() {
+        scheduleRepository.softDeleteByClassId(10);
+
+        verify(scheduleJPARepository).softDeleteByClassId(10);
+    }
+
+    @Test
+    void softDeleteBySubjectId_shouldDelegate() {
+        scheduleRepository.softDeleteBySubjectId(5);
+
+        verify(scheduleJPARepository).softDeleteBySubjectId(5);
+    }
+
+    @Test
+    void findSubjectIdsByClassIdAndDay_shouldReturnSubjectIds() {
+        final Integer classId = 1;
+        final Integer day = 2;
+
+        when(scheduleJPARepository.findDistinctSubjectIdsByClassIdAndDay(classId, day)).thenReturn(List.of(10, 20, 30));
+
+        final List<Integer> result = scheduleRepository.findSubjectIdsByClassIdAndDay(classId, day);
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+        assertEquals(List.of(10, 20, 30), result);
+    }
+
+    @Test
+    void findSubjectIdsByClassIdAndDay_shouldReturnEmptyList_whenNoneExist() {
+        when(scheduleJPARepository.findDistinctSubjectIdsByClassIdAndDay(1, 5)).thenReturn(List.of());
+
+        final List<Integer> result = scheduleRepository.findSubjectIdsByClassIdAndDay(1, 5);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void existsByClassIdAndSubjectIdAndDay_shouldReturnTrue_whenExists() {
+        when(scheduleJPARepository.existsByClassIdAndSubjectIdAndDay(1, 10, 2)).thenReturn(true);
+
+        final boolean result = scheduleRepository.existsByClassIdAndSubjectIdAndDay(1, 10, 2);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void existsByClassIdAndSubjectIdAndDay_shouldReturnFalse_whenNotExists() {
+        when(scheduleJPARepository.existsByClassIdAndSubjectIdAndDay(1, 10, 2)).thenReturn(false);
+
+        final boolean result = scheduleRepository.existsByClassIdAndSubjectIdAndDay(1, 10, 2);
+
+        assertFalse(result);
+    }
 }

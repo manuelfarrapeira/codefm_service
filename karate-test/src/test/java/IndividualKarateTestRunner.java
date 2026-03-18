@@ -322,4 +322,44 @@ public class IndividualKarateTestRunner {
 		return Karate.run("features/teacher-notebook/skill-rubrics/deletecriteria").relativeTo(getClass());
 	}
 
+	@Karate.Test
+	Karate testTeacherNotebookGetClassRubrics() {
+		return Karate.run("features/teacher-notebook/class-rubrics/getrubricsbyclass").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookAssignRubricToClass() {
+		return Karate.run("features/teacher-notebook/class-rubrics/assignrubrictoclass").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookRemoveRubricFromClass() {
+		return Karate.run("features/teacher-notebook/class-rubrics/removerubricfromclass").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookGetAllStudentCriteria() {
+		return Karate.run("features/teacher-notebook/class-rubrics/getallstudentcriteria").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookGetStudentCriteria() {
+		return Karate.run("features/teacher-notebook/class-rubrics/getstudentcriteria").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookAssignCriterionToStudent() {
+		return Karate.run("features/teacher-notebook/class-rubrics/assigncriterion").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookUpdateStudentCriterion() {
+		return Karate.run("features/teacher-notebook/class-rubrics/updatestudentcriterion").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookRemoveStudentCriterion() {
+		return Karate.run("features/teacher-notebook/class-rubrics/removestudentcriterion").relativeTo(getClass());
+	}
+
 }

@@ -35,6 +35,10 @@ class CascadeSoftDeleteServiceImplTest {
 	private ExerciseDocumentService exerciseDocumentService;
 	@Mock
 	private StudentAbsenceRepository studentAbsenceRepository;
+	@Mock
+	private SkillRubricRepository skillRubricRepository;
+	@Mock
+	private SkillRubricCriteriaRepository skillRubricCriteriaRepository;
     @Mock
     private ClassRubricRepository classRubricRepository;
     @Mock
@@ -251,5 +255,68 @@ class CascadeSoftDeleteServiceImplTest {
 		verify(this.studentClassRepository).findById(studentClassId);
 		verifyNoInteractions(this.exerciseStudentGradeRepository);
 		verify(this.studentAbsenceRepository).deleteByStudentClassId(studentClassId);
+	}
+
+	@Test
+	void cascadeDeleteChildrenOfSkill_shouldSoftDeleteCriteriaAndRubrics_whenRubricsExist() {
+		final Integer skillId = 5;
+
+		when(this.skillRubricRepository.findActiveIdsBySkillId(skillId)).thenReturn(Arrays.asList(100, 200));
+
+		this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSkill(skillId);
+
+		final var order = inOrder(this.skillRubricCriteriaRepository, this.skillRubricRepository);
+		order.verify(this.skillRubricCriteriaRepository).softDeleteByRubricIds(Arrays.asList(100, 200));
+		order.verify(this.skillRubricRepository).softDeleteBySkillId(skillId);
+	}
+
+	@Test
+	void cascadeDeleteChildrenOfSkill_shouldOnlySoftDeleteRubrics_whenNoRubricsExist() {
+		final Integer skillId = 5;
+
+		when(this.skillRubricRepository.findActiveIdsBySkillId(skillId)).thenReturn(Collections.emptyList());
+
+		this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSkill(skillId);
+
+		verify(this.skillRubricRepository).findActiveIdsBySkillId(skillId);
+		verify(this.skillRubricRepository).softDeleteBySkillId(skillId);
+		verifyNoInteractions(this.skillRubricCriteriaRepository);
+	}
+
+	@Test
+	void cascadeDeleteChildrenOfRubric_shouldSoftDeleteCriteriaAndClassRubricsWithStudentCriteria_whenClassRubricsExist() {
+		final Integer rubricId = 100;
+
+		when(this.classRubricRepository.findActiveIdsByRubricId(rubricId)).thenReturn(Arrays.asList(10, 20));
+
+		this.cascadeSoftDeleteService.cascadeDeleteChildrenOfRubric(rubricId);
+
+		final var order = inOrder(this.skillRubricCriteriaRepository, this.studentClassRubricCriteriaRepository, this.classRubricRepository);
+		order.verify(this.skillRubricCriteriaRepository).softDeleteByRubricId(rubricId);
+		order.verify(this.studentClassRubricCriteriaRepository).softDeleteByClassRubricIds(Arrays.asList(10, 20));
+		order.verify(this.classRubricRepository).softDeleteByRubricId(rubricId);
+	}
+
+	@Test
+	void cascadeDeleteChildrenOfRubric_shouldSoftDeleteCriteriaAndClassRubrics_whenNoClassRubricsExist() {
+		final Integer rubricId = 100;
+
+		when(this.classRubricRepository.findActiveIdsByRubricId(rubricId)).thenReturn(Collections.emptyList());
+
+		this.cascadeSoftDeleteService.cascadeDeleteChildrenOfRubric(rubricId);
+
+		verify(this.skillRubricCriteriaRepository).softDeleteByRubricId(rubricId);
+		verify(this.classRubricRepository).findActiveIdsByRubricId(rubricId);
+		verify(this.classRubricRepository).softDeleteByRubricId(rubricId);
+		verify(this.studentClassRubricCriteriaRepository, never()).softDeleteByClassRubricIds(any());
+	}
+
+	@Test
+	void cascadeDeleteChildrenOfClassRubric_shouldSoftDeleteStudentCriteria() {
+		final Integer classRubricId = 10;
+
+		this.cascadeSoftDeleteService.cascadeDeleteChildrenOfClassRubric(classRubricId);
+
+		verify(this.studentClassRubricCriteriaRepository).softDeleteByClassRubricId(classRubricId);
 	}
 }
