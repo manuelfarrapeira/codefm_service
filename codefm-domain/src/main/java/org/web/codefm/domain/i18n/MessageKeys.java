@@ -131,4 +131,16 @@ public class MessageKeys {
 	public static final String SKILL_RUBRIC_VALIDATION_CRITERIA_GRADE_RANGE_INVALID = "skill.rubric.validation.criteria.gradeRange.invalid";
 	public static final String SKILL_RUBRIC_VALIDATION_CRITERIA_OVERLAP = "skill.rubric.validation.criteria.overlap";
 
+    public static final String CLASS_RUBRIC_NOT_FOUND = "class.rubric.not.found";
+    public static final String CLASS_RUBRIC_VALIDATION_CLASS_NOT_FOUND = "class.rubric.validation.class.not.found";
+    public static final String CLASS_RUBRIC_VALIDATION_RUBRIC_NOT_FOUND = "class.rubric.validation.rubric.not.found";
+    public static final String CLASS_RUBRIC_ALREADY_EXISTS = "class.rubric.already.exists";
+
+    public static final String STUDENT_CLASS_RUBRIC_CRITERIA_NOT_FOUND = "student.class.rubric.criteria.not.found";
+    public static final String STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_STUDENT_NOT_FOUND = "student.class.rubric.criteria.validation.student.not.found";
+    public static final String STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_STUDENT_NOT_IN_CLASS = "student.class.rubric.criteria.validation.student.not.in.class";
+    public static final String STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_CRITERION_NOT_FOUND = "student.class.rubric.criteria.validation.criterion.not.found";
+    public static final String STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_CRITERION_NOT_IN_RUBRIC = "student.class.rubric.criteria.validation.criterion.not.in.rubric";
+    public static final String STUDENT_CLASS_RUBRIC_CRITERIA_ALREADY_EXISTS = "student.class.rubric.criteria.already.exists";
+
 }

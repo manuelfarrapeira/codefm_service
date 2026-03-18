@@ -1,0 +1,298 @@
+{
+  "info": {
+    "_postman_id": "class-rubrics-collection",
+    "name": "ClassRubrics",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Rubrics By Class",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/rubrics",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "rubrics"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Obtiene todas las rúbricas asignadas a una clase, enriquecidas con skillId y criterios activos."
+      }
+    },
+    {
+      "name": "Assign Rubric To Class",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"rubricId\": 1\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/rubrics",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "rubrics"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Asigna una rúbrica a una clase."
+      }
+    },
+    {
+      "name": "Remove Rubric From Class",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/class-rubrics/:classRubricId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "class-rubrics",
+            ":classRubricId"
+          ],
+          "variable": [
+            {
+              "key": "classRubricId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) la asignación de una rúbrica a una clase. Aplica cascada a los criterios de alumnos."
+      }
+    },
+    {
+      "name": "Get All Student Criteria By Class",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/rubric-criteria",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "rubric-criteria"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Obtiene todas las asignaciones de criterios de todos los alumnos de una clase, agrupados por alumno. Cada alumno tiene un objeto student, y una lista rubricCriteria con objetos que contienen rubric (id, title) y criterion (id, description, gradeStart, gradeEnd)."
+      }
+    },
+    {
+      "name": "Get Student Criteria By Student",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/students/:studentId/rubric-criteria",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "students",
+            ":studentId",
+            "rubric-criteria"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            },
+            {
+              "key": "studentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Obtiene las asignaciones de criterios de un alumno concreto en una clase."
+      }
+    },
+    {
+      "name": "Assign Criterion To Student",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"criterionId\": 1\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/class-rubrics/:classRubricId/students/:studentId/criteria",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "class-rubrics",
+            ":classRubricId",
+            "students",
+            ":studentId",
+            "criteria"
+          ],
+          "variable": [
+            {
+              "key": "classRubricId",
+              "value": "1"
+            },
+            {
+              "key": "studentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Asigna un criterio a un alumno dentro de la asignación clase-rúbrica."
+      }
+    },
+    {
+      "name": "Update Student Criterion",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"criterionId\": 2\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/student-criteria/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "student-criteria",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Actualiza el criterio asignado a un alumno. El nuevo criterio debe pertenecer a la misma rúbrica."
+      }
+    },
+    {
+      "name": "Remove Student Criterion",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/student-criteria/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "student-criteria",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) la asignación de criterio de un alumno."
+      }
+    }
+  ]
+}

@@ -5,9 +5,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.web.codefm.api.mapper.ErrorResponseMapper;
 import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.exception.ErrorCodeEnum;
@@ -189,5 +193,64 @@ class RestExceptionHandlerTest {
         assertEquals("Error genérico", response.getBody().getDetail());
         assertEquals("1000", response.getBody().getCode());
         assertEquals("INTERNAL_SERVER_ERROR", response.getBody().getDescription());
+    }
+
+    @Test
+    void handleMethodArgumentNotValid_shouldReturnBadRequest_whenSingleFieldError() throws NoSuchMethodException {
+        final BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "request");
+        bindingResult.addError(new FieldError("request", "name", "must not be blank"));
+
+        final MethodParameter methodParameter = new MethodParameter(
+                RestExceptionHandler.class.getDeclaredMethod("handleMethodArgumentNotValid", MethodArgumentNotValidException.class), -1);
+        final MethodArgumentNotValidException ex = new MethodArgumentNotValidException(methodParameter, bindingResult);
+
+        final ResponseEntity<ErrorResponseDTO> response = restExceptionHandler.handleMethodArgumentNotValid(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getCode(), response.getBody().getCode());
+        assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getDescription(), response.getBody().getDescription());
+        assertEquals(1, response.getBody().getDetails().size());
+        assertEquals("name", response.getBody().getDetails().get(0).getField());
+        assertEquals("must not be blank", response.getBody().getDetails().get(0).getReason());
+    }
+
+    @Test
+    void handleMethodArgumentNotValid_shouldReturnBadRequest_whenMultipleFieldErrors() throws NoSuchMethodException {
+        final BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "request");
+        bindingResult.addError(new FieldError("request", "name", "must not be blank"));
+        bindingResult.addError(new FieldError("request", "rubricId", "must not be null"));
+        bindingResult.addError(new FieldError("request", "gradeStart", "must be between 0 and 10"));
+
+        final MethodParameter methodParameter = new MethodParameter(
+                RestExceptionHandler.class.getDeclaredMethod("handleMethodArgumentNotValid", MethodArgumentNotValidException.class), -1);
+        final MethodArgumentNotValidException ex = new MethodArgumentNotValidException(methodParameter, bindingResult);
+
+        final ResponseEntity<ErrorResponseDTO> response = restExceptionHandler.handleMethodArgumentNotValid(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getCode(), response.getBody().getCode());
+        assertEquals(3, response.getBody().getDetails().size());
+        assertEquals("name", response.getBody().getDetails().get(0).getField());
+        assertEquals("must not be blank", response.getBody().getDetails().get(0).getReason());
+        assertEquals("rubricId", response.getBody().getDetails().get(1).getField());
+        assertEquals("must not be null", response.getBody().getDetails().get(1).getReason());
+        assertEquals("gradeStart", response.getBody().getDetails().get(2).getField());
+        assertEquals("must be between 0 and 10", response.getBody().getDetails().get(2).getReason());
+    }
+
+    @Test
+    void handleMethodArgumentNotValid_shouldReturnEmptyDetails_whenNoFieldErrors() throws NoSuchMethodException {
+        final BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "request");
+
+        final MethodParameter methodParameter = new MethodParameter(
+                RestExceptionHandler.class.getDeclaredMethod("handleMethodArgumentNotValid", MethodArgumentNotValidException.class), -1);
+        final MethodArgumentNotValidException ex = new MethodArgumentNotValidException(methodParameter, bindingResult);
+
+        final ResponseEntity<ErrorResponseDTO> response = restExceptionHandler.handleMethodArgumentNotValid(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getCode(), response.getBody().getCode());
+        assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getDescription(), response.getBody().getDescription());
+        assertEquals(0, response.getBody().getDetails().size());
     }
 }
