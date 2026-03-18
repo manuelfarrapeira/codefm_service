@@ -24,6 +24,8 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 	private final StudentAbsenceRepository studentAbsenceRepository;
 	private final SkillRubricRepository skillRubricRepository;
 	private final SkillRubricCriteriaRepository skillRubricCriteriaRepository;
+    private final ClassRubricRepository classRubricRepository;
+    private final StudentClassRubricCriteriaRepository studentClassRubricCriteriaRepository;
 
 	@Override
 	public void cascadeDeleteChildrenOfSchool(Integer schoolId) {
@@ -44,6 +46,11 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 		this.studentAbsenceRepository.hardDeleteByClassId(classId);
 		this.studentClassRepository.softDeleteByClassId(classId);
 		this.scheduleRepository.softDeleteByClassId(classId);
+        final List<Integer> classRubricIds = this.classRubricRepository.findActiveIdsByClassId(classId);
+        if (!classRubricIds.isEmpty()) {
+            this.studentClassRubricCriteriaRepository.softDeleteByClassRubricIds(classRubricIds);
+        }
+        this.classRubricRepository.softDeleteByClassId(classId);
 	}
 
 	@Override
@@ -101,5 +108,15 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 	@Override
 	public void cascadeDeleteChildrenOfRubric(Integer rubricId) {
 		this.skillRubricCriteriaRepository.softDeleteByRubricId(rubricId);
+        final List<Integer> classRubricIds = this.classRubricRepository.findActiveIdsByRubricId(rubricId);
+        if (!classRubricIds.isEmpty()) {
+            this.studentClassRubricCriteriaRepository.softDeleteByClassRubricIds(classRubricIds);
+        }
+        this.classRubricRepository.softDeleteByRubricId(rubricId);
+    }
+
+    @Override
+    public void cascadeDeleteChildrenOfClassRubric(Integer classRubricId) {
+        this.studentClassRubricCriteriaRepository.softDeleteByClassRubricId(classRubricId);
 	}
 }

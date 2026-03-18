@@ -51,7 +51,11 @@ public enum ExceptionStatusEnum {
     SKILL_NOT_FOUND(SkillNotFoundException.class, HttpStatus.NOT_FOUND),
     SKILL_FORBIDDEN(SkillForbiddenException.class, HttpStatus.FORBIDDEN),
     SKILL_RUBRIC_VALIDATION_ERROR(SkillRubricValidationException.class, HttpStatus.BAD_REQUEST),
-    SKILL_RUBRIC_NOT_FOUND(SkillRubricNotFoundException.class, HttpStatus.NOT_FOUND);
+    SKILL_RUBRIC_NOT_FOUND(SkillRubricNotFoundException.class, HttpStatus.NOT_FOUND),
+    CLASS_RUBRIC_NOT_FOUND(ClassRubricNotFoundException.class, HttpStatus.NOT_FOUND),
+    CLASS_RUBRIC_VALIDATION_ERROR(ClassRubricValidationException.class, HttpStatus.BAD_REQUEST),
+    STUDENT_CLASS_RUBRIC_CRITERIA_NOT_FOUND(StudentClassRubricCriteriaNotFoundException.class, HttpStatus.NOT_FOUND),
+    STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_ERROR(StudentClassRubricCriteriaValidationException.class, HttpStatus.BAD_REQUEST);
 
     private final Class<?> exceptionClazz;
 

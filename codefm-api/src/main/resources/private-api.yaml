@@ -33,6 +33,8 @@ tags:
     description: Operations related to Teacher Notebook Skills
   - name: TeacherNoteBookSkillRubrics
     description: Operations related to Teacher Notebook Skill Rubrics
+  - name: TeacherNoteBookClassRubrics
+    description: Operations related to Teacher Notebook Class Rubric assignments
 
 paths:
   /greeting:
@@ -3042,6 +3044,291 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/classes/{classId}/rubrics:
+    get:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: getRubricsByClass
+      summary: Get all rubrics assigned to a class
+      description: Returns all rubrics assigned to the class enriched with skillId and active criteria list
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of class rubric assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassRubricDTO'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    post:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: assignRubricToClass
+      summary: Assign a rubric to a class
+      description: Assigns the given rubric to the class. Validates teacher ownership and no duplicates.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Accept-Language
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassRubricRequestDTO'
+      responses:
+        '201':
+          description: Rubric assigned to class successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassRubricDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '401':
+          description: Unauthorized
+  /teacher-notebook/v1/class-rubrics/{classRubricId}:
+    delete:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: removeRubricFromClass
+      summary: Remove a rubric assignment from a class
+      description: Soft-deletes the class-rubric assignment and cascades to student criterion assignments
+      parameters:
+        - name: classRubricId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Accept-Language
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Rubric assignment removed successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Class rubric assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/classes/{classId}/rubric-criteria:
+    get:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: getAllStudentCriteriaByClass
+      summary: Get all student criterion assignments for a class grouped by student
+      description: Returns all criterion assignments for all students in the class, grouped by student with nested rubric and criterion objects
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of student criterion groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentCriteriaGroupDTO'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/classes/{classId}/students/{studentId}/rubric-criteria:
+    get:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: getStudentCriteriaByStudent
+      summary: Get criterion assignments for a specific student in a class grouped
+      description: Returns all criterion assignments for the student in the class, grouped by student with nested rubric and criterion objects
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of student criterion groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentCriteriaGroupDTO'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/class-rubrics/{classRubricId}/students/{studentId}/criteria:
+    post:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: assignCriterionToStudent
+      summary: Assign a rubric criterion to a student
+      description: Assigns the given criterion to the student within the class-rubric assignment
+      parameters:
+        - name: classRubricId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Accept-Language
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentClassRubricCriteriaRequestDTO'
+      responses:
+        '201':
+          description: Criterion assigned to student successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentClassRubricCriteriaDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Class rubric assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/student-criteria/{id}:
+    put:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: updateStudentCriterion
+      summary: Update the criterion assigned to a student
+      description: Replaces the current criterion with a new one belonging to the same rubric
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Accept-Language
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentClassRubricCriteriaRequestDTO'
+      responses:
+        '200':
+          description: Criterion updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentClassRubricCriteriaDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: removeStudentCriterion
+      summary: Remove a student criterion assignment
+      description: Soft-deletes the student criterion assignment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Accept-Language
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Assignment removed successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
 components:
   schemas:
     ErrorResponseDTO:
@@ -3597,3 +3884,106 @@ components:
         gradeEnd:
           type: 'integer'
           example: 4
+    ClassRubricDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classId:
+          type: 'integer'
+        rubricId:
+          type: 'integer'
+        rubricTitle:
+          type: 'string'
+        skillId:
+          type: 'integer'
+        criteria:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/SkillRubricCriteriaDTO'
+    ClassRubricRequestDTO:
+      type: 'object'
+      required:
+        - rubricId
+      properties:
+        rubricId:
+          type: 'integer'
+          example: 1
+    StudentClassRubricCriteriaDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classRubricId:
+          type: 'integer'
+        rubricId:
+          type: 'integer'
+        studentId:
+          type: 'integer'
+        studentName:
+          type: 'string'
+        studentSurnames:
+          type: 'string'
+        criterionId:
+          type: 'integer'
+        criterionDescription:
+          type: 'string'
+        gradeStart:
+          type: 'integer'
+        gradeEnd:
+          type: 'integer'
+    StudentClassRubricCriteriaRequestDTO:
+      type: 'object'
+      required:
+        - criterionId
+      properties:
+        criterionId:
+          type: 'integer'
+          example: 1
+    StudentCriteriaGroupDTO:
+      type: 'object'
+      properties:
+        student:
+          $ref: '#/components/schemas/StudentSummaryDTO'
+        rubricCriteria:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/RubricCriterionAssignmentDTO'
+    StudentSummaryDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        name:
+          type: 'string'
+        surnames:
+          type: 'string'
+    RubricCriterionAssignmentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classRubricId:
+          type: 'integer'
+        rubric:
+          $ref: '#/components/schemas/RubricSummaryDTO'
+        criterion:
+          $ref: '#/components/schemas/CriterionSummaryDTO'
+    RubricSummaryDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        title:
+          type: 'string'
+    CriterionSummaryDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        description:
+          type: 'string'
+        gradeStart:
+          type: 'integer'
+        gradeEnd:
+          type: 'integer'
