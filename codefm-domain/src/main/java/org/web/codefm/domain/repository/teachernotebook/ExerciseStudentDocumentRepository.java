@@ -116,5 +116,21 @@ public interface ExerciseStudentDocumentRepository {
      * @param studentId The unique identifier of the student
      */
     void deleteByStudentId(Integer studentId);
-}
 
+    /**
+     * Finds all documents linked to grades of a specific student in a specific class.
+     *
+     * @param studentId The unique identifier of the student
+     * @param classId   The unique identifier of the class
+     * @return List of documents linked to grades of the student in the class
+     */
+    List<ExerciseStudentDocument> findByStudentIdAndClassId(Integer studentId, Integer classId);
+
+    /**
+     * Deletes all documents linked to grades of a specific student in a specific class (hard delete).
+     *
+     * @param studentId The unique identifier of the student
+     * @param classId   The unique identifier of the class
+     */
+    void deleteByStudentIdAndClassId(Integer studentId, Integer classId);
+}

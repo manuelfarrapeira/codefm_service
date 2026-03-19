@@ -239,6 +239,14 @@ public class ExerciseStudentDocumentServiceImpl implements ExerciseStudentDocume
         documents.forEach(doc -> this.deleteFileFromDisk(doc.getDocument()));
     }
 
+    @Override
+    @Transactional
+    public void deleteDocumentsByStudentIdAndClassId(Integer studentId, Integer classId) {
+        final List<ExerciseStudentDocument> documents = this.exerciseStudentDocumentRepository.findByStudentIdAndClassId(studentId, classId);
+        this.exerciseStudentDocumentRepository.deleteByStudentIdAndClassId(studentId, classId);
+        documents.forEach(doc -> this.deleteFileFromDisk(doc.getDocument()));
+    }
+
     private void deleteFileFromDisk(String filename) {
         try {
             final Path filePath = Paths.get(this.documentsDirectory).resolve(filename);

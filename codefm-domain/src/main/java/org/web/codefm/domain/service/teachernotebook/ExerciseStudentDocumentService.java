@@ -96,5 +96,13 @@ public interface ExerciseStudentDocumentService {
      * @param studentId The unique identifier of the student
      */
     void deleteDocumentsByStudentId(Integer studentId);
-}
 
+    /**
+     * Deletes all documents linked to grades of a specific student in a specific class (hard delete).
+     * Used for cascade deletion when a student is removed from a class.
+     *
+     * @param studentId The unique identifier of the student
+     * @param classId   The unique identifier of the class
+     */
+    void deleteDocumentsByStudentIdAndClassId(Integer studentId, Integer classId);
+}

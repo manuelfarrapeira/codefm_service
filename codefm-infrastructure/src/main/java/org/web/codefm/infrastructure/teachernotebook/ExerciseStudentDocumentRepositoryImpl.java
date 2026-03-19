@@ -113,5 +113,16 @@ public class ExerciseStudentDocumentRepositoryImpl implements ExerciseStudentDoc
     public void deleteByStudentId(Integer studentId) {
         this.exerciseStudentDocumentJPARepository.deleteByStudentId(studentId);
     }
-}
 
+    @Override
+    public List<ExerciseStudentDocument> findByStudentIdAndClassId(Integer studentId, Integer classId) {
+        return this.exerciseStudentDocumentMapper.toModelList(
+                this.exerciseStudentDocumentJPARepository.findByStudentIdAndClassId(studentId, classId)
+        );
+    }
+
+    @Override
+    public void deleteByStudentIdAndClassId(Integer studentId, Integer classId) {
+        this.exerciseStudentDocumentJPARepository.deleteByStudentIdAndClassId(studentId, classId);
+    }
+}

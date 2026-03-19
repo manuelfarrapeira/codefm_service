@@ -247,7 +247,7 @@ class CascadeSoftDeleteServiceImplTest {
         this.cascadeSoftDeleteService.cascadeDeleteChildrenOfStudentClass(studentClassId);
 
 		verify(this.studentClassRepository).findById(studentClassId);
-		verify(this.exerciseStudentDocumentService).deleteDocumentsByStudentId(7);
+		verify(this.exerciseStudentDocumentService).deleteDocumentsByStudentIdAndClassId(7, 10);
 		verify(this.exerciseStudentGradeRepository).softDeleteByStudentIdAndClassId(7, 10);
 		verify(this.studentAbsenceRepository).deleteByStudentClassId(studentClassId);
 	}

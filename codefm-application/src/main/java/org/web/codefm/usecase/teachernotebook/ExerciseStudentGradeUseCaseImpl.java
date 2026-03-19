@@ -2,7 +2,9 @@ package org.web.codefm.usecase.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentGrade;
+import org.web.codefm.domain.service.teachernotebook.ExerciseStudentDocumentService;
 import org.web.codefm.domain.service.teachernotebook.ExerciseStudentGradeService;
 import org.web.codefm.domain.usecase.teachernotebook.ExerciseStudentGradeUseCase;
 
@@ -13,6 +15,7 @@ import java.util.List;
 public class ExerciseStudentGradeUseCaseImpl implements ExerciseStudentGradeUseCase {
 
     private final ExerciseStudentGradeService exerciseStudentGradeService;
+    private final ExerciseStudentDocumentService exerciseStudentDocumentService;
 
     @Override
     public List<ExerciseStudentGrade> getGradesByClassId(Integer classId) {
@@ -35,8 +38,9 @@ public class ExerciseStudentGradeUseCaseImpl implements ExerciseStudentGradeUseC
     }
 
     @Override
+    @Transactional
     public void deleteGrade(Integer id) {
-        exerciseStudentGradeService.deleteGrade(id);
+        this.exerciseStudentDocumentService.deleteDocumentsByGradeId(id);
+        this.exerciseStudentGradeService.deleteGrade(id);
     }
 }
-
