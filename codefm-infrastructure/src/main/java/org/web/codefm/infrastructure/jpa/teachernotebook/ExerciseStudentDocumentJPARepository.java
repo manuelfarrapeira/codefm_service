@@ -73,6 +73,6 @@ public interface ExerciseStudentDocumentJPARepository extends JpaRepository<Exer
             "WHERE g.studentId = :studentId AND g.deletionDate IS NULL " +
             "AND g.exerciseId IN (SELECT e.id FROM ExerciseEntity e " +
             "JOIN SubjectClassEntity sc ON e.subjectClassId = sc.id " +
-            "WHERE sc.classId = :classId AND e.deletionDate IS NULL)")
+            "WHERE sc.classId = :classId AND e.deletionDate IS NULL))")
     void deleteByStudentIdAndClassId(@Param("studentId") Integer studentId, @Param("classId") Integer classId);
 }
