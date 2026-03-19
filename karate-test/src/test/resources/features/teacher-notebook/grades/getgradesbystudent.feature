@@ -6,7 +6,8 @@ Feature: Get Grades by Class and Student
     Given url baseHttpsUrl
 
   Scenario: Get grades by class and student - Success
-    * def exerciseGradeSchema = { gradeId: '#number', exerciseId: '#number', exerciseTitle: '#string', maxGrade: '#number', percentageGrade: '#number', grade: '#number', description: '##string' }
+    * def documentSchema = { id: '#number', gradeId: '#number', document: '#string', description: '##string' }
+    * def exerciseGradeSchema = { gradeId: '#number', exerciseId: '#number', exerciseTitle: '#string', maxGrade: '#number', percentageGrade: '#number', grade: '#number', description: '##string', documents: '#[] documentSchema' }
     * def subjectGradeSchema = { subjectId: '#number', subjectName: '#string', exercises: '#[] exerciseGradeSchema' }
     * def quarterGradeSchema = { quarter: '#number', subjects: '#[] subjectGradeSchema' }
     Given path '/teacher-notebook/v1/classes/4/students/1/grades'
