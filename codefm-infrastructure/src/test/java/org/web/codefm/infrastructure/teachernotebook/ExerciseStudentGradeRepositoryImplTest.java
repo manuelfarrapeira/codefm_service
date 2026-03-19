@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentGrade;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.*;
 import org.web.codefm.infrastructure.jpa.teachernotebook.*;
+import org.web.codefm.infrastructure.mapper.ExerciseStudentDocumentMapper;
 import org.web.codefm.infrastructure.mapper.ExerciseStudentGradeMapper;
 
 import java.util.ArrayList;
@@ -36,7 +37,13 @@ class ExerciseStudentGradeRepositoryImplTest {
     private StudentJPARepository studentJPARepository;
 
     @Mock
+    private ExerciseStudentDocumentJPARepository exerciseStudentDocumentJPARepository;
+
+    @Mock
     private ExerciseStudentGradeMapper exerciseStudentGradeMapper;
+
+    @Mock
+    private ExerciseStudentDocumentMapper exerciseStudentDocumentMapper;
 
     @InjectMocks
     private ExerciseStudentGradeRepositoryImpl exerciseStudentGradeRepository;
@@ -62,6 +69,8 @@ class ExerciseStudentGradeRepositoryImplTest {
         studentEntity.setName("Juan");
         studentEntity.setSurnames("García");
         when(studentJPARepository.findAllById(List.of(5))).thenReturn(List.of(studentEntity));
+        when(exerciseStudentDocumentJPARepository.findByGradeIdIn(List.of(1))).thenReturn(List.of());
+        when(exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
 
         List<ExerciseStudentGrade> result = exerciseStudentGradeRepository.findByClassId(1);
 
@@ -102,6 +111,8 @@ class ExerciseStudentGradeRepositoryImplTest {
         studentEntity.setName("Juan");
         studentEntity.setSurnames("García");
         when(studentJPARepository.findAllById(List.of(5))).thenReturn(List.of(studentEntity));
+        when(exerciseStudentDocumentJPARepository.findByGradeIdIn(List.of(1))).thenReturn(List.of());
+        when(exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
 
         List<ExerciseStudentGrade> result = exerciseStudentGradeRepository.findByClassIdAndStudentId(1, 5);
 
@@ -136,6 +147,8 @@ class ExerciseStudentGradeRepositoryImplTest {
         studentEntity.setName("Juan");
         studentEntity.setSurnames("García");
         when(studentJPARepository.findById(5)).thenReturn(Optional.of(studentEntity));
+        when(exerciseStudentDocumentJPARepository.findByGradeId(1)).thenReturn(List.of());
+        when(exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
 
         Optional<ExerciseStudentGrade> result = exerciseStudentGradeRepository.findByIdAndTeacherId(1, 1);
 
@@ -175,6 +188,8 @@ class ExerciseStudentGradeRepositoryImplTest {
         studentEntity.setName("Juan");
         studentEntity.setSurnames("García");
         when(studentJPARepository.findById(5)).thenReturn(Optional.of(studentEntity));
+        when(exerciseStudentDocumentJPARepository.findByGradeId(1)).thenReturn(List.of());
+        when(exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
 
         ExerciseStudentGrade result = exerciseStudentGradeRepository.save(grade);
 
