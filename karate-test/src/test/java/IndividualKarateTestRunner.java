@@ -362,4 +362,24 @@ public class IndividualKarateTestRunner {
 		return Karate.run("features/teacher-notebook/class-rubrics/removestudentcriterion").relativeTo(getClass());
 	}
 
+	@Karate.Test
+	Karate testTeacherNotebookUploadGradeDocument() {
+		return Karate.run("features/teacher-notebook/grade-documents/uploaddocument").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookDownloadGradeDocument() {
+		return Karate.run("features/teacher-notebook/grade-documents/downloaddocument").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookUpdateGradeDocument() {
+		return Karate.run("features/teacher-notebook/grade-documents/updatedocument").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookDeleteGradeDocument() {
+		return Karate.run("features/teacher-notebook/grade-documents/deletedocument").relativeTo(getClass());
+	}
+
 }

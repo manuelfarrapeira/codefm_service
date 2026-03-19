@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.repository.teachernotebook.*;
 import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
+import org.web.codefm.domain.service.teachernotebook.ExerciseStudentDocumentService;
 
 import java.util.List;
 
@@ -21,6 +22,7 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 	private final ExerciseRepository exerciseRepository;
 	private final ExerciseStudentGradeRepository exerciseStudentGradeRepository;
 	private final ExerciseDocumentService exerciseDocumentService;
+	private final ExerciseStudentDocumentService exerciseStudentDocumentService;
 	private final StudentAbsenceRepository studentAbsenceRepository;
 	private final SkillRubricRepository skillRubricRepository;
 	private final SkillRubricCriteriaRepository skillRubricCriteriaRepository;
@@ -58,6 +60,7 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 		final List<Integer> exerciseIds = this.exerciseRepository
 				.findActiveIdsBySubjectClassIds(List.of(subjectClassId));
 		if (!exerciseIds.isEmpty()) {
+			this.exerciseStudentDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
 			this.exerciseStudentGradeRepository.softDeleteByExerciseIds(exerciseIds);
 			this.exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
 		}
@@ -77,12 +80,14 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 
 	@Override
 	public void cascadeDeleteChildrenOfExercise(Integer exerciseId) {
+		this.exerciseStudentDocumentService.deleteDocumentsByExerciseIds(List.of(exerciseId));
 		this.exerciseStudentGradeRepository.softDeleteByExerciseIds(List.of(exerciseId));
 		this.exerciseDocumentService.deleteDocumentsByExerciseIds(List.of(exerciseId));
 	}
 
 	@Override
 	public void cascadeDeleteChildrenOfStudent(Integer studentId) {
+		this.exerciseStudentDocumentService.deleteDocumentsByStudentId(studentId);
 		this.exerciseStudentGradeRepository.softDeleteByStudentId(studentId);
 		this.studentAbsenceRepository.hardDeleteByStudentId(studentId);
 		this.studentClassRepository.softDeleteByStudentId(studentId);
@@ -91,8 +96,11 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 	@Override
 	public void cascadeDeleteChildrenOfStudentClass(Integer studentClassId) {
 		this.studentClassRepository.findById(studentClassId)
-				.ifPresent(studentClass -> this.exerciseStudentGradeRepository
-						.softDeleteByStudentIdAndClassId(studentClass.getStudentId(), studentClass.getClassId()));
+				.ifPresent(studentClass -> {
+					this.exerciseStudentDocumentService.deleteDocumentsByStudentId(studentClass.getStudentId());
+					this.exerciseStudentGradeRepository
+							.softDeleteByStudentIdAndClassId(studentClass.getStudentId(), studentClass.getClassId());
+				});
 		this.studentAbsenceRepository.deleteByStudentClassId(studentClassId);
 	}
 

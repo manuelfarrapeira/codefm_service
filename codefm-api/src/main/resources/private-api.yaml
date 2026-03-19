@@ -27,6 +27,8 @@ tags:
     description: Operations related to Teacher Notebook Exercises
   - name: TeacherNoteBookExerciseDocuments
     description: Operations related to Teacher Notebook Exercise Documents
+  - name: TeacherNoteBookExerciseStudentDocuments
+    description: Operations related to Teacher Notebook Exercise Student Documents
   - name: TeacherNoteBookCalendarAlerts
     description: Operations related to Teacher Notebook Calendar Alerts
   - name: TeacherNoteBookSkills
@@ -2349,6 +2351,201 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/grades/{gradeId}/documents:
+    post:
+      tags:
+        - TeacherNoteBookExerciseStudentDocuments
+      operationId: uploadGradeDocument
+      summary: Upload a document for a student grade
+      description: Uploads a document file and associates it with the given student grade.
+      parameters:
+        - name: gradeId
+          in: path
+          required: true
+          description: The ID of the student grade
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseStudentDocumentDTO'
+        '404':
+          description: Grade not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/grades/{gradeId}/documents/{documentId}:
+    get:
+      tags:
+        - TeacherNoteBookExerciseStudentDocuments
+      operationId: downloadGradeDocument
+      summary: Download a document of a student grade
+      description: Downloads the file associated with the given document.
+      parameters:
+        - name: gradeId
+          in: path
+          required: true
+          description: The ID of the student grade
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: Document file content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    patch:
+      tags:
+        - TeacherNoteBookExerciseStudentDocuments
+      operationId: updateGradeDocumentDescription
+      summary: Update the description of a student grade document
+      description: Updates only the description field of the given document.
+      parameters:
+        - name: gradeId
+          in: path
+          required: true
+          description: The ID of the student grade
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseStudentDocumentUpdateRequestDTO'
+      responses:
+        '200':
+          description: Document updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseStudentDocumentDTO'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookExerciseStudentDocuments
+      operationId: deleteGradeDocument
+      summary: Delete a student grade document
+      description: Deletes the document record and file from disk (hard delete).
+      parameters:
+        - name: gradeId
+          in: path
+          required: true
+          description: The ID of the student grade
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Document successfully deleted (No Content)
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
   /teacher-notebook/v1/classes/{classId}/grades/export:
     get:
       tags:
@@ -3649,6 +3846,23 @@ components:
         description:
           type: 'string'
     ExerciseDocumentUpdateRequestDTO:
+      type: 'object'
+      properties:
+        description:
+          type: 'string'
+          example: 'Updated description'
+    ExerciseStudentDocumentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        gradeId:
+          type: 'integer'
+        document:
+          type: 'string'
+        description:
+          type: 'string'
+    ExerciseStudentDocumentUpdateRequestDTO:
       type: 'object'
       properties:
         description:

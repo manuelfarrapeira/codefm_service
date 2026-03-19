@@ -87,6 +87,7 @@ jobs:
             mkdir -p ~/codefm-pre/logs
             mkdir -p ~/codefm-pre/data/student-photos
             mkdir -p ~/codefm-pre/data/exercise-documents
+            mkdir -p ~/codefm-pre/data/exercise-student-document
             echo "=== Verifying created directories ==="
             ls -la ~/codefm-pre/data/
             echo "=== Full path ==="
