@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = ExerciseStudentDocumentDTOMapper.class)
 public interface ExerciseStudentGradeDTOMapper {
 
     ExerciseStudentGradeDTO toDTO(ExerciseStudentGrade grade);
@@ -23,6 +23,7 @@ public interface ExerciseStudentGradeDTOMapper {
     @Mapping(target = "percentageGrade", source = "percentageGrade")
     @Mapping(target = "grade", source = "grade")
     @Mapping(target = "description", source = "description")
+    @Mapping(target = "documents", source = "documents")
     ExerciseGradeDTO toExerciseGradeDTO(ExerciseStudentGrade grade);
 
     default List<StudentGradesDTO> toGroupedByStudentDTOList(List<ExerciseStudentGrade> grades) {
@@ -86,4 +87,3 @@ public interface ExerciseStudentGradeDTOMapper {
         return quarterList;
     }
 }
-

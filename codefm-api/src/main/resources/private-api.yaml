@@ -3882,6 +3882,10 @@ components:
           format: 'double'
         description:
           type: 'string'
+        documents:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ExerciseStudentDocumentDTO'
     ExerciseStudentGradeRequestDTO:
       type: 'object'
       properties:
@@ -3956,6 +3960,10 @@ components:
           format: 'double'
         description:
           type: 'string'
+        documents:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ExerciseStudentDocumentDTO'
     CalendarAlertDTO:
       type: 'object'
       properties:

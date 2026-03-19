@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Generated;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Builder
@@ -24,5 +25,5 @@ public class ExerciseStudentGrade {
     private Integer quarter;
     private Integer maxGrade;
     private Integer percentageGrade;
+    private List<ExerciseStudentDocument> documents;
 }
-

@@ -3,10 +3,12 @@ package org.web.codefm.infrastructure.teachernotebook;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentDocument;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentGrade;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepository;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.*;
 import org.web.codefm.infrastructure.jpa.teachernotebook.*;
+import org.web.codefm.infrastructure.mapper.ExerciseStudentDocumentMapper;
 import org.web.codefm.infrastructure.mapper.ExerciseStudentGradeMapper;
 
 import java.util.ArrayList;
@@ -24,7 +26,9 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
     private final SubjectClassJPARepository subjectClassJPARepository;
     private final SubjectJPARepository subjectJPARepository;
     private final StudentJPARepository studentJPARepository;
+    private final ExerciseStudentDocumentJPARepository exerciseStudentDocumentJPARepository;
     private final ExerciseStudentGradeMapper exerciseStudentGradeMapper;
+    private final ExerciseStudentDocumentMapper exerciseStudentDocumentMapper;
 
     @Override
     public List<ExerciseStudentGrade> findByClassId(Integer classId) {
@@ -147,6 +151,12 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
         Map<Integer, StudentEntity> studentMap = studentJPARepository.findAllById(studentIds).stream()
                 .collect(Collectors.toMap(StudentEntity::getId, s -> s));
 
+        List<Integer> gradeIds = grades.stream().map(ExerciseStudentGrade::getId).toList();
+        Map<Integer, List<ExerciseStudentDocument>> documentsMap = this.exerciseStudentDocumentMapper
+                .toModelList(this.exerciseStudentDocumentJPARepository.findByGradeIdIn(gradeIds))
+                .stream()
+                .collect(Collectors.groupingBy(ExerciseStudentDocument::getGradeId));
+
         grades.forEach(grade -> {
             ExerciseEntity exercise = exerciseMap.get(grade.getExerciseId());
             if (exercise != null) {
@@ -167,6 +177,8 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
                 grade.setStudentName(student.getName());
                 grade.setStudentSurnames(student.getSurnames());
             }
+
+            grade.setDocuments(documentsMap.getOrDefault(grade.getId(), List.of()));
         });
 
         return grades;
@@ -190,6 +202,8 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
             grade.setStudentName(student.getName());
             grade.setStudentSurnames(student.getSurnames());
         });
+
+        grade.setDocuments(this.exerciseStudentDocumentMapper.toModelList(
+                this.exerciseStudentDocumentJPARepository.findByGradeId(grade.getId())));
     }
 }
-
