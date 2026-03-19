@@ -57,5 +57,22 @@ public interface ExerciseStudentDocumentJPARepository extends JpaRepository<Exer
     @Query("DELETE FROM ExerciseStudentDocumentEntity d WHERE d.gradeId IN " +
             "(SELECT g.id FROM ExerciseStudentGradeEntity g WHERE g.studentId = :studentId AND g.deletionDate IS NULL)")
     void deleteByStudentId(@Param("studentId") Integer studentId);
-}
 
+    @Query("SELECT d FROM ExerciseStudentDocumentEntity d " +
+            "JOIN ExerciseStudentGradeEntity g ON d.gradeId = g.id " +
+            "WHERE g.studentId = :studentId AND g.deletionDate IS NULL " +
+            "AND g.exerciseId IN (SELECT e.id FROM ExerciseEntity e " +
+            "JOIN SubjectClassEntity sc ON e.subjectClassId = sc.id " +
+            "WHERE sc.classId = :classId AND e.deletionDate IS NULL)")
+    List<ExerciseStudentDocumentEntity> findByStudentIdAndClassId(@Param("studentId") Integer studentId, @Param("classId") Integer classId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM ExerciseStudentDocumentEntity d WHERE d.gradeId IN " +
+            "(SELECT g.id FROM ExerciseStudentGradeEntity g " +
+            "WHERE g.studentId = :studentId AND g.deletionDate IS NULL " +
+            "AND g.exerciseId IN (SELECT e.id FROM ExerciseEntity e " +
+            "JOIN SubjectClassEntity sc ON e.subjectClassId = sc.id " +
+            "WHERE sc.classId = :classId AND e.deletionDate IS NULL)")
+    void deleteByStudentIdAndClassId(@Param("studentId") Integer studentId, @Param("classId") Integer classId);
+}

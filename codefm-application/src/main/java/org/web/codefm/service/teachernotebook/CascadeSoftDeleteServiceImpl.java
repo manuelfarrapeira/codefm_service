@@ -97,7 +97,7 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 	public void cascadeDeleteChildrenOfStudentClass(Integer studentClassId) {
 		this.studentClassRepository.findById(studentClassId)
 				.ifPresent(studentClass -> {
-					this.exerciseStudentDocumentService.deleteDocumentsByStudentId(studentClass.getStudentId());
+					this.exerciseStudentDocumentService.deleteDocumentsByStudentIdAndClassId(studentClass.getStudentId(), studentClass.getClassId());
 					this.exerciseStudentGradeRepository
 							.softDeleteByStudentIdAndClassId(studentClass.getStudentId(), studentClass.getClassId());
 				});

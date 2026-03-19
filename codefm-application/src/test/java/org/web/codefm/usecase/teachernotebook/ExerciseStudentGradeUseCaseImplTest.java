@@ -6,19 +6,22 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentGrade;
+import org.web.codefm.domain.service.teachernotebook.ExerciseStudentDocumentService;
 import org.web.codefm.domain.service.teachernotebook.ExerciseStudentGradeService;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ExerciseStudentGradeUseCaseImplTest {
 
     @Mock
     private ExerciseStudentGradeService exerciseStudentGradeService;
+
+    @Mock
+    private ExerciseStudentDocumentService exerciseStudentDocumentService;
 
     @InjectMocks
     private ExerciseStudentGradeUseCaseImpl exerciseStudentGradeUseCase;
@@ -70,10 +73,11 @@ class ExerciseStudentGradeUseCaseImplTest {
     }
 
     @Test
-    void deleteGrade_shouldDelegateToService() {
+    void deleteGrade_shouldDeleteDocumentsBeforeSoftDeleteGrade() {
         exerciseStudentGradeUseCase.deleteGrade(1);
 
-        verify(exerciseStudentGradeService).deleteGrade(1);
+        final var order = inOrder(exerciseStudentDocumentService, exerciseStudentGradeService);
+        order.verify(exerciseStudentDocumentService).deleteDocumentsByGradeId(1);
+        order.verify(exerciseStudentGradeService).deleteGrade(1);
     }
 }
-
