@@ -21,6 +21,10 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ClassRubricServiceImpl implements ClassRubricService {
 
+    private static final String PARAM_STUDENT_ID = "studentId";
+    private static final String PARAM_CRITERION_ID = "criterionId";
+    private static final String PARAM_RUBRIC_ID = "rubricId";
+
     private final ClassRubricRepository classRubricRepository;
     private final StudentClassRubricCriteriaRepository studentClassRubricCriteriaRepository;
     private final ClassRepository classRepository;
@@ -57,12 +61,12 @@ public class ClassRubricServiceImpl implements ClassRubricService {
 
         final Optional<SkillRubric> rubricOpt = this.skillRubricRepository.findById(rubricId);
         if (rubricOpt.isEmpty()) {
-            errors.add(new ErrorMessage("rubricId",
+            errors.add(new ErrorMessage(PARAM_RUBRIC_ID,
                     this.messageSource.getMessage(MessageKeys.CLASS_RUBRIC_VALIDATION_RUBRIC_NOT_FOUND, null, locale)));
         } else {
             this.skillRepository.findByIdAndTeacherId(rubricOpt.get().getSkillId(), teacherId)
                     .orElseGet(() -> {
-                        errors.add(new ErrorMessage("rubricId",
+                        errors.add(new ErrorMessage(PARAM_RUBRIC_ID,
                                 this.messageSource.getMessage(MessageKeys.CLASS_RUBRIC_VALIDATION_RUBRIC_NOT_FOUND, null, locale)));
                         return null;
                     });
@@ -70,7 +74,7 @@ public class ClassRubricServiceImpl implements ClassRubricService {
 
         if (errors.isEmpty() && this.classRubricRepository
                 .existsByClassIdAndRubricIdAndDeletionDateIsNull(classId, rubricId)) {
-            errors.add(new ErrorMessage("rubricId",
+            errors.add(new ErrorMessage(PARAM_RUBRIC_ID,
                     this.messageSource.getMessage(MessageKeys.CLASS_RUBRIC_ALREADY_EXISTS, null, locale)));
         }
 
@@ -157,7 +161,7 @@ public class ClassRubricServiceImpl implements ClassRubricService {
 
         this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId)
                 .orElseGet(() -> {
-                    errors.add(new ErrorMessage("studentId",
+                    errors.add(new ErrorMessage(PARAM_STUDENT_ID,
                             this.messageSource.getMessage(MessageKeys.STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_STUDENT_NOT_FOUND, null, locale)));
                     return null;
                 });
@@ -166,7 +170,7 @@ public class ClassRubricServiceImpl implements ClassRubricService {
             this.studentClassRepository.findByClassIdAndStudentId(classRubric.getClassId(), studentId)
                     .filter(sc -> sc.getDeletionDate() == null)
                     .orElseGet(() -> {
-                        errors.add(new ErrorMessage("studentId",
+                        errors.add(new ErrorMessage(PARAM_STUDENT_ID,
                                 this.messageSource.getMessage(MessageKeys.STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_STUDENT_NOT_IN_CLASS, null, locale)));
                         return null;
                     });
@@ -174,16 +178,16 @@ public class ClassRubricServiceImpl implements ClassRubricService {
 
         final Optional<SkillRubricCriteria> criterionOpt = this.skillRubricCriteriaRepository.findActiveById(criterionId);
         if (criterionOpt.isEmpty()) {
-            errors.add(new ErrorMessage("criterionId",
+            errors.add(new ErrorMessage(PARAM_CRITERION_ID,
                     this.messageSource.getMessage(MessageKeys.STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_CRITERION_NOT_FOUND, null, locale)));
         } else if (!criterionOpt.get().getRubricId().equals(classRubric.getRubricId())) {
-            errors.add(new ErrorMessage("criterionId",
+            errors.add(new ErrorMessage(PARAM_CRITERION_ID,
                     this.messageSource.getMessage(MessageKeys.STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_CRITERION_NOT_IN_RUBRIC, null, locale)));
         }
 
         if (errors.isEmpty() && this.studentClassRubricCriteriaRepository
                 .existsByClassRubricIdAndStudentIdAndDeletionDateIsNull(classRubricId, studentId)) {
-            errors.add(new ErrorMessage("studentId",
+            errors.add(new ErrorMessage(PARAM_STUDENT_ID,
                     this.messageSource.getMessage(MessageKeys.STUDENT_CLASS_RUBRIC_CRITERIA_ALREADY_EXISTS, null, locale)));
         }
 
@@ -217,10 +221,10 @@ public class ClassRubricServiceImpl implements ClassRubricService {
         final List<ErrorMessage> errors = new ArrayList<>();
         final Optional<SkillRubricCriteria> criterionOpt = this.skillRubricCriteriaRepository.findActiveById(criterionId);
         if (criterionOpt.isEmpty()) {
-            errors.add(new ErrorMessage("criterionId",
+            errors.add(new ErrorMessage(PARAM_CRITERION_ID,
                     this.messageSource.getMessage(MessageKeys.STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_CRITERION_NOT_FOUND, null, locale)));
         } else if (!criterionOpt.get().getRubricId().equals(classRubric.getRubricId())) {
-            errors.add(new ErrorMessage("criterionId",
+            errors.add(new ErrorMessage(PARAM_CRITERION_ID,
                     this.messageSource.getMessage(MessageKeys.STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_CRITERION_NOT_IN_RUBRIC, null, locale)));
         }
 
