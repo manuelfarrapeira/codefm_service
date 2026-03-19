@@ -105,6 +105,7 @@ jobs:
             mkdir -p ~/codefm/logs
             mkdir -p ~/codefm/data/student-photos
             mkdir -p ~/codefm/data/exercise-documents
+            mkdir -p ~/codefm/data/exercise-student-document
             echo "=== Verifying created directories ==="
             ls -la ~/codefm/data/
             echo "=== Full path ==="

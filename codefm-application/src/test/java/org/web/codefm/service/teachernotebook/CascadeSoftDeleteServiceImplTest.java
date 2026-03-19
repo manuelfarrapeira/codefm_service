@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.StudentClass;
 import org.web.codefm.domain.repository.teachernotebook.*;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
+import org.web.codefm.domain.service.teachernotebook.ExerciseStudentDocumentService;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,6 +34,8 @@ class CascadeSoftDeleteServiceImplTest {
 	private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
 	@Mock
 	private ExerciseDocumentService exerciseDocumentService;
+	@Mock
+	private ExerciseStudentDocumentService exerciseStudentDocumentService;
 	@Mock
 	private StudentAbsenceRepository studentAbsenceRepository;
 	@Mock
@@ -107,6 +110,7 @@ class CascadeSoftDeleteServiceImplTest {
 
         this.cascadeSoftDeleteService.cascadeDeleteChildrenOfClass(classId);
 
+		verify(this.exerciseStudentDocumentService).deleteDocumentsByExerciseIds(exerciseIds);
 		verify(this.exerciseStudentGradeRepository).softDeleteByExerciseIds(exerciseIds);
 		verify(this.exerciseDocumentService).deleteDocumentsByExerciseIds(exerciseIds);
 		verify(this.exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId1));
@@ -145,8 +149,9 @@ class CascadeSoftDeleteServiceImplTest {
 
         this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSubjectClass(subjectClassId);
 
-		final var order = inOrder(this.exerciseStudentGradeRepository, this.exerciseDocumentService, this.exerciseRepository,
+		final var order = inOrder(this.exerciseStudentDocumentService, this.exerciseStudentGradeRepository, this.exerciseDocumentService, this.exerciseRepository,
                 this.studentAbsenceRepository);
+		order.verify(this.exerciseStudentDocumentService).deleteDocumentsByExerciseIds(exerciseIds);
 		order.verify(this.exerciseStudentGradeRepository).softDeleteByExerciseIds(exerciseIds);
 		order.verify(this.exerciseDocumentService).deleteDocumentsByExerciseIds(exerciseIds);
 		order.verify(this.exerciseRepository).softDeleteBySubjectClassIds(List.of(subjectClassId));
@@ -213,7 +218,8 @@ class CascadeSoftDeleteServiceImplTest {
 
         this.cascadeSoftDeleteService.cascadeDeleteChildrenOfExercise(exerciseId);
 
-		final var order = inOrder(this.exerciseStudentGradeRepository, this.exerciseDocumentService);
+		final var order = inOrder(this.exerciseStudentDocumentService, this.exerciseStudentGradeRepository, this.exerciseDocumentService);
+		order.verify(this.exerciseStudentDocumentService).deleteDocumentsByExerciseIds(List.of(exerciseId));
 		order.verify(this.exerciseStudentGradeRepository).softDeleteByExerciseIds(List.of(exerciseId));
 		order.verify(this.exerciseDocumentService).deleteDocumentsByExerciseIds(List.of(exerciseId));
 	}
@@ -224,7 +230,8 @@ class CascadeSoftDeleteServiceImplTest {
 
         this.cascadeSoftDeleteService.cascadeDeleteChildrenOfStudent(studentId);
 
-		final var order = inOrder(this.exerciseStudentGradeRepository, this.studentAbsenceRepository, this.studentClassRepository);
+		final var order = inOrder(this.exerciseStudentDocumentService, this.exerciseStudentGradeRepository, this.studentAbsenceRepository, this.studentClassRepository);
+		order.verify(this.exerciseStudentDocumentService).deleteDocumentsByStudentId(studentId);
 		order.verify(this.exerciseStudentGradeRepository).softDeleteByStudentId(studentId);
 		order.verify(this.studentAbsenceRepository).hardDeleteByStudentId(studentId);
 		order.verify(this.studentClassRepository).softDeleteByStudentId(studentId);
@@ -240,6 +247,7 @@ class CascadeSoftDeleteServiceImplTest {
         this.cascadeSoftDeleteService.cascadeDeleteChildrenOfStudentClass(studentClassId);
 
 		verify(this.studentClassRepository).findById(studentClassId);
+		verify(this.exerciseStudentDocumentService).deleteDocumentsByStudentId(7);
 		verify(this.exerciseStudentGradeRepository).softDeleteByStudentIdAndClassId(7, 10);
 		verify(this.studentAbsenceRepository).deleteByStudentClassId(studentClassId);
 	}

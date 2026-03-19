@@ -122,3 +122,5 @@ student:
 exercise:
   documents:
     directory: ./data/exercise-documents
+  student-documents:
+    directory: ./data/exercise-student-document

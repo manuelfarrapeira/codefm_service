@@ -1,0 +1,176 @@
+{
+  "info": {
+    "_postman_id": "exercise-student-documents-collection",
+    "name": "ExerciseStudentDocuments",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Upload Grade Document",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "description",
+              "value": "Descripcion del documento",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/grades/:gradeId/documents",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "grades",
+            ":gradeId",
+            "documents"
+          ],
+          "variable": [
+            {
+              "key": "gradeId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Sube un documento al registro de nota de un alumno. Formatos permitidos: DOC, DOCX, PDF, XLS, XLSX, JPEG, JPG, PNG. Tamanyo maximo: 2MB."
+      }
+    },
+    {
+      "name": "Download Grade Document",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/grades/:gradeId/documents/:documentId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "grades",
+            ":gradeId",
+            "documents",
+            ":documentId"
+          ],
+          "variable": [
+            {
+              "key": "gradeId",
+              "value": "1"
+            },
+            {
+              "key": "documentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Descarga el fichero asociado a un documento de nota de alumno."
+      }
+    },
+    {
+      "name": "Update Grade Document Description",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"description\": \"Nueva descripcion del documento\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/grades/:gradeId/documents/:documentId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "grades",
+            ":gradeId",
+            "documents",
+            ":documentId"
+          ],
+          "variable": [
+            {
+              "key": "gradeId",
+              "value": "1"
+            },
+            {
+              "key": "documentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Actualiza la descripcion de un documento de nota de alumno."
+      }
+    },
+    {
+      "name": "Delete Grade Document",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/grades/:gradeId/documents/:documentId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "grades",
+            ":gradeId",
+            "documents",
+            ":documentId"
+          ],
+          "variable": [
+            {
+              "key": "gradeId",
+              "value": "1"
+            },
+            {
+              "key": "documentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Elimina el documento y el fichero fisico del disco (hard delete)."
+      }
+    }
+  ]
+}
+
