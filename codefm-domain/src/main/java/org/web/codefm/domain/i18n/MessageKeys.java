@@ -24,6 +24,7 @@ public class MessageKeys {
 	public static final String STUDENT_VALIDATION_DATE_FORMAT_INVALID = "student.validation.dateOfBirth.format.invalid";
 	public static final String STUDENT_VALIDATION_GENDER_REQUIRED = "student.validation.gender.required";
 	public static final String STUDENT_VALIDATION_GENDER_INVALID = "student.validation.gender.invalid";
+	public static final String STUDENT_VALIDATION_SHAPE_INVALID = "student.validation.shape.invalid";
 	public static final String STUDENT_NOT_FOUND = "student.not.found";
 	public static final String STUDENT_PHOTO_EMPTY = "student.photo.empty";
 	public static final String STUDENT_PHOTO_UPLOAD_ERROR = "student.photo.upload.error";

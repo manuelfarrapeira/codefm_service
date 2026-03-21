@@ -41,6 +41,9 @@ public class StudentEntity {
     @Column(length = 100)
     private String photo;
 
+    @Column(length = 20)
+    private String shape;
+
     @Column(name = "deletion_date")
     private LocalDate deletionDate;
 }
