@@ -3599,6 +3599,9 @@ components:
           type: 'string'
         photo:
           type: 'string'
+        shape:
+          type: 'string'
+          description: 'Student shape (SQUARE, CIRCLE, TRIANGLE)'
         classIds:
           type: 'array'
           items:
@@ -3624,6 +3627,10 @@ components:
         additionalInfo:
           type: 'string'
           example: 'Additional information about the student'
+        shape:
+          type: 'string'
+          description: 'Student shape (SQUARE, CIRCLE, TRIANGLE)'
+          example: 'SQUARE'
     SubjectDTO:
       type: 'object'
       properties:

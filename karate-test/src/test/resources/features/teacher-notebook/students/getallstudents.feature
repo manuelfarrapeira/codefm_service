@@ -3,7 +3,7 @@ Feature: Get All Students Endpoint
   Background:
     * configure headers = { 'Cookie': '#(authTokens.karateuseradmin)', 'Accept-Language': 'es' }
     Given url baseHttpsUrl
-    * def studentSchema = { id: '#number', name: '#string', surnames: '#string', dateOfBirth: '##string', gender: '##string', additionalInfo: '##string', photo: '##string', classIds: '##[]' }
+    * def studentSchema = { id: '#number', name: '#string', surnames: '#string', dateOfBirth: '##string', gender: '##string', additionalInfo: '##string', photo: '##string', shape: '##string', classIds: '##[]' }
 
   Scenario: Get all students successfully
     Given path '/teacher-notebook/v1/students/all'

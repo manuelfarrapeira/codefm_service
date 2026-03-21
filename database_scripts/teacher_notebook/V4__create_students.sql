@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS students
     date_of_birth  DATE         NULL,
     aditional_info TEXT         NULL,
     photo          VARCHAR(100) NULL,
+    shape VARCHAR(20) NULL,
     deletion_date  DATE         NULL
 );
 

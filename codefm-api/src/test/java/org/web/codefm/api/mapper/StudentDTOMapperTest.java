@@ -27,6 +27,7 @@ class StudentDTOMapperTest {
                 .dateOfBirth(LocalDate.of(2010, 3, 15))
                 .additionalInfo("Test info")
                 .photo("1.jpg")
+                .shape("SQUARE")
                 .build();
 
         // When
@@ -40,6 +41,7 @@ class StudentDTOMapperTest {
         assertEquals("15/03/2010", result.getDateOfBirth());
         assertEquals("Test info", result.getAdditionalInfo());
         assertEquals("1.jpg", result.getPhoto());
+        assertEquals("SQUARE", result.getShape());
     }
 
     @Test

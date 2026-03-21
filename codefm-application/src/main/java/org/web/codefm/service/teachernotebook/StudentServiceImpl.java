@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.Student;
+import org.web.codefm.domain.enums.StudentShape;
 import org.web.codefm.domain.exception.teachernotebook.*;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.StudentClassRepository;
@@ -62,6 +63,7 @@ public class StudentServiceImpl implements StudentService {
         existingStudent.setDateOfBirth(student.getDateOfBirth());
         existingStudent.setGender(student.getGender());
         existingStudent.setAdditionalInfo(student.getAdditionalInfo());
+        existingStudent.setShape(student.getShape());
 
         return studentRepository.update(existingStudent);
     }
@@ -197,6 +199,16 @@ public class StudentServiceImpl implements StudentService {
             ));
         }
 
+        if (student.getShape() != null && !student.getShape().trim().isEmpty()) {
+            student.setShape(student.getShape().trim().toUpperCase());
+            try {
+                StudentShape.valueOf(student.getShape());
+            } catch (IllegalArgumentException e) {
+                errors.add(new ErrorMessage("shape",
+                        messageSource.getMessage(MessageKeys.STUDENT_VALIDATION_SHAPE_INVALID, null, sessionUser.getLocale())
+                ));
+            }
+        }
 
         if (!errors.isEmpty()) {
             throw new StudentValidationException(errors);

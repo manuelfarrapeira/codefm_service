@@ -31,6 +31,8 @@ public abstract class StudentRequestMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "photo", ignore = true)
     @Mapping(target = "deletionDate", ignore = true)
+    @Mapping(target = "teacherId", ignore = true)
+    @Mapping(target = "classIds", ignore = true)
     @Mapping(target = "dateOfBirth", expression = "java(parseDate(dto.getDateOfBirth()))")
     public abstract Student toDomain(StudentRequestDTO dto);
 

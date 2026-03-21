@@ -75,6 +75,8 @@ class StudentServiceImplTest {
                 .thenReturn("Student gender is required.");
         when(messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_GENDER_INVALID), eq(null), any(Locale.class)))
                 .thenReturn("Gender must be M (Male) or F (Female).");
+        when(messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_SHAPE_INVALID), eq(null), any(Locale.class)))
+                .thenReturn("Shape must be SQUARE (Square), CIRCLE (Circle) or TRIANGLE (Triangle).");
         when(messageSource.getMessage(eq(MessageKeys.STUDENT_NOT_FOUND), eq(null), any(Locale.class)))
                 .thenReturn("Student not found.");
         when(messageSource.getMessage(eq(MessageKeys.STUDENT_PHOTO_SIZE_EXCEEDED), eq(null), any(Locale.class)))
@@ -959,6 +961,101 @@ class StudentServiceImplTest {
         assertNotNull(exception);
         assertTrue(exception.getErrors().stream()
                 .anyMatch(e -> e.getParam().equals("gender")));
+        verify(studentRepository, never()).save(any());
+    }
+
+    @Test
+    void createStudent_shouldSaveStudent_whenShapeIsSquare() {
+        Student studentToCreate = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender("M")
+                .shape("SQUARE")
+                .build();
+
+        Student expectedStudent = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender("M")
+                .shape("SQUARE")
+                .teacherId(1)
+                .build();
+
+        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
+
+        Student createdStudent = studentService.createStudent(studentToCreate);
+
+        assertNotNull(createdStudent);
+        assertEquals("SQUARE", createdStudent.getShape());
+        verify(studentRepository, times(1)).save(any(Student.class));
+    }
+
+    @Test
+    void createStudent_shouldSaveStudent_whenShapeIsNull() {
+        Student studentToCreate = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender("M")
+                .shape(null)
+                .build();
+
+        Student expectedStudent = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender("M")
+                .teacherId(1)
+                .build();
+
+        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
+
+        Student createdStudent = studentService.createStudent(studentToCreate);
+
+        assertNotNull(createdStudent);
+        assertNull(createdStudent.getShape());
+        verify(studentRepository, times(1)).save(any(Student.class));
+    }
+
+    @Test
+    void createStudent_shouldNormalizeShapeToUpperCase() {
+        Student studentToCreate = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender("M")
+                .shape("circle")
+                .build();
+
+        Student expectedStudent = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender("M")
+                .shape("CIRCLE")
+                .teacherId(1)
+                .build();
+
+        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
+
+        Student createdStudent = studentService.createStudent(studentToCreate);
+
+        assertNotNull(createdStudent);
+        assertEquals("CIRCLE", createdStudent.getShape());
+        verify(studentRepository, times(1)).save(any(Student.class));
+    }
+
+    @Test
+    void createStudent_shouldThrowValidationException_whenShapeIsInvalid() {
+        Student studentWithInvalidShape = Student.builder()
+                .name("Juan")
+                .surnames("García López")
+                .gender("M")
+                .shape("HEXAGON")
+                .build();
+
+        StudentValidationException exception = assertThrows(StudentValidationException.class, () ->
+                studentService.createStudent(studentWithInvalidShape));
+
+        assertNotNull(exception);
+        assertTrue(exception.getErrors().stream()
+                .anyMatch(e -> e.getParam().equals("shape")));
         verify(studentRepository, never()).save(any());
     }
 }

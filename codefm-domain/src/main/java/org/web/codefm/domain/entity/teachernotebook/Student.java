@@ -19,6 +19,7 @@ public class Student {
     private String gender;
     private String additionalInfo;
     private String photo;
+    private String shape;
     private LocalDate deletionDate;
     private List<Integer> classIds;
 }

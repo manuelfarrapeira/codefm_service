@@ -54,6 +54,7 @@ class StudentRequestMapperTest {
         dto.setSurnames("García López");
         dto.setDateOfBirth("15/03/2010");
         dto.setAdditionalInfo("Test info");
+        dto.setShape("CIRCLE");
 
         // When
         Student result = mapper.toDomain(dto);
@@ -64,6 +65,7 @@ class StudentRequestMapperTest {
         assertEquals("García López", result.getSurnames());
         assertEquals(LocalDate.of(2010, 3, 15), result.getDateOfBirth());
         assertEquals("Test info", result.getAdditionalInfo());
+        assertEquals("CIRCLE", result.getShape());
         assertNull(result.getId());
         assertNull(result.getPhoto());
         assertNull(result.getDeletionDate());
