@@ -26,7 +26,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SavedStudentGroupServiceImplTest {
@@ -118,12 +119,12 @@ class SavedStudentGroupServiceImplTest {
                         SavedStudentGroupMember.builder().studentId(3).build()))
                 .build();
         final SavedStudentGroup savedGroup = SavedStudentGroup.builder().id(GROUP_ID).classId(CLASS_ID).name("Group A").build();
-        when(this.savedStudentGroupRepository.save(any())).thenReturn(savedGroup);
+        when(this.savedStudentGroupRepository.saveAll(any())).thenReturn(List.of(savedGroup));
 
         final List<SavedStudentGroup> result = this.savedStudentGroupService.createSavedGroups(CLASS_ID, List.of(inputGroup));
 
         assertFalse(result.isEmpty());
-        verify(this.savedStudentGroupRepository).save(any());
+        verify(this.savedStudentGroupRepository).saveAll(any());
         verify(this.savedStudentGroupRepository).saveMembers(any());
     }
 
@@ -189,11 +190,6 @@ class SavedStudentGroupServiceImplTest {
         setupSessionMocks();
         setupClassAndStudentMocks();
         when(this.savedStudentGroupRepository.findActiveIdsByClassId(CLASS_ID)).thenReturn(List.of(99, 100));
-        final SavedStudentGroup savedGroupA = SavedStudentGroup.builder().id(99).classId(CLASS_ID).name("Group A").build();
-        final SavedStudentGroup savedGroupB = SavedStudentGroup.builder().id(100).classId(CLASS_ID).name("Group B").build();
-        when(this.savedStudentGroupRepository.save(any()))
-                .thenReturn(savedGroupA)
-                .thenReturn(savedGroupB);
 
         final List<SavedStudentGroup> inputGroups = List.of(
                 SavedStudentGroup.builder().id(99).name("Group A")
@@ -208,10 +204,10 @@ class SavedStudentGroupServiceImplTest {
         final List<SavedStudentGroup> result = this.savedStudentGroupService.updateAllSavedGroups(CLASS_ID, inputGroups);
 
         assertEquals(2, result.size());
-        verify(this.savedStudentGroupRepository).hardDeleteMembersByGroupId(99);
-        verify(this.savedStudentGroupRepository).hardDeleteMembersByGroupId(100);
-        verify(this.savedStudentGroupRepository, times(2)).save(any());
-        verify(this.savedStudentGroupRepository, times(2)).saveMembers(any());
+        verify(this.savedStudentGroupRepository).updateName(99, "Group A");
+        verify(this.savedStudentGroupRepository).updateName(100, "Group B");
+        verify(this.savedStudentGroupRepository).hardDeleteMembersByGroupIds(List.of(99, 100));
+        verify(this.savedStudentGroupRepository).saveMembers(any());
     }
 
     @Test
