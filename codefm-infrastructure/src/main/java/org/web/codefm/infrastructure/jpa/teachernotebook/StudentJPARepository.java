@@ -26,4 +26,7 @@ public interface StudentJPARepository extends JpaRepository<StudentEntity, Integ
 
     @Query("SELECT s FROM StudentEntity s WHERE s.teacherId = :teacherId AND s.deletionDate IS NULL ORDER BY s.surnames ASC")
     List<StudentEntity> findAllByTeacherIdAndDeletionDateIsNull(@Param("teacherId") Integer teacherId);
+
+    @Query("SELECT s FROM StudentEntity s WHERE s.id IN :ids AND s.teacherId = :teacherId AND s.deletionDate IS NULL")
+    List<StudentEntity> findByIdInAndTeacherIdAndDeletionDateIsNull(@Param("ids") List<Integer> ids, @Param("teacherId") Integer teacherId);
 }

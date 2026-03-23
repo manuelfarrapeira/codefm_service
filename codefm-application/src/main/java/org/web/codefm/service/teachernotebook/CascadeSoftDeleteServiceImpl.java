@@ -28,6 +28,7 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 	private final SkillRubricCriteriaRepository skillRubricCriteriaRepository;
     private final ClassRubricRepository classRubricRepository;
     private final StudentClassRubricCriteriaRepository studentClassRubricCriteriaRepository;
+	private final SavedStudentGroupRepository savedStudentGroupRepository;
 
 	@Override
 	public void cascadeDeleteChildrenOfSchool(Integer schoolId) {
@@ -53,6 +54,11 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
             this.studentClassRubricCriteriaRepository.softDeleteByClassRubricIds(classRubricIds);
         }
         this.classRubricRepository.softDeleteByClassId(classId);
+		final List<Integer> savedGroupIds = this.savedStudentGroupRepository.findActiveIdsByClassId(classId);
+		if (!savedGroupIds.isEmpty()) {
+			this.savedStudentGroupRepository.hardDeleteMembersByGroupIds(savedGroupIds);
+		}
+		this.savedStudentGroupRepository.softDeleteByClassId(classId);
 	}
 
 	@Override

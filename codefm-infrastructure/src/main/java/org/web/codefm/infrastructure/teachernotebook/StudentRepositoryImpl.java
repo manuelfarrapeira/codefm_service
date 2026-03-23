@@ -64,4 +64,11 @@ public class StudentRepositoryImpl implements StudentRepository {
                 studentJPARepository.findAllByTeacherIdAndDeletionDateIsNull(teacherId)
         );
     }
+
+    @Override
+    public List<Student> findByIdsAndTeacherIdAndDeletionDateIsNull(List<Integer> ids, Integer teacherId) {
+        return this.studentMapper.toModelList(
+                this.studentJPARepository.findByIdInAndTeacherIdAndDeletionDateIsNull(ids, teacherId)
+        );
+    }
 }

@@ -1,0 +1,162 @@
+{
+  "info": {
+    "_postman_id": "saved-student-groups-collection",
+    "name": "SavedStudentGroups",
+    "description": "Endpoints for managing persisted student groups.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Saved Student Groups",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/saved-groups",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "saved-groups"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID of the class"
+            }
+          ]
+        },
+        "description": "Retrieves all saved student groups for a class, including student names."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Saved Student Groups",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n    {\n        \"name\": \"Group A\",\n        \"studentIds\": [1, 2, 3, 4]\n    },\n    {\n        \"name\": \"Group B\",\n        \"studentIds\": [5, 6, 7, 8]\n    }\n]"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/saved-groups",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "saved-groups"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID of the class"
+            }
+          ]
+        },
+        "description": "Creates multiple saved student groups for a class."
+      },
+      "response": []
+    },
+    {
+      "name": "Update All Saved Student Groups",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n    {\n        \"id\": 1,\n        \"name\": \"Group A\",\n        \"studentIds\": [1, 2, 3]\n    },\n    {\n        \"id\": 2,\n        \"name\": \"Group B\",\n        \"studentIds\": [4, 5, 6, 7]\n    },\n    {\n        \"name\": \"Group C (nuevo)\",\n        \"studentIds\": [8, 9]\n    }\n]"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/saved-groups",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "saved-groups"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID of the class"
+            }
+          ]
+        },
+        "description": "Reemplaza todos los grupos guardados de una clase. Los grupos con 'id' se actualizan, los grupos sin 'id' se crean como nuevos, y los grupos existentes que no aparezcan en el request se eliminan. Todos los alumnos deben estar asignados y ningún alumno puede aparecer en más de un grupo."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete All Saved Student Groups",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/saved-groups",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "saved-groups"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID of the class"
+            }
+          ]
+        },
+        "description": "Elimina todos los grupos guardados de una clase."
+      },
+      "response": []
+    }
+  ]
+}

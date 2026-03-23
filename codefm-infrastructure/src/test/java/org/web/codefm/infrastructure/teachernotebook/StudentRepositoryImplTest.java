@@ -491,4 +491,53 @@ class StudentRepositoryImplTest {
         verify(studentJPARepository, times(1)).findAllByTeacherIdAndDeletionDateIsNull(teacherId);
         verify(studentMapper, times(1)).toModelList(emptyEntities);
     }
+
+    @Test
+    void findByIdsAndTeacherIdAndDeletionDateIsNull_shouldReturnStudents_whenFound() {
+        Integer teacherId = 1;
+        List<Integer> ids = List.of(1, 2);
+        StudentEntity entity1 = new StudentEntity();
+        entity1.setId(1);
+        entity1.setTeacherId(teacherId);
+        entity1.setName("Juan");
+        entity1.setSurnames("García");
+        StudentEntity entity2 = new StudentEntity();
+        entity2.setId(2);
+        entity2.setTeacherId(teacherId);
+        entity2.setName("Ana");
+        entity2.setSurnames("López");
+        List<StudentEntity> entities = List.of(entity1, entity2);
+        List<Student> expected = List.of(
+                Student.builder().id(1).teacherId(teacherId).name("Juan").surnames("García").build(),
+                Student.builder().id(2).teacherId(teacherId).name("Ana").surnames("López").build());
+
+        when(studentJPARepository.findByIdInAndTeacherIdAndDeletionDateIsNull(ids, teacherId)).thenReturn(entities);
+        when(studentMapper.toModelList(entities)).thenReturn(expected);
+
+        List<Student> result = studentRepository.findByIdsAndTeacherIdAndDeletionDateIsNull(ids, teacherId);
+
+        assertEquals(2, result.size());
+        assertEquals("Juan", result.get(0).getName());
+        assertEquals("Ana", result.get(1).getName());
+        verify(studentJPARepository).findByIdInAndTeacherIdAndDeletionDateIsNull(ids, teacherId);
+        verify(studentMapper).toModelList(entities);
+    }
+
+    @Test
+    void findByIdsAndTeacherIdAndDeletionDateIsNull_shouldReturnEmptyList_whenNoStudentsMatch() {
+        Integer teacherId = 1;
+        List<Integer> ids = List.of(999);
+        List<StudentEntity> emptyEntities = List.of();
+        List<Student> emptyStudents = List.of();
+
+        when(studentJPARepository.findByIdInAndTeacherIdAndDeletionDateIsNull(ids, teacherId)).thenReturn(emptyEntities);
+        when(studentMapper.toModelList(emptyEntities)).thenReturn(emptyStudents);
+
+        List<Student> result = studentRepository.findByIdsAndTeacherIdAndDeletionDateIsNull(ids, teacherId);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(studentJPARepository).findByIdInAndTeacherIdAndDeletionDateIsNull(ids, teacherId);
+        verify(studentMapper).toModelList(emptyEntities);
+    }
 }
