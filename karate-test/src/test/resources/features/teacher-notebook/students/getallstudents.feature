@@ -1,3 +1,4 @@
+@Regresion
 Feature: Get All Students Endpoint
 
   Background:

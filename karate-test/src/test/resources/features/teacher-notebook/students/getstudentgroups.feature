@@ -1,3 +1,4 @@
+@Regresion
 Feature: Generate Student Groups Endpoint
 
   Background:

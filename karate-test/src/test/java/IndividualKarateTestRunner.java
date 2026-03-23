@@ -387,4 +387,24 @@ public class IndividualKarateTestRunner {
 		return Karate.run("features/teacher-notebook/students/getstudentgroups").relativeTo(getClass());
 	}
 
+	@Karate.Test
+	Karate testTeacherNotebookGetSavedStudentGroups() {
+		return Karate.run("features/teacher-notebook/saved-student-groups/getsavedstudentgroups").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookCreateSavedStudentGroups() {
+		return Karate.run("features/teacher-notebook/saved-student-groups/createsavedstudentgroups").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookUpdateSavedStudentGroups() {
+		return Karate.run("features/teacher-notebook/saved-student-groups/updatesavedstudentgroups").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookDeleteSavedStudentGroups() {
+		return Karate.run("features/teacher-notebook/saved-student-groups/deletesavedstudentgroup").relativeTo(getClass());
+	}
+
 }

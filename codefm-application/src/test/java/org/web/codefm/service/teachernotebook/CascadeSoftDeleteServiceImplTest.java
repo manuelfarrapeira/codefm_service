@@ -46,6 +46,8 @@ class CascadeSoftDeleteServiceImplTest {
     private ClassRubricRepository classRubricRepository;
     @Mock
     private StudentClassRubricCriteriaRepository studentClassRubricCriteriaRepository;
+	@Mock
+	private SavedStudentGroupRepository savedStudentGroupRepository;
 
 	@InjectMocks
 	private CascadeSoftDeleteServiceImpl cascadeSoftDeleteService;
@@ -61,6 +63,8 @@ class CascadeSoftDeleteServiceImplTest {
 		when(this.subjectClassRepository.findActiveIdsByClassId(classId2)).thenReturn(Collections.emptyList());
         when(this.classRubricRepository.findActiveIdsByClassId(classId1)).thenReturn(Collections.emptyList());
         when(this.classRubricRepository.findActiveIdsByClassId(classId2)).thenReturn(Collections.emptyList());
+		when(this.savedStudentGroupRepository.findActiveIdsByClassId(classId1)).thenReturn(Collections.emptyList());
+		when(this.savedStudentGroupRepository.findActiveIdsByClassId(classId2)).thenReturn(Collections.emptyList());
 
         this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(schoolId);
 
@@ -71,12 +75,14 @@ class CascadeSoftDeleteServiceImplTest {
 		verify(this.studentClassRepository).softDeleteByClassId(classId1);
 		verify(this.scheduleRepository).softDeleteByClassId(classId1);
         verify(this.classRubricRepository).softDeleteByClassId(classId1);
+		verify(this.savedStudentGroupRepository).softDeleteByClassId(classId1);
 		verify(this.subjectClassRepository).findActiveIdsByClassId(classId2);
 		verify(this.subjectClassRepository).softDeleteByClassId(classId2);
 		verify(this.studentAbsenceRepository).hardDeleteByClassId(classId2);
 		verify(this.studentClassRepository).softDeleteByClassId(classId2);
 		verify(this.scheduleRepository).softDeleteByClassId(classId2);
         verify(this.classRubricRepository).softDeleteByClassId(classId2);
+		verify(this.savedStudentGroupRepository).softDeleteByClassId(classId2);
 		verify(this.classRepository).softDeleteBySchoolId(schoolId);
 	}
 
@@ -107,6 +113,7 @@ class CascadeSoftDeleteServiceImplTest {
 		when(this.exerciseRepository.findActiveIdsBySubjectClassIds(List.of(subjectClassId2)))
 				.thenReturn(Collections.emptyList());
         when(this.classRubricRepository.findActiveIdsByClassId(classId)).thenReturn(Collections.emptyList());
+		when(this.savedStudentGroupRepository.findActiveIdsByClassId(classId)).thenReturn(Collections.emptyList());
 
         this.cascadeSoftDeleteService.cascadeDeleteChildrenOfClass(classId);
 
@@ -120,6 +127,7 @@ class CascadeSoftDeleteServiceImplTest {
 		verify(this.studentClassRepository).softDeleteByClassId(classId);
 		verify(this.scheduleRepository).softDeleteByClassId(classId);
         verify(this.classRubricRepository).softDeleteByClassId(classId);
+		verify(this.savedStudentGroupRepository).softDeleteByClassId(classId);
 	}
 
 	@Test
@@ -128,6 +136,7 @@ class CascadeSoftDeleteServiceImplTest {
 
 		when(this.subjectClassRepository.findActiveIdsByClassId(classId)).thenReturn(Collections.emptyList());
         when(this.classRubricRepository.findActiveIdsByClassId(classId)).thenReturn(Collections.emptyList());
+		when(this.savedStudentGroupRepository.findActiveIdsByClassId(classId)).thenReturn(Collections.emptyList());
 
         this.cascadeSoftDeleteService.cascadeDeleteChildrenOfClass(classId);
 
@@ -137,6 +146,7 @@ class CascadeSoftDeleteServiceImplTest {
 		verify(this.studentClassRepository).softDeleteByClassId(classId);
 		verify(this.scheduleRepository).softDeleteByClassId(classId);
         verify(this.classRubricRepository).softDeleteByClassId(classId);
+		verify(this.savedStudentGroupRepository).softDeleteByClassId(classId);
 		verifyNoInteractions(this.exerciseRepository, this.exerciseStudentGradeRepository, this.exerciseDocumentService);
 	}
 

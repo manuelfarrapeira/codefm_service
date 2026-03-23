@@ -159,4 +159,13 @@ public class MessageKeys {
     public static final String SHAPE_NAME_CIRCLE = "shape.name.circle";
     public static final String SHAPE_NAME_TRIANGLE = "shape.name.triangle";
 
+	public static final String SAVED_GROUP_CLASS_ALREADY_HAS_GROUPS = "saved.group.class.already.has.groups";
+	public static final String SAVED_GROUP_VALIDATION_NAME_REQUIRED = "saved.group.validation.name.required";
+	public static final String SAVED_GROUP_VALIDATION_STUDENTS_REQUIRED = "saved.group.validation.students.required";
+	public static final String SAVED_GROUP_VALIDATION_STUDENT_NOT_IN_CLASS = "saved.group.validation.student.not.in.class";
+	public static final String SAVED_GROUP_VALIDATION_STUDENT_DUPLICATE = "saved.group.validation.student.duplicate";
+	public static final String SAVED_GROUP_VALIDATION_STUDENTS_NOT_ALL_ASSIGNED = "saved.group.validation.students.not.all.assigned";
+	public static final String SAVED_GROUP_VALIDATION_GROUP_ID_REQUIRED = "saved.group.validation.group.id.required";
+	public static final String SAVED_GROUP_VALIDATION_GROUP_NOT_FOUND = "saved.group.validation.group.not.found";
+
 }

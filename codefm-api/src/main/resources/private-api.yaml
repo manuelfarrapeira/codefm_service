@@ -39,6 +39,8 @@ tags:
     description: Operations related to Teacher Notebook Class Rubric assignments
   - name: TeacherNoteBookStudentGroups
     description: Operations related to Teacher Notebook Student Group generation
+  - name: TeacherNoteBookSavedStudentGroups
+    description: Operations related to Teacher Notebook Saved Student Groups
 
 paths:
   /greeting:
@@ -3587,6 +3589,162 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/classes/{classId}/saved-groups:
+    get:
+      tags:
+        - TeacherNoteBookSavedStudentGroups
+      operationId: getSavedStudentGroups
+      summary: Get all saved student groups for a class
+      description: Returns all saved student groups for the specified class, including student names.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+      responses:
+        '200':
+          description: Saved groups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedStudentGroupDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    post:
+      tags:
+        - TeacherNoteBookSavedStudentGroups
+      operationId: createSavedStudentGroups
+      summary: Create saved student groups for a class
+      description: Creates multiple saved student groups for the specified class.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/SavedStudentGroupRequestDTO'
+      responses:
+        '201':
+          description: Groups created successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedStudentGroupDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    patch:
+      tags:
+        - TeacherNoteBookSavedStudentGroups
+      operationId: updateAllSavedStudentGroups
+      summary: Replace all saved student groups for a class
+      description: Replaces all saved student groups for the specified class. Groups with an existing id are updated, groups without id are created, and existing groups not included are deleted. All students must be assigned and no student can appear in more than one group.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/SavedStudentGroupBulkUpdateItemDTO'
+      responses:
+        '200':
+          description: Groups updated successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedStudentGroupDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSavedStudentGroups
+      operationId: deleteSavedStudentGroupsByClassId
+      summary: Delete all saved student groups for a class
+      description: Soft-deletes all saved student groups for the specified class and removes their members.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+      responses:
+        '204':
+          description: Groups deleted successfully
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
 components:
   schemas:
     ErrorResponseDTO:
@@ -4277,3 +4435,53 @@ components:
           type: 'integer'
         gradeEnd:
           type: 'integer'
+    SavedStudentGroupDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classId:
+          type: 'integer'
+        name:
+          type: 'string'
+        members:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/SavedStudentGroupMemberDTO'
+    SavedStudentGroupMemberDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        studentId:
+          type: 'integer'
+        studentName:
+          type: 'string'
+        studentSurnames:
+          type: 'string'
+    SavedStudentGroupRequestDTO:
+      type: 'object'
+      properties:
+        name:
+          type: 'string'
+          example: 'Group A'
+        studentIds:
+          type: 'array'
+          items:
+            type: 'integer'
+          example: [ 1, 2, 3, 4 ]
+    SavedStudentGroupBulkUpdateItemDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+          description: 'ID of the existing group. Null or omitted for new groups.'
+          example: 1
+        name:
+          type: 'string'
+          example: 'Group A'
+        studentIds:
+          type: 'array'
+          items:
+            type: 'integer'
+          example: [ 1, 2, 3, 4 ]
