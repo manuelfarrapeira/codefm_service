@@ -57,7 +57,8 @@ public enum ExceptionStatusEnum {
     CLASS_RUBRIC_NOT_FOUND(ClassRubricNotFoundException.class, HttpStatus.NOT_FOUND),
     CLASS_RUBRIC_VALIDATION_ERROR(ClassRubricValidationException.class, HttpStatus.BAD_REQUEST),
     STUDENT_CLASS_RUBRIC_CRITERIA_NOT_FOUND(StudentClassRubricCriteriaNotFoundException.class, HttpStatus.NOT_FOUND),
-    STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_ERROR(StudentClassRubricCriteriaValidationException.class, HttpStatus.BAD_REQUEST);
+    STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_ERROR(StudentClassRubricCriteriaValidationException.class, HttpStatus.BAD_REQUEST),
+    STUDENT_GROUP_VALIDATION_ERROR(StudentGroupValidationException.class, HttpStatus.BAD_REQUEST);
 
     private final Class<?> exceptionClazz;
 

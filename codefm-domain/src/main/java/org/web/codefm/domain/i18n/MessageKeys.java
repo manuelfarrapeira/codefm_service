@@ -151,4 +151,12 @@ public class MessageKeys {
     public static final String STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_CRITERION_NOT_IN_RUBRIC = "student.class.rubric.criteria.validation.criterion.not.in.rubric";
     public static final String STUDENT_CLASS_RUBRIC_CRITERIA_ALREADY_EXISTS = "student.class.rubric.criteria.already.exists";
 
+    public static final String STUDENT_GROUP_MIN_STUDENTS = "student.group.min.students";
+    public static final String STUDENT_GROUP_IMPOSSIBLE_COUNT = "student.group.impossible.count";
+    public static final String STUDENT_GROUP_MISSING_SHAPE = "student.group.missing.shape";
+
+    public static final String SHAPE_NAME_SQUARE = "shape.name.square";
+    public static final String SHAPE_NAME_CIRCLE = "shape.name.circle";
+    public static final String SHAPE_NAME_TRIANGLE = "shape.name.triangle";
+
 }

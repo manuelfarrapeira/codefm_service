@@ -204,8 +204,12 @@ public class StudentServiceImpl implements StudentService {
             try {
                 StudentShape.valueOf(student.getShape());
             } catch (IllegalArgumentException e) {
+                final Locale locale = this.sessionUser.getLocale();
+                final String squareName = this.messageSource.getMessage(MessageKeys.SHAPE_NAME_SQUARE, null, locale);
+                final String circleName = this.messageSource.getMessage(MessageKeys.SHAPE_NAME_CIRCLE, null, locale);
+                final String triangleName = this.messageSource.getMessage(MessageKeys.SHAPE_NAME_TRIANGLE, null, locale);
                 errors.add(new ErrorMessage("shape",
-                        messageSource.getMessage(MessageKeys.STUDENT_VALIDATION_SHAPE_INVALID, null, sessionUser.getLocale())
+                        this.messageSource.getMessage(MessageKeys.STUDENT_VALIDATION_SHAPE_INVALID, new Object[]{squareName, circleName, triangleName}, locale)
                 ));
             }
         }

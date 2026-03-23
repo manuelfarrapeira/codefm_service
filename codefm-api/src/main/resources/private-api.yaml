@@ -37,6 +37,8 @@ tags:
     description: Operations related to Teacher Notebook Skill Rubrics
   - name: TeacherNoteBookClassRubrics
     description: Operations related to Teacher Notebook Class Rubric assignments
+  - name: TeacherNoteBookStudentGroups
+    description: Operations related to Teacher Notebook Student Group generation
 
 paths:
   /greeting:
@@ -437,7 +439,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
-
   /teacher-notebook/v1/students:
     get:
       tags:
@@ -2379,10 +2380,10 @@ paths:
               type: object
               properties:
                 file:
-                  type: string
+                  type: 'string'
                   format: binary
                 description:
-                  type: string
+                  type: 'string'
       responses:
         '201':
           description: Document uploaded successfully
@@ -3526,6 +3527,66 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/student-groups:
+    get:
+      tags:
+        - TeacherNoteBookStudentGroups
+      operationId: generateStudentGroups
+      summary: Generate balanced student groups for a class
+      description: Generates groups of 3-4 students balanced by gender and shape. Each group will have 1 CIRCLE student when possible. All students must have a shape assigned.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - name: prioritizeShapeDiversity
+          in: query
+          required: false
+          description: When true (default), shape diversity is prioritized over gender diversity. When false, gender diversity takes priority over shape diversity. Circle distribution (1 per group) is always the top priority.
+          schema:
+            type: boolean
+            default: true
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Groups generated successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: integer
+                    format: int32
+        '400':
+          description: Validation error - Not enough students, impossible count, or missing shapes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class does not exist or does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
 components:
   schemas:
     ErrorResponseDTO:

@@ -1,0 +1,92 @@
+{
+  "info": {
+    "_postman_id": "student-groups-collection",
+    "name": "StudentGroups",
+    "description": "Endpoints for generating balanced student groups by class.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Generate Student Groups (Shape Priority)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/student-groups?prioritizeShapeDiversity=true",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "student-groups"
+          ],
+          "query": [
+            {
+              "key": "prioritizeShapeDiversity",
+              "value": "true",
+              "description": "When true (default), shape diversity is prioritized over gender diversity. When false, gender diversity takes priority."
+            }
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID of the class to generate groups for"
+            }
+          ]
+        },
+        "description": "Generates balanced groups of 3-4 students for the specified class. Prioritizes shape diversity over gender diversity. Each group will have 1 CIRCLE student when possible. All students must have a shape assigned."
+      },
+      "response": []
+    },
+    {
+      "name": "Generate Student Groups (Gender Priority)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/student-groups?prioritizeShapeDiversity=false",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "student-groups"
+          ],
+          "query": [
+            {
+              "key": "prioritizeShapeDiversity",
+              "value": "false",
+              "description": "When false, gender diversity is prioritized over shape diversity."
+            }
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1",
+              "description": "ID of the class to generate groups for"
+            }
+          ]
+        },
+        "description": "Generates balanced groups of 3-4 students for the specified class. Prioritizes gender diversity over shape diversity. Each group will have 1 CIRCLE student when possible. All students must have a shape assigned."
+      },
+      "response": []
+    }
+  ]
+}

@@ -382,4 +382,9 @@ public class IndividualKarateTestRunner {
 		return Karate.run("features/teacher-notebook/grade-documents/deletedocument").relativeTo(getClass());
 	}
 
+	@Karate.Test
+	Karate testTeacherNotebookGetStudentGroups() {
+		return Karate.run("features/teacher-notebook/students/getstudentgroups").relativeTo(getClass());
+	}
+
 }

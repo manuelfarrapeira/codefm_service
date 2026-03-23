@@ -63,4 +63,13 @@ public interface StudentRepository {
      * @return List of all students belonging to the teacher
      */
     List<Student> findAllByTeacherId(Integer teacherId);
+
+    /**
+     * Finds multiple students by their IDs for a specific teacher. Excludes soft-deleted students.
+     *
+     * @param ids       List of student IDs to find
+     * @param teacherId The unique identifier of the teacher
+     * @return List of students matching the given IDs, belonging to the teacher and not deleted
+     */
+    List<Student> findByIdsAndTeacherIdAndDeletionDateIsNull(List<Integer> ids, Integer teacherId);
 }

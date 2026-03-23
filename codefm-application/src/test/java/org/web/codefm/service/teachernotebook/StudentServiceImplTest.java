@@ -75,8 +75,14 @@ class StudentServiceImplTest {
                 .thenReturn("Student gender is required.");
         when(messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_GENDER_INVALID), eq(null), any(Locale.class)))
                 .thenReturn("Gender must be M (Male) or F (Female).");
-        when(messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_SHAPE_INVALID), eq(null), any(Locale.class)))
-                .thenReturn("Shape must be SQUARE (Square), CIRCLE (Circle) or TRIANGLE (Triangle).");
+        when(messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_SHAPE_INVALID), any(Object[].class), any(Locale.class)))
+                .thenReturn("Shape must be Square, Circle or Triangle.");
+        when(messageSource.getMessage(eq(MessageKeys.SHAPE_NAME_SQUARE), eq(null), any(Locale.class)))
+                .thenReturn("Square");
+        when(messageSource.getMessage(eq(MessageKeys.SHAPE_NAME_CIRCLE), eq(null), any(Locale.class)))
+                .thenReturn("Circle");
+        when(messageSource.getMessage(eq(MessageKeys.SHAPE_NAME_TRIANGLE), eq(null), any(Locale.class)))
+                .thenReturn("Triangle");
         when(messageSource.getMessage(eq(MessageKeys.STUDENT_NOT_FOUND), eq(null), any(Locale.class)))
                 .thenReturn("Student not found.");
         when(messageSource.getMessage(eq(MessageKeys.STUDENT_PHOTO_SIZE_EXCEEDED), eq(null), any(Locale.class)))
