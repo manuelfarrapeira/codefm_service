@@ -11,6 +11,7 @@ monitoreo y despliegue automatizado.
 
 - **Java 17** con Spring Boot 3.2.3
 - **MariaDB** como base de datos principal
+- **Redis** como caché distribuida
 - **Maven** para gestión de dependencias
 - **Apache Kafka** para mensajería asíncrona y event streaming
 
@@ -121,6 +122,25 @@ La aplicación utiliza Kafka para:
 ### Consumers
 
 - **ExampleKafkaConsumer**: Consume y procesa eventos de usuario
+
+## 🗄️ Caché Redis
+
+### Configuración
+
+La aplicación utiliza Redis como caché distribuida mediante Spring Cache para mejorar el rendimiento de consultas frecuentes:
+
+- **Redis 7 Alpine** desplegado como contenedor Docker
+- **Serialización JSON** con `GenericJackson2JsonRedisSerializer` y soporte para tipos Java 8 (`LocalDate`, etc.)
+- **TTL configurable** por caché (por defecto 30 minutos)
+- **Prefijo de clave por entorno**: `codefm::` en producción, `pre-` en preproducción (misma instancia Redis compartida)
+
+### Evicción de caché
+
+La invalidación de caché se gestiona de forma centralizada:
+
+- Evicción por clave específica (`cacheName` + `key`)
+
+Las operaciones de escritura (crear, actualizar, eliminar) invalidan automáticamente las cachés afectadas.
 
 ## 🧪 Testing
 
