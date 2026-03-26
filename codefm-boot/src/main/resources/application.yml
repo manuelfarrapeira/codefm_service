@@ -63,7 +63,18 @@ spring:
         profileSeparator: ','
   data:
     rest:
-      detection-strategy: ANNOTATED #esto es para evitar la generación de endpoints relacionados con los JPA
+      detection-strategy: ANNOTATED
+    redis:
+      host: redis
+      port: 6380
+      password: ${REDIS_PASSWORD}
+  cache:
+    type: redis
+    redis:
+      key-prefix: "codefm::"
+      time-to-live: 1800000
+      ttl:
+        studentsByTeacher: 1800000
   datasource:
     codefm:
       driver-class-name: com.p6spy.engine.spy.P6SpyDriver

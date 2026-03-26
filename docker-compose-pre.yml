@@ -30,6 +30,7 @@ services:
       - infisical_external
       - keycloak
       - kafka-network
+      - redis-network
 
 
 networks:
@@ -42,6 +43,8 @@ networks:
   sonarqube:
     external: true
   kafka-network:
+    external: true
+  redis-network:
     external: true
 
 

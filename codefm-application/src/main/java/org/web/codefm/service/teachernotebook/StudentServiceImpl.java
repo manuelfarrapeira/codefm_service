@@ -79,8 +79,6 @@ public class StudentServiceImpl implements StudentService {
                     messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
             );
         }
-
-
         studentRepository.softDelete(id, teacherId);
     }
 
