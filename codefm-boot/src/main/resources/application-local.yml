@@ -17,6 +17,12 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://codefm.synology.me:8480/realms/codefm-pre
+  cache:
+    redis:
+      key-prefix: "codefm-local::"
+  data:
+    redis:
+      host: 192.168.18.10
   kafka:
     bootstrap-servers: 192.168.18.10:9092
     consumer:

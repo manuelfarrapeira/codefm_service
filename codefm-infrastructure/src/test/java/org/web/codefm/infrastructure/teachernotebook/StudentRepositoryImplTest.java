@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Student;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.StudentEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.StudentJPARepository;
 import org.web.codefm.infrastructure.mapper.StudentMapper;
@@ -26,6 +27,9 @@ class StudentRepositoryImplTest {
 
     @Mock
     private StudentMapper studentMapper;
+
+    @Mock
+    private CacheEvictionService cacheEvictionService;
 
     @InjectMocks
     private StudentRepositoryImpl studentRepository;
@@ -72,6 +76,7 @@ class StudentRepositoryImplTest {
         verify(studentMapper, times(1)).toEntity(studentToSave);
         verify(studentJPARepository, times(1)).save(studentEntity);
         verify(studentMapper, times(1)).toModel(savedStudentEntity);
+        verify(cacheEvictionService).evictByTeacher("studentsByTeacher");
     }
 
     @Test
@@ -170,6 +175,7 @@ class StudentRepositoryImplTest {
         verify(studentMapper, times(1)).toEntity(studentToUpdate);
         verify(studentJPARepository, times(1)).save(studentEntity);
         verify(studentMapper, times(1)).toModel(updatedStudentEntity);
+        verify(cacheEvictionService).evictByTeacher("studentsByTeacher");
     }
 
     @Test
@@ -208,6 +214,7 @@ class StudentRepositoryImplTest {
         verify(studentJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
         verify(studentJPARepository, times(1)).save(any(StudentEntity.class));
         verify(studentMapper, times(1)).toModel(any(StudentEntity.class));
+        verify(cacheEvictionService).evictByTeacher("studentsByTeacher");
     }
 
     @Test
