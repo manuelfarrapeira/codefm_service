@@ -2,14 +2,11 @@ package org.web.codefm.infrastructure.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 import org.web.codefm.domain.entity.teachernotebook.Student;
 import org.web.codefm.domain.repository.teachernotebook.StudentRepository;
-import org.web.codefm.domain.session.SessionParameter;
-import org.web.codefm.domain.session.SessionUser;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.StudentEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.StudentJPARepository;
 import org.web.codefm.infrastructure.mapper.StudentMapper;
@@ -28,14 +25,13 @@ public class StudentRepositoryImpl implements StudentRepository {
 
     private static final String CACHE_NAME = "studentsByTeacher";
 
-    private final CacheManager cacheManager;
-    private final SessionUser sessionUser;
+    private final CacheEvictionService cacheEvictionService;
 
     @Override
     public Student save(Student student) {
         StudentEntity studentEntity = studentMapper.toEntity(student);
         StudentEntity savedEntity = studentJPARepository.save(studentEntity);
-        this.evictTeacherCache();
+        this.cacheEvictionService.evictByTeacher(CACHE_NAME);
         return studentMapper.toModel(savedEntity);
     }
 
@@ -49,7 +45,7 @@ public class StudentRepositoryImpl implements StudentRepository {
     public Student update(Student student) {
         StudentEntity studentEntity = studentMapper.toEntity(student);
         StudentEntity updatedEntity = studentJPARepository.save(studentEntity);
-        this.evictTeacherCache();
+        this.cacheEvictionService.evictByTeacher(CACHE_NAME);
         return studentMapper.toModel(updatedEntity);
     }
 
@@ -60,7 +56,7 @@ public class StudentRepositoryImpl implements StudentRepository {
 
         studentEntity.setDeletionDate(LocalDate.now());
         StudentEntity updatedEntity = studentJPARepository.save(studentEntity);
-        this.evictTeacherCache();
+        this.cacheEvictionService.evictByTeacher(CACHE_NAME);
         return studentMapper.toModel(updatedEntity);
     }
 
@@ -84,13 +80,6 @@ public class StudentRepositoryImpl implements StudentRepository {
         return this.studentMapper.toModelList(
                 this.studentJPARepository.findByIdInAndTeacherIdAndDeletionDateIsNull(ids, teacherId)
         );
-    }
-
-    private void evictTeacherCache() {
-        final Cache cache = this.cacheManager.getCache(CACHE_NAME);
-        if (cache != null) {
-            cache.evict(this.sessionUser.getParameter(SessionParameter.TEACHER_ID));
-        }
     }
 
 }

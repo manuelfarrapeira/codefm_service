@@ -74,7 +74,7 @@ spring:
       key-prefix: "codefm::"
       time-to-live: 1800000
       ttl:
-        studentsByTeacher: 1800000
+        studentsByTeacher: 3600000
   datasource:
     codefm:
       driver-class-name: com.p6spy.engine.spy.P6SpyDriver
