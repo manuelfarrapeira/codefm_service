@@ -5,8 +5,9 @@ RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:17-jdk
 
+#esto instala el cliente de infisical para poder acceder al server
 RUN apt-get update && apt-get install -y bash curl && curl -1sLf \
-'https://artifacts.infisical.com/repos/setup.deb.sh' | bash \
+'https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh' | bash \
 && apt-get update && apt-get install -y infisical
 
 
