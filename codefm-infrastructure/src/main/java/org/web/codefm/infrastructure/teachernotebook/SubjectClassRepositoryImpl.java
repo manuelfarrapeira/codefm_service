@@ -18,10 +18,7 @@ import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectJPARepository;
 import org.web.codefm.infrastructure.mapper.ClassMapper;
 import org.web.codefm.infrastructure.mapper.SubjectClassMapper;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -62,6 +59,7 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
                             .subjectName(subject.getName())
                             .build();
                 })
+                .sorted(Comparator.comparing(SubjectClassDetail::getSubjectName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 

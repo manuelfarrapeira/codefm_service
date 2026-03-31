@@ -11,10 +11,7 @@ import org.web.codefm.infrastructure.jpa.teachernotebook.*;
 import org.web.codefm.infrastructure.mapper.ExerciseStudentDocumentMapper;
 import org.web.codefm.infrastructure.mapper.ExerciseStudentGradeMapper;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
@@ -41,7 +38,9 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
                 exerciseStudentGradeJPARepository.findByExerciseIdInAndDeletionDateIsNull(exerciseIds)
         );
 
-        return enrichGrades(grades);
+        return enrichGrades(grades).stream()
+                .sorted(Comparator.comparing(ExerciseStudentGrade::getSubjectName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .toList();
     }
 
     @Override
@@ -55,7 +54,9 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
                 exerciseStudentGradeJPARepository.findByExerciseIdInAndStudentIdAndDeletionDateIsNull(exerciseIds, studentId)
         );
 
-        return enrichGrades(grades);
+        return enrichGrades(grades).stream()
+                .sorted(Comparator.comparing(ExerciseStudentGrade::getSubjectName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .toList();
     }
 
     @Override
