@@ -14,6 +14,7 @@ public interface StudentClassRubricCriteriaMapper {
     @Mapping(target = "studentName", ignore = true)
     @Mapping(target = "studentSurnames", ignore = true)
     @Mapping(target = "criterionDescription", ignore = true)
+    @Mapping(target = "qualification", ignore = true)
     @Mapping(target = "gradeStart", ignore = true)
     @Mapping(target = "gradeEnd", ignore = true)
     StudentClassRubricCriteria toModel(StudentClassRubricCriteriaEntity entity);

@@ -20,6 +20,7 @@ public class StudentClassRubricCriteria {
     private String studentName;
     private String studentSurnames;
     private String criterionDescription;
+    private String qualification;
     private Integer gradeStart;
     private Integer gradeEnd;
 }

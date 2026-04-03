@@ -21,7 +21,7 @@ class StudentCriteriaGroupDTOMapperTest {
     void toDTO_shouldMapStudentAndRubricCriteria_whenAllFieldsArePresent() {
         final RubricCriterionAssignment assignment = RubricCriterionAssignment.builder()
                 .id(1).classRubricId(10).rubricId(20).rubricTitle("Rubric A")
-                .criterionId(30).criterionDescription("Lo hace bien").gradeStart(7).gradeEnd(10)
+                .criterionId(30).criterionDescription("Lo hace bien").qualification("Notable").gradeStart(7).gradeEnd(10)
                 .build();
         final StudentCriteriaGroup group = StudentCriteriaGroup.builder()
                 .studentId(100).studentName("Juan").studentSurnames("García López")
@@ -45,6 +45,7 @@ class StudentCriteriaGroupDTOMapperTest {
         assertEquals("Rubric A", assignmentDTO.getRubric().getTitle());
         assertEquals(30, assignmentDTO.getCriterion().getId());
         assertEquals("Lo hace bien", assignmentDTO.getCriterion().getDescription());
+        assertEquals("Notable", assignmentDTO.getCriterion().getQualification());
         assertEquals(7, assignmentDTO.getCriterion().getGradeStart());
         assertEquals(10, assignmentDTO.getCriterion().getGradeEnd());
     }
@@ -151,7 +152,7 @@ class StudentCriteriaGroupDTOMapperTest {
     void toAssignmentDTO_shouldMapAllFields() {
         final RubricCriterionAssignment assignment = RubricCriterionAssignment.builder()
                 .id(5).classRubricId(50).rubricId(60).rubricTitle("Expresión oral")
-                .criterionId(70).criterionDescription("Se expresa con fluidez").gradeStart(7).gradeEnd(10)
+                .criterionId(70).criterionDescription("Se expresa con fluidez").qualification("Notable").gradeStart(7).gradeEnd(10)
                 .build();
 
         final RubricCriterionAssignmentDTO result = mapper.toAssignmentDTO(assignment);
@@ -165,6 +166,7 @@ class StudentCriteriaGroupDTOMapperTest {
         assertNotNull(result.getCriterion());
         assertEquals(70, result.getCriterion().getId());
         assertEquals("Se expresa con fluidez", result.getCriterion().getDescription());
+        assertEquals("Notable", result.getCriterion().getQualification());
         assertEquals(7, result.getCriterion().getGradeStart());
         assertEquals(10, result.getCriterion().getGradeEnd());
     }
@@ -195,6 +197,7 @@ class StudentCriteriaGroupDTOMapperTest {
         assertNotNull(result.getCriterion());
         assertNull(result.getCriterion().getId());
         assertNull(result.getCriterion().getDescription());
+        assertNull(result.getCriterion().getQualification());
         assertNull(result.getCriterion().getGradeStart());
         assertNull(result.getCriterion().getGradeEnd());
     }
@@ -229,7 +232,7 @@ class StudentCriteriaGroupDTOMapperTest {
     @Test
     void toCriterionSummary_shouldMapCriterionFields() {
         final RubricCriterionAssignment assignment = RubricCriterionAssignment.builder()
-                .criterionId(77).criterionDescription("Lo hace regular").gradeStart(5).gradeEnd(6)
+                .criterionId(77).criterionDescription("Lo hace regular").qualification("Suficiente").gradeStart(5).gradeEnd(6)
                 .build();
 
         final CriterionSummaryDTO result = mapper.toCriterionSummary(assignment);
@@ -237,6 +240,7 @@ class StudentCriteriaGroupDTOMapperTest {
         assertNotNull(result);
         assertEquals(77, result.getId());
         assertEquals("Lo hace regular", result.getDescription());
+        assertEquals("Suficiente", result.getQualification());
         assertEquals(5, result.getGradeStart());
         assertEquals(6, result.getGradeEnd());
     }

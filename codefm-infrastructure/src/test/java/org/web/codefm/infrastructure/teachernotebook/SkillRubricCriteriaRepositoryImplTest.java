@@ -30,7 +30,7 @@ class SkillRubricCriteriaRepositoryImplTest {
 
     @Test
     void findActiveByRubricId_shouldReturnActiveCriteria() {
-        final SkillRubricCriteriaEntity entity = new SkillRubricCriteriaEntity(1, "Desc", 100, 0, 4, null);
+        final SkillRubricCriteriaEntity entity = new SkillRubricCriteriaEntity(1, "Desc", null, 100, 0, 4, null);
         final SkillRubricCriteria model = SkillRubricCriteria.builder().id(1).description("Desc").rubricId(100).gradeStart(0).gradeEnd(4).build();
 
         when(skillRubricCriteriaJPARepository.findActiveByRubricId(100)).thenReturn(List.of(entity));
@@ -43,7 +43,7 @@ class SkillRubricCriteriaRepositoryImplTest {
 
     @Test
     void findActiveById_shouldReturnCriterionWhenActive() {
-        final SkillRubricCriteriaEntity entity = new SkillRubricCriteriaEntity(1, "Desc", 100, 0, 4, null);
+        final SkillRubricCriteriaEntity entity = new SkillRubricCriteriaEntity(1, "Desc", null, 100, 0, 4, null);
         final SkillRubricCriteria model = SkillRubricCriteria.builder().id(1).description("Desc").rubricId(100).gradeStart(0).gradeEnd(4).build();
 
         when(skillRubricCriteriaJPARepository.findActiveById(1)).thenReturn(Optional.of(entity));
@@ -67,7 +67,7 @@ class SkillRubricCriteriaRepositoryImplTest {
     void save_shouldMapAndSave() {
         final SkillRubricCriteria criteria = SkillRubricCriteria.builder().description("A").rubricId(100).gradeStart(0).gradeEnd(4).build();
         final SkillRubricCriteriaEntity entity = new SkillRubricCriteriaEntity();
-        final SkillRubricCriteriaEntity saved = new SkillRubricCriteriaEntity(1, "A", 100, 0, 4, null);
+        final SkillRubricCriteriaEntity saved = new SkillRubricCriteriaEntity(1, "A", null, 100, 0, 4, null);
 
         when(skillRubricCriteriaMapper.toEntity(criteria)).thenReturn(entity);
         when(skillRubricCriteriaJPARepository.save(entity)).thenReturn(saved);

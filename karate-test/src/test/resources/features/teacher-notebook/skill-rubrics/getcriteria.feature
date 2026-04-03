@@ -6,7 +6,7 @@ Feature: Teacher Notebook - Get Skill Rubric Criteria
     Given url baseHttpsUrl
 
   Scenario: Get criteria for a rubric
-    * def criteriaSchema = { id: '#number', description: '#string', gradeStart: '#number', gradeEnd: '#number' }
+    * def criteriaSchema = { id: '#number', description: '#string', qualification: '##string', gradeStart: '#number', gradeEnd: '#number' }
 
     Given path '/teacher-notebook/v1/rubrics/1/criteria'
     When method GET

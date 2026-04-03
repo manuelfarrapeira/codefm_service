@@ -46,7 +46,7 @@ class ClassRubricRepositoryImplTest {
         final ClassRubricEntity entity = new ClassRubricEntity(1, 10, 50, null);
         final ClassRubric model = ClassRubric.builder().id(1).classId(10).rubricId(50).build();
         final SkillRubricEntity rubricEntity = new SkillRubricEntity(50, "Rubric Title", 5, null);
-        final SkillRubricCriteriaEntity criteriaEntity = new SkillRubricCriteriaEntity(100, "Lo hace bien", 50, 7, 10, null);
+        final SkillRubricCriteriaEntity criteriaEntity = new SkillRubricCriteriaEntity(100, "Lo hace bien", null, 50, 7, 10, null);
         final SkillRubricCriteria criteriaModel = SkillRubricCriteria.builder().id(100).description("Lo hace bien").rubricId(50).gradeStart(7).gradeEnd(10).build();
 
         when(classRubricJPARepository.findByClassIdAndDeletionDateIsNull(10)).thenReturn(List.of(entity));

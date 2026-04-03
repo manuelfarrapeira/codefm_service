@@ -27,6 +27,7 @@ Feature: Teacher Notebook - Create Skill Rubric Criterion
     """
     {
       "description": "Overlapping",
+      "qualification": "Regular",
       "gradeStart": 3,
       "gradeEnd": 6
     }

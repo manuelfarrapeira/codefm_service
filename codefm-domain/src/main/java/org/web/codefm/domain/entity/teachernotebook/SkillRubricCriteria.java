@@ -12,6 +12,7 @@ import java.time.LocalDate;
 public class SkillRubricCriteria {
     private Integer id;
     private String description;
+    private String qualification;
     private Integer rubricId;
     private Integer gradeStart;
     private Integer gradeEnd;

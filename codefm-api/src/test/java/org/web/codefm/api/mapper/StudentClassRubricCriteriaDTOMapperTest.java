@@ -21,7 +21,7 @@ class StudentClassRubricCriteriaDTOMapperTest {
         final StudentClassRubricCriteria criteria = StudentClassRubricCriteria.builder()
                 .id(1).classRubricId(10).rubricId(20).studentId(30)
                 .studentName("Juan").studentSurnames("García López")
-                .criterionId(40).criterionDescription("Lo hace bien")
+                .criterionId(40).criterionDescription("Lo hace bien").qualification("Notable")
                 .gradeStart(7).gradeEnd(10)
                 .build();
 
@@ -36,6 +36,7 @@ class StudentClassRubricCriteriaDTOMapperTest {
         assertEquals("García López", result.getStudentSurnames());
         assertEquals(40, result.getCriterionId());
         assertEquals("Lo hace bien", result.getCriterionDescription());
+        assertEquals("Notable", result.getQualification());
         assertEquals(7, result.getGradeStart());
         assertEquals(10, result.getGradeEnd());
     }
@@ -52,7 +53,7 @@ class StudentClassRubricCriteriaDTOMapperTest {
         final StudentClassRubricCriteria criteria = StudentClassRubricCriteria.builder()
                 .id(1).classRubricId(10).studentId(30).criterionId(40)
                 .rubricId(null).studentName(null).studentSurnames(null)
-                .criterionDescription(null).gradeStart(null).gradeEnd(null)
+                .criterionDescription(null).qualification(null).gradeStart(null).gradeEnd(null)
                 .build();
 
         final StudentClassRubricCriteriaDTO result = mapper.toDTO(criteria);
@@ -66,6 +67,7 @@ class StudentClassRubricCriteriaDTOMapperTest {
         assertNull(result.getStudentName());
         assertNull(result.getStudentSurnames());
         assertNull(result.getCriterionDescription());
+        assertNull(result.getQualification());
         assertNull(result.getGradeStart());
         assertNull(result.getGradeEnd());
     }

@@ -154,6 +154,7 @@ public class SkillRubricServiceImpl implements SkillRubricService {
         }
 
         existing.setDescription(criterion.getDescription());
+        existing.setQualification(criterion.getQualification());
         existing.setGradeStart(criterion.getGradeStart());
         existing.setGradeEnd(criterion.getGradeEnd());
         return this.skillRubricCriteriaRepository.save(existing);
@@ -220,7 +221,7 @@ public class SkillRubricServiceImpl implements SkillRubricService {
             if (excludeId != null && excludeId.equals(c.getId())) {
                 continue;
             }
-            if (criterion.getGradeStart() <= c.getGradeEnd() && criterion.getGradeEnd() >= c.getGradeStart()) {
+            if (criterion.getGradeStart() < c.getGradeEnd() && criterion.getGradeEnd() > c.getGradeStart()) {
                 errors.add(new ErrorMessage("gradeRange",
                         this.messageSource.getMessage(MessageKeys.SKILL_RUBRIC_VALIDATION_CRITERIA_OVERLAP, null, locale)));
                 return;

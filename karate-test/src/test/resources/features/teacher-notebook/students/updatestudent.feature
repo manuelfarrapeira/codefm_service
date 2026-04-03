@@ -89,5 +89,5 @@ Feature: Teacher Notebook - Update Student
     Then status 400
     And match response.code == "1006"
     And match response.description == "VALIDATION_ERROR"
-    And match response.details contains deep [{ field: 'shape', reason: 'La figura debe ser SQUARE (Cuadrado), CIRCLE (Círculo) o TRIANGLE (Triángulo).' }]
+    And match response.details contains deep [{ field: 'shape', reason: 'La figura debe ser Cuadrado, Círculo o Triángulo.' }]
 

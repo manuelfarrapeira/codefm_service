@@ -39,6 +39,7 @@ public interface StudentCriteriaGroupDTOMapper {
         final CriterionSummaryDTO dto = new CriterionSummaryDTO();
         dto.setId(assignment.getCriterionId());
         dto.setDescription(assignment.getCriterionDescription());
+        dto.setQualification(assignment.getQualification());
         dto.setGradeStart(assignment.getGradeStart());
         dto.setGradeEnd(assignment.getGradeEnd());
         return dto;

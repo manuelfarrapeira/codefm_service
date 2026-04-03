@@ -23,6 +23,9 @@ public class SkillRubricCriteriaEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String description;
 
+    @Column(length = 100)
+    private String qualification;
+
     @Column(name = "id_rubric", nullable = false)
     private Integer rubricId;
 

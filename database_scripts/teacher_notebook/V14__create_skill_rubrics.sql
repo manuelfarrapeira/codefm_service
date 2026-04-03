@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS skill_rubric_criteria
     id_rubric     INT  NOT NULL,
     grade_start   INT  NOT NULL,
     grade_end     INT  NOT NULL,
+    qualification VARCHAR(100) NOT NULL,
     deletion_date DATE NULL,
     CONSTRAINT fk_rubric_criteria_rubric FOREIGN KEY (id_rubric) REFERENCES skill_rubrics (id),
     CONSTRAINT chk_grade_start_range CHECK (grade_start >= 0 AND grade_start <= 10),
