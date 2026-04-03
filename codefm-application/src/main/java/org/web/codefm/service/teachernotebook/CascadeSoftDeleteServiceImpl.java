@@ -133,4 +133,9 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
     public void cascadeDeleteChildrenOfClassRubric(Integer classRubricId) {
         this.studentClassRubricCriteriaRepository.softDeleteByClassRubricId(classRubricId);
 	}
+
+	@Override
+	public void cascadeDeleteChildrenOfSkillRubricCriteria(Integer criterionId) {
+		this.studentClassRubricCriteriaRepository.softDeleteByCriterionId(criterionId);
+	}
 }

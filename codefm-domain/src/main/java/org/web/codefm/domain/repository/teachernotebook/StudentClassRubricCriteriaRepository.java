@@ -72,6 +72,14 @@ public interface StudentClassRubricCriteriaRepository {
     void softDeleteByClassRubricIds(List<Integer> classRubricIds);
 
     /**
+     * Soft-deletes all student criterion assignments that reference the given skill rubric criterion.
+     * Used in cascade when a skill rubric criterion is soft-deleted.
+     *
+     * @param criterionId The unique identifier of the skill rubric criterion
+     */
+    void softDeleteByCriterionId(Integer criterionId);
+
+    /**
      * Checks whether an active criterion assignment exists for the given class-rubric and student.
      *
      * @param classRubricId The unique identifier of the class-rubric assignment

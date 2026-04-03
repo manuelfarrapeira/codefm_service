@@ -117,12 +117,15 @@ class SkillRubricUseCaseImplTest {
     }
 
     @Test
-    void deleteCriterion_shouldDelegateToService() {
+    void deleteCriterion_shouldCallCascadeBeforeService() {
+        doNothing().when(this.cascadeSoftDeleteService).cascadeDeleteChildrenOfSkillRubricCriteria(1);
         doNothing().when(this.skillRubricService).deleteCriterion(RUBRIC_ID, 1);
 
         this.skillRubricUseCase.deleteCriterion(RUBRIC_ID, 1);
 
-        verify(this.skillRubricService).deleteCriterion(RUBRIC_ID, 1);
+        final var order = inOrder(this.cascadeSoftDeleteService, this.skillRubricService);
+        order.verify(this.cascadeSoftDeleteService).cascadeDeleteChildrenOfSkillRubricCriteria(1);
+        order.verify(this.skillRubricService).deleteCriterion(RUBRIC_ID, 1);
     }
 }
 

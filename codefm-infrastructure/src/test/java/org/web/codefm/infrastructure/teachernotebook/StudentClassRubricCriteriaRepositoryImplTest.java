@@ -256,6 +256,12 @@ class StudentClassRubricCriteriaRepositoryImplTest {
     }
 
     @Test
+    void softDeleteByCriterionId_shouldDelegate() {
+        studentClassRubricCriteriaRepository.softDeleteByCriterionId(300);
+        verify(studentClassRubricCriteriaJPARepository).softDeleteByCriterionId(300);
+    }
+
+    @Test
     void softDeleteByClassRubricIds_shouldDelegate_whenNotEmpty() {
         studentClassRubricCriteriaRepository.softDeleteByClassRubricIds(Arrays.asList(1, 2, 3));
         verify(studentClassRubricCriteriaJPARepository).softDeleteByClassRubricIds(Arrays.asList(1, 2, 3));
