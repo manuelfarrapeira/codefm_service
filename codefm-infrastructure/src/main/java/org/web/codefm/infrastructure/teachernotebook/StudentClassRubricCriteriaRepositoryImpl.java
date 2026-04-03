@@ -52,7 +52,9 @@ public class StudentClassRubricCriteriaRepositoryImpl implements StudentClassRub
     public StudentClassRubricCriteria save(StudentClassRubricCriteria criteria) {
         final StudentClassRubricCriteriaEntity entity = this.studentClassRubricCriteriaMapper.toEntity(criteria);
         final StudentClassRubricCriteriaEntity saved = this.studentClassRubricCriteriaJPARepository.save(entity);
-        return this.studentClassRubricCriteriaMapper.toModel(saved);
+        final StudentClassRubricCriteria result = this.studentClassRubricCriteriaMapper.toModel(saved);
+        this.enrichWithDisplayData(result);
+        return result;
     }
 
     @Override
@@ -95,6 +97,7 @@ public class StudentClassRubricCriteriaRepositoryImpl implements StudentClassRub
         this.skillRubricCriteriaJPARepository.findById(criteria.getCriterionId())
                 .ifPresent(criterion -> {
                     criteria.setCriterionDescription(criterion.getDescription());
+                    criteria.setQualification(criterion.getQualification());
                     criteria.setGradeStart(criterion.getGradeStart());
                     criteria.setGradeEnd(criterion.getGradeEnd());
                 });

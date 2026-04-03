@@ -127,6 +127,7 @@ public class ClassRubricServiceImpl implements ClassRubricService {
                             .rubricTitle(item.getRubricTitle())
                             .criterionId(item.getCriterionId())
                             .criterionDescription(item.getCriterionDescription())
+                            .qualification(item.getQualification())
                             .gradeStart(item.getGradeStart())
                             .gradeEnd(item.getGradeEnd())
                             .build());

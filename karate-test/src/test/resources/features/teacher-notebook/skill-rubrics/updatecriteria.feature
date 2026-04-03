@@ -10,6 +10,7 @@ Feature: Teacher Notebook - Update Skill Rubric Criterion
     """
     {
       "description": "Lo hace mal",
+      "qualification": "Insuficiente",
       "gradeStart": 0,
       "gradeEnd": 4
     }

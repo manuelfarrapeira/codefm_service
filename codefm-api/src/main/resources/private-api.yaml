@@ -4310,6 +4310,8 @@ components:
           type: 'integer'
         description:
           type: 'string'
+        qualification:
+          type: 'string'
         gradeStart:
           type: 'integer'
         gradeEnd:
@@ -4326,6 +4328,9 @@ components:
         description:
           type: 'string'
           example: 'Performs poorly'
+        qualification:
+          type: 'string'
+          example: 'Insuficiente'
         gradeStart:
           type: 'integer'
           example: 0
@@ -4375,6 +4380,8 @@ components:
         criterionId:
           type: 'integer'
         criterionDescription:
+          type: 'string'
+        qualification:
           type: 'string'
         gradeStart:
           type: 'integer'
@@ -4430,6 +4437,8 @@ components:
         id:
           type: 'integer'
         description:
+          type: 'string'
+        qualification:
           type: 'string'
         gradeStart:
           type: 'integer'

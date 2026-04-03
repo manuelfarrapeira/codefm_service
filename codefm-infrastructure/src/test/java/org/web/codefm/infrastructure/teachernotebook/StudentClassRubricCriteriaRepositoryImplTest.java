@@ -53,7 +53,7 @@ class StudentClassRubricCriteriaRepositoryImplTest {
         when(studentJPARepository.findById(200))
                 .thenReturn(Optional.of(new StudentEntity(200, 1, "Juan", "García", null, "M", null, null, null, null)));
         when(skillRubricCriteriaJPARepository.findById(300))
-                .thenReturn(Optional.of(new SkillRubricCriteriaEntity(300, "Lo hace bien", 50, 5, 10, null)));
+                .thenReturn(Optional.of(new SkillRubricCriteriaEntity(300, "Lo hace bien", "Notable", 50, 5, 10, null)));
 
         final List<StudentClassRubricCriteria> result = studentClassRubricCriteriaRepository.findByClassId(classId);
 
@@ -64,6 +64,7 @@ class StudentClassRubricCriteriaRepositoryImplTest {
         assertEquals("Juan", criteria.getStudentName());
         assertEquals("García", criteria.getStudentSurnames());
         assertEquals("Lo hace bien", criteria.getCriterionDescription());
+        assertEquals("Notable", criteria.getQualification());
         assertEquals(5, criteria.getGradeStart());
         assertEquals(10, criteria.getGradeEnd());
     }
@@ -146,7 +147,7 @@ class StudentClassRubricCriteriaRepositoryImplTest {
         when(studentJPARepository.findById(studentId))
                 .thenReturn(Optional.of(new StudentEntity(studentId, 1, "Ana", "López", null, "F", null, null, null, null)));
         when(skillRubricCriteriaJPARepository.findById(300))
-                .thenReturn(Optional.of(new SkillRubricCriteriaEntity(300, "Lo hace regular", 50, 5, 6, null)));
+                .thenReturn(Optional.of(new SkillRubricCriteriaEntity(300, "Lo hace regular", "Suficiente", 50, 5, 6, null)));
 
         final List<StudentClassRubricCriteria> result =
                 studentClassRubricCriteriaRepository.findByClassIdAndStudentId(classId, studentId);
@@ -155,6 +156,7 @@ class StudentClassRubricCriteriaRepositoryImplTest {
         assertEquals("Ana", result.get(0).getStudentName());
         assertEquals("López", result.get(0).getStudentSurnames());
         assertEquals("Lo hace regular", result.get(0).getCriterionDescription());
+        assertEquals("Suficiente", result.get(0).getQualification());
     }
 
     @Test
@@ -207,7 +209,7 @@ class StudentClassRubricCriteriaRepositoryImplTest {
     }
 
     @Test
-    void save_shouldMapAndPersist() {
+    void save_shouldMapAndPersistAndEnrich() {
         final StudentClassRubricCriteria criteria = StudentClassRubricCriteria.builder()
                 .classRubricId(100).studentId(200).criterionId(300).build();
         final StudentClassRubricCriteriaEntity entity = new StudentClassRubricCriteriaEntity(null, 100, 200, 300, null);
@@ -218,11 +220,26 @@ class StudentClassRubricCriteriaRepositoryImplTest {
         when(studentClassRubricCriteriaMapper.toEntity(criteria)).thenReturn(entity);
         when(studentClassRubricCriteriaJPARepository.save(entity)).thenReturn(saved);
         when(studentClassRubricCriteriaMapper.toModel(saved)).thenReturn(savedModel);
+        when(classRubricJPARepository.findByIdAndDeletionDateIsNull(100))
+                .thenReturn(Optional.of(new ClassRubricEntity(100, 10, 50, null)));
+        when(skillRubricJPARepository.findById(50))
+                .thenReturn(Optional.of(new SkillRubricEntity(50, "Rubric Title", 1, null)));
+        when(studentJPARepository.findById(200))
+                .thenReturn(Optional.of(new StudentEntity(200, 1, "Juan", "García", null, "M", null, null, null, null)));
+        when(skillRubricCriteriaJPARepository.findById(300))
+                .thenReturn(Optional.of(new SkillRubricCriteriaEntity(300, "Lo hace bien", "Notable", 50, 7, 10, null)));
 
         final StudentClassRubricCriteria result = studentClassRubricCriteriaRepository.save(criteria);
 
         assertNotNull(result);
         assertEquals(1, result.getId());
+        assertEquals("Rubric Title", result.getRubricTitle());
+        assertEquals("Juan", result.getStudentName());
+        assertEquals("García", result.getStudentSurnames());
+        assertEquals("Lo hace bien", result.getCriterionDescription());
+        assertEquals("Notable", result.getQualification());
+        assertEquals(7, result.getGradeStart());
+        assertEquals(10, result.getGradeEnd());
         verify(studentClassRubricCriteriaJPARepository).save(entity);
     }
 
@@ -303,9 +320,9 @@ class StudentClassRubricCriteriaRepositoryImplTest {
                 .thenReturn(Optional.of(new StudentEntity(201, 1, "Ana", "López", null, "F", null, null, null, null)));
 
         when(skillRubricCriteriaJPARepository.findById(300))
-                .thenReturn(Optional.of(new SkillRubricCriteriaEntity(300, "Mal", 50, 0, 4, null)));
+                .thenReturn(Optional.of(new SkillRubricCriteriaEntity(300, "Mal", "Insuficiente", 50, 0, 4, null)));
         when(skillRubricCriteriaJPARepository.findById(301))
-                .thenReturn(Optional.of(new SkillRubricCriteriaEntity(301, "Bien", 51, 7, 10, null)));
+                .thenReturn(Optional.of(new SkillRubricCriteriaEntity(301, "Bien", "Notable", 51, 7, 10, null)));
 
         final List<StudentClassRubricCriteria> result = studentClassRubricCriteriaRepository.findByClassId(classId);
 

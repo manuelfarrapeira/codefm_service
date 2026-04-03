@@ -199,13 +199,13 @@ class ClassRubricServiceImplTest {
                         .id(1).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID)
                         .rubricId(RUBRIC_ID).rubricTitle("Rubric A")
                         .studentName("Juan").studentSurnames("Garcia")
-                        .criterionId(CRITERION_ID).criterionDescription("Good").gradeStart(5).gradeEnd(10)
+                        .criterionId(CRITERION_ID).criterionDescription("Good").qualification("Notable").gradeStart(5).gradeEnd(10)
                         .build(),
                 StudentClassRubricCriteria.builder()
                         .id(2).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID)
                         .rubricId(RUBRIC_ID).rubricTitle("Rubric B")
                         .studentName("Juan").studentSurnames("Garcia")
-                        .criterionId(51).criterionDescription("Bad").gradeStart(0).gradeEnd(4)
+                        .criterionId(51).criterionDescription("Bad").qualification("Insuficiente").gradeStart(0).gradeEnd(4)
                         .build());
         when(this.studentClassRubricCriteriaRepository.findByClassId(CLASS_ID)).thenReturn(flatList);
 

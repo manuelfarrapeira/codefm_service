@@ -244,6 +244,28 @@ class SkillRubricServiceImplTest {
     }
 
     @Test
+    void createCriterion_shouldCreate_whenBoundaryTouchesExistingRange() {
+        this.setupTeacherAndLocale();
+        final SkillRubric rubric = SkillRubric.builder().id(RUBRIC_ID).skillId(SKILL_ID).title("R").build();
+        final List<SkillRubricCriteria> existing = List.of(
+                SkillRubricCriteria.builder().id(CRITERION_ID).description("A").gradeStart(0).gradeEnd(5).rubricId(RUBRIC_ID).build()
+        );
+        final SkillRubricCriteria touchingBoundary = SkillRubricCriteria.builder().description("B").gradeStart(5).gradeEnd(7).build();
+        final SkillRubricCriteria saved = SkillRubricCriteria.builder().id(2).description("B").rubricId(RUBRIC_ID).gradeStart(5).gradeEnd(7).build();
+
+        when(this.skillRubricRepository.findById(RUBRIC_ID)).thenReturn(Optional.of(rubric));
+        this.setupSkillOwnership();
+        when(this.skillRubricCriteriaRepository.findActiveByRubricId(RUBRIC_ID)).thenReturn(existing);
+        when(this.skillRubricCriteriaRepository.save(any())).thenReturn(saved);
+
+        final SkillRubricCriteria result = this.skillRubricService.createCriterion(RUBRIC_ID, touchingBoundary);
+
+        assertNotNull(result);
+        assertEquals(2, result.getId());
+        verify(this.skillRubricCriteriaRepository).save(any());
+    }
+
+    @Test
     void createCriterion_shouldThrowValidation_whenOverlap() {
         this.setupTeacherAndLocale();
         final SkillRubric rubric = SkillRubric.builder().id(RUBRIC_ID).skillId(SKILL_ID).title("R").build();

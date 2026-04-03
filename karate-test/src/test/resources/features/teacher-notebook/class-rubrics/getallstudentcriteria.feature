@@ -7,7 +7,7 @@ Feature: Teacher Notebook - Get All Student Criteria By Class
 
   Scenario: Get all student criterion assignments for a class grouped by student
     * def rubricSchema = { id: '#number', title: '#string' }
-    * def criterionSchema = { id: '#number', description: '#string', gradeStart: '#number', gradeEnd: '#number' }
+    * def criterionSchema = { id: '#number', description: '#string', qualification: '##string', gradeStart: '#number', gradeEnd: '#number' }
     * def assignmentSchema = { id: '#number', classRubricId: '#number', rubric: '#(rubricSchema)', criterion: '#(criterionSchema)' }
     * def studentSchema = { id: '#number', name: '#string', surnames: '#string' }
     * def groupSchema = { student: '#(studentSchema)', rubricCriteria: '#[] assignmentSchema' }

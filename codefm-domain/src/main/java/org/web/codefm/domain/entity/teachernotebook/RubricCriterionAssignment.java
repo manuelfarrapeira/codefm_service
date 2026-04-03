@@ -14,6 +14,7 @@ public class RubricCriterionAssignment {
     private String rubricTitle;
     private Integer criterionId;
     private String criterionDescription;
+    private String qualification;
     private Integer gradeStart;
     private Integer gradeEnd;
 }

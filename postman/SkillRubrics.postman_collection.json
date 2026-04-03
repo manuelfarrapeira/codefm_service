@@ -191,7 +191,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"description\": \"Lo hace mal\",\n    \"gradeStart\": 0,\n    \"gradeEnd\": 4\n}"
+          "raw": "{\n    \"description\": \"Lo hace mal\",\n    \"qualification\": \"Insuficiente\",\n    \"gradeStart\": 0,\n    \"gradeEnd\": 4\n}"
         },
         "url": {
           "raw": "{{host}}/teacher-notebook/v1/rubrics/:rubricId/criteria",
@@ -232,7 +232,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"description\": \"Lo hace regular\",\n    \"gradeStart\": 5,\n    \"gradeEnd\": 6\n}"
+          "raw": "{\n    \"description\": \"Lo hace regular\",\n    \"qualification\": \"Suficiente\",\n    \"gradeStart\": 5,\n    \"gradeEnd\": 6\n}"
         },
         "url": {
           "raw": "{{host}}/teacher-notebook/v1/rubrics/:rubricId/criteria/:criterionId",

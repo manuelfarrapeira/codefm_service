@@ -53,6 +53,7 @@ class StudentClassRubricCriteriaMapperTest {
         assertNull(result.getStudentName());
         assertNull(result.getStudentSurnames());
         assertNull(result.getCriterionDescription());
+        assertNull(result.getQualification());
         assertNull(result.getGradeStart());
         assertNull(result.getGradeEnd());
     }
@@ -133,7 +134,7 @@ class StudentClassRubricCriteriaMapperTest {
         final StudentClassRubricCriteria model = StudentClassRubricCriteria.builder()
                 .id(1).classRubricId(100).studentId(200).criterionId(300)
                 .rubricId(50).rubricTitle("Rubric").studentName("Juan").studentSurnames("García")
-                .criterionDescription("Lo hace bien").gradeStart(7).gradeEnd(10)
+                .criterionDescription("Lo hace bien").qualification("Notable").gradeStart(7).gradeEnd(10)
                 .build();
 
         final StudentClassRubricCriteriaEntity result = mapper.toEntity(model);
