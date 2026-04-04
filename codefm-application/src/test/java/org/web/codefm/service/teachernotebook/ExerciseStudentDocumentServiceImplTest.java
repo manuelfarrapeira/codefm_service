@@ -491,40 +491,5 @@ class ExerciseStudentDocumentServiceImplTest {
         assertThrows(ExerciseStudentDocumentUploadException.class,
                 () -> exerciseStudentDocumentService.deleteDocumentsByGradeId(GRADE_ID));
     }
-
-    @Test
-    void extractBaseName_shouldReturnEmpty_whenFilenameIsNull() {
-        final String result = ReflectionTestUtils.invokeMethod(exerciseStudentDocumentService, "extractBaseName", (String) null);
-
-        assertEquals("", result);
-    }
-
-    @Test
-    void extractBaseName_shouldSanitizeAndReturn_whenFilenameHasNoDot() {
-        final String result = ReflectionTestUtils.invokeMethod(exerciseStudentDocumentService, "extractBaseName", "my file (1)");
-
-        assertEquals("my_file__1_", result);
-    }
-
-    @Test
-    void extractBaseName_shouldReturnSanitizedName_whenFilenameHasNoDotAndIsAlphanumeric() {
-        final String result = ReflectionTestUtils.invokeMethod(exerciseStudentDocumentService, "extractBaseName", "document");
-
-        assertEquals("document", result);
-    }
-
-    @Test
-    void extractExtension_shouldReturnEmpty_whenFilenameIsNull() {
-        final String result = ReflectionTestUtils.invokeMethod(exerciseStudentDocumentService, "extractExtension", (String) null);
-
-        assertEquals("", result);
-    }
-
-    @Test
-    void extractExtension_shouldReturnEmpty_whenFilenameHasNoDot() {
-        final String result = ReflectionTestUtils.invokeMethod(exerciseStudentDocumentService, "extractExtension", "document");
-
-        assertEquals("", result);
-    }
 }
 

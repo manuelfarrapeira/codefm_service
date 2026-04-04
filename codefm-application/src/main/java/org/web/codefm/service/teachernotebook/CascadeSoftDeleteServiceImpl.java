@@ -7,6 +7,7 @@ import org.web.codefm.domain.repository.teachernotebook.*;
 import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 import org.web.codefm.domain.service.teachernotebook.ExerciseStudentDocumentService;
+import org.web.codefm.domain.service.teachernotebook.GroupAssignmentDocumentService;
 
 import java.util.List;
 
@@ -29,6 +30,9 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
     private final ClassRubricRepository classRubricRepository;
     private final StudentClassRubricCriteriaRepository studentClassRubricCriteriaRepository;
 	private final SavedStudentGroupRepository savedStudentGroupRepository;
+	private final GroupAssignmentRepository groupAssignmentRepository;
+	private final GroupAssignmentGradeRepository groupAssignmentGradeRepository;
+	private final GroupAssignmentDocumentService groupAssignmentDocumentService;
 
 	@Override
 	public void cascadeDeleteChildrenOfSchool(Integer schoolId) {
@@ -56,9 +60,17 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
         this.classRubricRepository.softDeleteByClassId(classId);
 		final List<Integer> savedGroupIds = this.savedStudentGroupRepository.findActiveIdsByClassId(classId);
 		if (!savedGroupIds.isEmpty()) {
+			this.groupAssignmentGradeRepository.softDeleteByGroupIds(savedGroupIds);
+			this.groupAssignmentDocumentService.deleteDocumentsByGroupIds(savedGroupIds);
 			this.savedStudentGroupRepository.hardDeleteMembersByGroupIds(savedGroupIds);
 		}
 		this.savedStudentGroupRepository.softDeleteByClassId(classId);
+		final List<Integer> assignmentIds = this.groupAssignmentRepository.findActiveIdsByClassId(classId);
+		if (!assignmentIds.isEmpty()) {
+			this.groupAssignmentGradeRepository.softDeleteByGroupAssignmentIds(assignmentIds);
+			this.groupAssignmentDocumentService.deleteDocumentsByGroupAssignmentIds(assignmentIds);
+		}
+		this.groupAssignmentRepository.softDeleteByClassId(classId);
 	}
 
 	@Override
@@ -137,5 +149,11 @@ public class CascadeSoftDeleteServiceImpl implements CascadeSoftDeleteService {
 	@Override
 	public void cascadeDeleteChildrenOfSkillRubricCriteria(Integer criterionId) {
 		this.studentClassRubricCriteriaRepository.softDeleteByCriterionId(criterionId);
+	}
+
+	@Override
+	public void cascadeDeleteChildrenOfGroupAssignment(Integer assignmentId) {
+		this.groupAssignmentGradeRepository.softDeleteByGroupAssignmentId(assignmentId);
+		this.groupAssignmentDocumentService.deleteDocumentsByGroupAssignmentId(assignmentId);
 	}
 }

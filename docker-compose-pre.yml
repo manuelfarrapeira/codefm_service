@@ -25,6 +25,7 @@ services:
       - ./data/student-photos:/app/data/student-photos
       - ./data/exercise-documents:/app/data/exercise-documents
       - ./data/exercise-student-document:/app/data/exercise-student-document
+      - ./data/group-documents:/app/data/group-documents
     networks:
       - logging
       - infisical_external

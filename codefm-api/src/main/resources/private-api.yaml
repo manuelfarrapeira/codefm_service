@@ -41,6 +41,8 @@ tags:
     description: Operations related to Teacher Notebook Student Group generation
   - name: TeacherNoteBookSavedStudentGroups
     description: Operations related to Teacher Notebook Saved Student Groups
+  - name: TeacherNoteBookGroupAssignments
+    description: Operations related to Teacher Notebook Group Assignments
 
 paths:
   /greeting:
@@ -3745,6 +3747,555 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/classes/{classId}/group-assignments:
+    get:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: getGroupAssignmentsByClass
+      summary: Get all group assignments for a class
+      description: Returns all active group assignments for the specified class.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupAssignmentDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    post:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: createGroupAssignment
+      summary: Create a group assignment for a class
+      description: Creates a new group assignment linked to the specified class.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupAssignmentRequestDTO'
+      responses:
+        '201':
+          description: Group assignment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupAssignmentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}:
+    patch:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: updateGroupAssignment
+      summary: Update a group assignment
+      description: Updates an existing group assignment.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupAssignmentRequestDTO'
+      responses:
+        '200':
+          description: Group assignment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupAssignmentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Group assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: deleteGroupAssignment
+      summary: Soft-delete a group assignment
+      description: Soft-deletes a group assignment with cascade deletion of grades and documents.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Group assignment successfully soft-deleted (No Content)
+        '404':
+          description: Group assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/grades:
+    get:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: getGroupAssignmentGrades
+      summary: Get grades for a group assignment
+      description: Returns all active grades for the specified group assignment.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupAssignmentGradeDTO'
+        '404':
+          description: Group assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/groups/{groupId}/grade:
+    put:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: upsertGroupAssignmentGrade
+      summary: Create or update a grade for a group
+      description: Creates or updates the grade for the specified group in the assignment.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - name: groupId
+          in: path
+          required: true
+          description: The ID of the student group
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupAssignmentGradeRequestDTO'
+      responses:
+        '200':
+          description: Grade created or updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupAssignmentGradeDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Group assignment or group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: deleteGroupAssignmentGrade
+      summary: Soft-delete a grade for a group
+      description: Soft-deletes the grade for the specified group in the assignment.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - name: groupId
+          in: path
+          required: true
+          description: The ID of the student group
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Grade successfully soft-deleted (No Content)
+        '404':
+          description: Grade not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/documents:
+    post:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: uploadGroupAssignmentDocument
+      summary: Upload a document for a group assignment
+      description: Uploads a document for the assignment (assignment-level, groupDocument=false).
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The document file to upload
+                description:
+                  type: string
+                  description: Optional description for the document
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupAssignmentDocumentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Group assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/groups/{groupId}/documents:
+    post:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: uploadGroupAssignmentGroupDocument
+      summary: Upload a document for a group in an assignment
+      description: Uploads a document for a specific group (group-level, groupDocument=true).
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - name: groupId
+          in: path
+          required: true
+          description: The ID of the student group
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The document file to upload
+                description:
+                  type: string
+                  description: Optional description for the document
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupAssignmentDocumentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Group assignment or group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/documents/{documentId}/download:
+    get:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: downloadGroupAssignmentDocument
+      summary: Download a group assignment document
+      description: Downloads the document file.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: Document downloaded successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/documents/{documentId}:
+    delete:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: deleteGroupAssignmentDocument
+      summary: Delete a group assignment document
+      description: Hard-deletes the document record and removes the file from disk.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Document successfully deleted (No Content)
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
 components:
   schemas:
     ErrorResponseDTO:
@@ -4494,3 +5045,83 @@ components:
           items:
             type: 'integer'
           example: [ 1, 2, 3, 4 ]
+    GroupAssignmentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classId:
+          type: 'integer'
+        title:
+          type: 'string'
+        description:
+          type: 'string'
+        quarter:
+          type: 'integer'
+        documents:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/GroupAssignmentDocumentSummaryDTO'
+    GroupAssignmentRequestDTO:
+      type: 'object'
+      properties:
+        title:
+          type: 'string'
+          example: 'Group Project Unit 1'
+        description:
+          type: 'string'
+          example: 'Collaborative project about ecosystems'
+        quarter:
+          type: 'integer'
+          example: 1
+    GroupAssignmentGradeDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        groupAssignmentId:
+          type: 'integer'
+        groupId:
+          type: 'integer'
+        grade:
+          type: 'number'
+          format: 'double'
+        groupName:
+          type: 'string'
+        documents:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/GroupAssignmentDocumentSummaryDTO'
+    GroupAssignmentGradeRequestDTO:
+      type: 'object'
+      properties:
+        grade:
+          type: 'number'
+          format: 'double'
+          example: 8.5
+    GroupAssignmentDocumentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        groupAssignmentId:
+          type: 'integer'
+        groupId:
+          type: 'integer'
+        document:
+          type: 'string'
+        description:
+          type: 'string'
+        groupDocument:
+          type: 'boolean'
+    GroupAssignmentDocumentSummaryDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        document:
+          type: 'string'
+        description:
+          type: 'string'
+        groupDocument:
+          type: 'boolean'

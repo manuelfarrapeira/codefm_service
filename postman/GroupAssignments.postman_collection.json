@@ -1,0 +1,443 @@
+{
+  "info": {
+    "_postman_id": "ga-collection-001",
+    "name": "GroupAssignments",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Group Assignments by Class",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/group-assignments",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "group-assignments"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "4"
+            }
+          ]
+        },
+        "description": "Obtiene todos los trabajos de grupo activos de una clase."
+      }
+    },
+    {
+      "name": "Create Group Assignment",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Proyecto Ecosistemas\",\n    \"description\": \"Proyecto colaborativo sobre ecosistemas\",\n    \"quarter\": 1\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/group-assignments",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "group-assignments"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "4"
+            }
+          ]
+        },
+        "description": "Crea un nuevo trabajo de grupo para una clase. El título y trimestre (1-3) son obligatorios."
+      }
+    },
+    {
+      "name": "Update Group Assignment",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Proyecto Ecosistemas Actualizado\",\n    \"description\": \"Descripción actualizada\",\n    \"quarter\": 2\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/group-assignments/:assignmentId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "group-assignments",
+            ":assignmentId"
+          ],
+          "variable": [
+            {
+              "key": "assignmentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Actualiza un trabajo de grupo existente."
+      }
+    },
+    {
+      "name": "Delete Group Assignment",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/group-assignments/:assignmentId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "group-assignments",
+            ":assignmentId"
+          ],
+          "variable": [
+            {
+              "key": "assignmentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) un trabajo de grupo y toda su cascada (notas y documentos)."
+      }
+    },
+    {
+      "name": "Get Group Assignment Grades",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/group-assignments/:assignmentId/grades",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "group-assignments",
+            ":assignmentId",
+            "grades"
+          ],
+          "variable": [
+            {
+              "key": "assignmentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Obtiene todas las notas de un trabajo de grupo."
+      }
+    },
+    {
+      "name": "Upsert Group Assignment Grade",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"grade\": 8.5\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/group-assignments/:assignmentId/groups/:groupId/grade",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "group-assignments",
+            ":assignmentId",
+            "groups",
+            ":groupId",
+            "grade"
+          ],
+          "variable": [
+            {
+              "key": "assignmentId",
+              "value": "1"
+            },
+            {
+              "key": "groupId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Crea o actualiza la nota de un grupo en un trabajo. La nota debe estar entre 0 y 10."
+      }
+    },
+    {
+      "name": "Delete Group Assignment Grade",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/group-assignments/:assignmentId/groups/:groupId/grade",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "group-assignments",
+            ":assignmentId",
+            "groups",
+            ":groupId",
+            "grade"
+          ],
+          "variable": [
+            {
+              "key": "assignmentId",
+              "value": "1"
+            },
+            {
+              "key": "groupId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) la nota de un grupo en un trabajo."
+      }
+    },
+    {
+      "name": "Upload Assignment Document",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            },
+            {
+              "key": "description",
+              "value": "Documento del trabajo",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/group-assignments/:assignmentId/documents",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "group-assignments",
+            ":assignmentId",
+            "documents"
+          ],
+          "variable": [
+            {
+              "key": "assignmentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Sube un documento para el trabajo de grupo (documento del trabajo, no de grupo). Máximo 2MB."
+      }
+    },
+    {
+      "name": "Upload Group Document",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            },
+            {
+              "key": "description",
+              "value": "Documento del grupo",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/group-assignments/:assignmentId/groups/:groupId/documents",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "group-assignments",
+            ":assignmentId",
+            "groups",
+            ":groupId",
+            "documents"
+          ],
+          "variable": [
+            {
+              "key": "assignmentId",
+              "value": "1"
+            },
+            {
+              "key": "groupId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Sube un documento de un grupo específico para un trabajo de grupo. Máximo 2MB."
+      }
+    },
+    {
+      "name": "Download Document",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/group-assignments/:assignmentId/documents/:documentId/download",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "group-assignments",
+            ":assignmentId",
+            "documents",
+            ":documentId",
+            "download"
+          ],
+          "variable": [
+            {
+              "key": "assignmentId",
+              "value": "1"
+            },
+            {
+              "key": "documentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Descarga un documento de un trabajo de grupo."
+      }
+    },
+    {
+      "name": "Delete Document",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/group-assignments/:assignmentId/documents/:documentId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "group-assignments",
+            ":assignmentId",
+            "documents",
+            ":documentId"
+          ],
+          "variable": [
+            {
+              "key": "assignmentId",
+              "value": "1"
+            },
+            {
+              "key": "documentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Elimina un documento (hard delete) y borra el archivo del disco."
+      }
+    }
+  ]
+}
+
