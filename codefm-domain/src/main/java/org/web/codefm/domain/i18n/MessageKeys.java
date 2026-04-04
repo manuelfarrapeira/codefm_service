@@ -168,4 +168,20 @@ public class MessageKeys {
 	public static final String SAVED_GROUP_VALIDATION_GROUP_ID_REQUIRED = "saved.group.validation.group.id.required";
 	public static final String SAVED_GROUP_VALIDATION_GROUP_NOT_FOUND = "saved.group.validation.group.not.found";
 
+	public static final String GROUP_ASSIGNMENT_NOT_FOUND = "group.assignment.not.found";
+	public static final String GROUP_ASSIGNMENT_VALIDATION_TITLE_REQUIRED = "group.assignment.validation.title.required";
+	public static final String GROUP_ASSIGNMENT_VALIDATION_QUARTER_REQUIRED = "group.assignment.validation.quarter.required";
+	public static final String GROUP_ASSIGNMENT_VALIDATION_QUARTER_INVALID = "group.assignment.validation.quarter.invalid";
+	public static final String GROUP_ASSIGNMENT_GRADE_REQUIRED = "group.assignment.grade.required";
+	public static final String GROUP_ASSIGNMENT_GRADE_INVALID = "group.assignment.grade.invalid";
+	public static final String GROUP_ASSIGNMENT_GROUP_NOT_FOUND = "group.assignment.group.not.found";
+	public static final String GROUP_ASSIGNMENT_GROUP_NOT_IN_CLASS = "group.assignment.group.not.in.class";
+	public static final String GROUP_ASSIGNMENT_GRADE_ALREADY_EXISTS = "group.assignment.grade.already.exists";
+	public static final String GROUP_ASSIGNMENT_DOCUMENT_NOT_FOUND = "group.assignment.document.not.found";
+	public static final String GROUP_ASSIGNMENT_DOCUMENT_EMPTY = "group.assignment.document.empty";
+	public static final String GROUP_ASSIGNMENT_DOCUMENT_UPLOAD_ERROR = "group.assignment.document.upload.error";
+	public static final String GROUP_ASSIGNMENT_DOCUMENT_DELETE_ERROR = "group.assignment.document.delete.error";
+	public static final String GROUP_ASSIGNMENT_DOCUMENT_INVALID_EXTENSION = "group.assignment.document.invalid.extension";
+	public static final String GROUP_ASSIGNMENT_DOCUMENT_SIZE_EXCEEDED = "group.assignment.document.size.exceeded";
+
 }

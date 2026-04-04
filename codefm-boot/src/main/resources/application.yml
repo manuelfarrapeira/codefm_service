@@ -135,3 +135,8 @@ exercise:
     directory: ./data/exercise-documents
   student-documents:
     directory: ./data/exercise-student-document
+
+group:
+  documents:
+    directory: ./data/group-documents
+

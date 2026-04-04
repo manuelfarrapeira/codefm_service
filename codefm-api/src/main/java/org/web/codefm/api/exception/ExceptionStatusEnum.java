@@ -60,7 +60,11 @@ public enum ExceptionStatusEnum {
     STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_ERROR(StudentClassRubricCriteriaValidationException.class, HttpStatus.BAD_REQUEST),
     STUDENT_GROUP_VALIDATION_ERROR(StudentGroupValidationException.class, HttpStatus.BAD_REQUEST),
     SAVED_STUDENT_GROUP_NOT_FOUND(SavedStudentGroupNotFoundException.class, HttpStatus.NOT_FOUND),
-    SAVED_STUDENT_GROUP_VALIDATION_ERROR(SavedStudentGroupValidationException.class, HttpStatus.BAD_REQUEST);
+    SAVED_STUDENT_GROUP_VALIDATION_ERROR(SavedStudentGroupValidationException.class, HttpStatus.BAD_REQUEST),
+    GROUP_ASSIGNMENT_NOT_FOUND(GroupAssignmentNotFoundException.class, HttpStatus.NOT_FOUND),
+    GROUP_ASSIGNMENT_VALIDATION_ERROR(GroupAssignmentValidationException.class, HttpStatus.BAD_REQUEST),
+    GROUP_ASSIGNMENT_DOCUMENT_NOT_FOUND(GroupAssignmentDocumentNotFoundException.class, HttpStatus.NOT_FOUND),
+    GROUP_ASSIGNMENT_DOCUMENT_UPLOAD_ERROR(GroupAssignmentDocumentUploadException.class, HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final Class<?> exceptionClazz;
 

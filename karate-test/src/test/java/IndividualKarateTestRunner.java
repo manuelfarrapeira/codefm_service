@@ -407,4 +407,54 @@ public class IndividualKarateTestRunner {
 		return Karate.run("features/teacher-notebook/saved-student-groups/deletesavedstudentgroup").relativeTo(getClass());
 	}
 
+	@Karate.Test
+	Karate testTeacherNotebookGetGroupAssignments() {
+		return Karate.run("features/teacher-notebook/group-assignments/getgroupassignments").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookCreateGroupAssignment() {
+		return Karate.run("features/teacher-notebook/group-assignments/creategroupassignment").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookUpdateGroupAssignment() {
+		return Karate.run("features/teacher-notebook/group-assignments/updategroupassignment").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookDeleteGroupAssignment() {
+		return Karate.run("features/teacher-notebook/group-assignments/deletegroupassignment").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookGetGroupAssignmentGrades() {
+		return Karate.run("features/teacher-notebook/group-assignments/getgroupassignmentgrades").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookUpsertGroupAssignmentGrade() {
+		return Karate.run("features/teacher-notebook/group-assignments/upsertgroupassignmentgrade").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookDeleteGroupAssignmentGrade() {
+		return Karate.run("features/teacher-notebook/group-assignments/deletegroupassignmentgrade").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookUploadGroupAssignmentDocument() {
+		return Karate.run("features/teacher-notebook/group-assignments/uploadgroupassignmentdocument").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookDownloadGroupAssignmentDocument() {
+		return Karate.run("features/teacher-notebook/group-assignments/downloadgroupassignmentdocument").relativeTo(getClass());
+	}
+
+	@Karate.Test
+	Karate testTeacherNotebookDeleteGroupAssignmentDocument() {
+		return Karate.run("features/teacher-notebook/group-assignments/deletegroupassignmentdocument").relativeTo(getClass());
+	}
+
 }

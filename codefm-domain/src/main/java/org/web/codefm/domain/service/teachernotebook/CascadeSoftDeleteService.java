@@ -100,4 +100,12 @@ public interface CascadeSoftDeleteService {
 	 * @param criterionId The unique identifier of the skill rubric criterion.
 	 */
 	void cascadeDeleteChildrenOfSkillRubricCriteria(Integer criterionId);
+
+	/**
+	 * Cascades delete for all children of the given group assignment:
+	 * grades (soft delete) and documents (hard delete + file removal).
+	 *
+	 * @param assignmentId The unique identifier of the group assignment.
+	 */
+	void cascadeDeleteChildrenOfGroupAssignment(Integer assignmentId);
 }
