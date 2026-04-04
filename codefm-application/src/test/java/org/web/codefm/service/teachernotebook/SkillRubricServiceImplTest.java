@@ -384,5 +384,106 @@ class SkillRubricServiceImplTest {
 
         assertThrows(SkillRubricNotFoundException.class, () -> this.skillRubricService.deleteCriterion(RUBRIC_ID, 999));
     }
+
+    @Test
+    void updateRubric_shouldThrowValidation_whenTitleIsEmpty() {
+        this.setupTeacherAndLocale();
+        final SkillRubric existing = SkillRubric.builder().id(RUBRIC_ID).title("Old").skillId(SKILL_ID).build();
+        when(this.skillRubricRepository.findById(RUBRIC_ID)).thenReturn(Optional.of(existing));
+        this.setupSkillOwnership();
+        when(this.messageSource.getMessage(eq(MessageKeys.SKILL_RUBRIC_VALIDATION_TITLE_REQUIRED), any(), any(Locale.class))).thenReturn("error");
+
+        final SkillRubric rubricWithEmptyTitle = SkillRubric.builder().title("").build();
+
+        assertThrows(SkillRubricValidationException.class,
+                () -> this.skillRubricService.updateRubric(RUBRIC_ID, rubricWithEmptyTitle));
+    }
+
+    @Test
+    void createCriterion_shouldThrowValidation_whenCriterionIsNull() {
+        this.setupTeacherAndLocale();
+        final SkillRubric rubric = SkillRubric.builder().id(RUBRIC_ID).skillId(SKILL_ID).title("R").build();
+        when(this.skillRubricRepository.findById(RUBRIC_ID)).thenReturn(Optional.of(rubric));
+        this.setupSkillOwnership();
+        when(this.messageSource.getMessage(any(String.class), any(), any(Locale.class))).thenReturn("error");
+
+        final SkillRubricValidationException exception = assertThrows(SkillRubricValidationException.class,
+                () -> this.skillRubricService.createCriterion(RUBRIC_ID, null));
+
+        assertEquals(3, exception.getErrors().size());
+        assertTrue(exception.getErrors().stream().anyMatch(e -> "description".equals(e.getParam())));
+        assertTrue(exception.getErrors().stream().anyMatch(e -> "gradeStart".equals(e.getParam())));
+        assertTrue(exception.getErrors().stream().anyMatch(e -> "gradeEnd".equals(e.getParam())));
+    }
+
+    @Test
+    void updateCriterion_shouldThrowValidation_whenCriterionDataIsInvalid() {
+        this.setupTeacherAndLocale();
+        final SkillRubric rubric = SkillRubric.builder().id(RUBRIC_ID).skillId(SKILL_ID).title("R").build();
+        final SkillRubricCriteria existing = SkillRubricCriteria.builder().id(CRITERION_ID).description("Old").rubricId(RUBRIC_ID).gradeStart(0).gradeEnd(4).build();
+
+        when(this.skillRubricRepository.findById(RUBRIC_ID)).thenReturn(Optional.of(rubric));
+        this.setupSkillOwnership();
+        when(this.skillRubricCriteriaRepository.findActiveById(CRITERION_ID)).thenReturn(Optional.of(existing));
+        when(this.messageSource.getMessage(any(String.class), any(), any(Locale.class))).thenReturn("error");
+
+        final SkillRubricCriteria invalidCriterion = SkillRubricCriteria.builder().description("").gradeStart(null).gradeEnd(null).build();
+
+        assertThrows(SkillRubricValidationException.class,
+                () -> this.skillRubricService.updateCriterion(RUBRIC_ID, CRITERION_ID, invalidCriterion));
+    }
+
+    @Test
+    void updateCriterion_shouldThrowValidation_whenOverlapExists() {
+        this.setupTeacherAndLocale();
+        final SkillRubric rubric = SkillRubric.builder().id(RUBRIC_ID).skillId(SKILL_ID).title("R").build();
+        final SkillRubricCriteria existing = SkillRubricCriteria.builder().id(CRITERION_ID).description("A").rubricId(RUBRIC_ID).gradeStart(0).gradeEnd(4).build();
+        final SkillRubricCriteria other = SkillRubricCriteria.builder().id(2).description("B").rubricId(RUBRIC_ID).gradeStart(5).gradeEnd(8).build();
+
+        when(this.skillRubricRepository.findById(RUBRIC_ID)).thenReturn(Optional.of(rubric));
+        this.setupSkillOwnership();
+        when(this.skillRubricCriteriaRepository.findActiveById(CRITERION_ID)).thenReturn(Optional.of(existing));
+        when(this.skillRubricCriteriaRepository.findActiveByRubricId(RUBRIC_ID)).thenReturn(List.of(existing, other));
+        when(this.messageSource.getMessage(eq(MessageKeys.SKILL_RUBRIC_VALIDATION_CRITERIA_OVERLAP), any(), any(Locale.class))).thenReturn("error");
+
+        final SkillRubricCriteria overlapping = SkillRubricCriteria.builder().description("Updated").gradeStart(4).gradeEnd(7).build();
+
+        assertThrows(SkillRubricValidationException.class,
+                () -> this.skillRubricService.updateCriterion(RUBRIC_ID, CRITERION_ID, overlapping));
+    }
+
+    @Test
+    void updateCriterion_shouldThrowNotFound_whenCriterionBelongsToDifferentRubric() {
+        this.setupTeacherAndLocale();
+        final SkillRubric rubric = SkillRubric.builder().id(RUBRIC_ID).skillId(SKILL_ID).title("R").build();
+        when(this.skillRubricRepository.findById(RUBRIC_ID)).thenReturn(Optional.of(rubric));
+        this.setupSkillOwnership();
+
+        final SkillRubricCriteria wrongRubricCriterion = SkillRubricCriteria.builder()
+                .id(CRITERION_ID).description("A").rubricId(999).gradeStart(0).gradeEnd(4).build();
+        when(this.skillRubricCriteriaRepository.findActiveById(CRITERION_ID)).thenReturn(Optional.of(wrongRubricCriterion));
+        when(this.messageSource.getMessage(eq(MessageKeys.SKILL_RUBRIC_CRITERIA_NOT_FOUND), any(), any(Locale.class))).thenReturn("not found");
+
+        final SkillRubricCriteria update = SkillRubricCriteria.builder().description("X").gradeStart(0).gradeEnd(5).build();
+
+        assertThrows(SkillRubricNotFoundException.class,
+                () -> this.skillRubricService.updateCriterion(RUBRIC_ID, CRITERION_ID, update));
+    }
+
+    @Test
+    void deleteCriterion_shouldThrowNotFound_whenCriterionBelongsToDifferentRubric() {
+        this.setupTeacherAndLocale();
+        final SkillRubric rubric = SkillRubric.builder().id(RUBRIC_ID).skillId(SKILL_ID).title("R").build();
+        when(this.skillRubricRepository.findById(RUBRIC_ID)).thenReturn(Optional.of(rubric));
+        this.setupSkillOwnership();
+
+        final SkillRubricCriteria wrongRubricCriterion = SkillRubricCriteria.builder()
+                .id(CRITERION_ID).description("A").rubricId(999).gradeStart(0).gradeEnd(4).build();
+        when(this.skillRubricCriteriaRepository.findActiveById(CRITERION_ID)).thenReturn(Optional.of(wrongRubricCriterion));
+        when(this.messageSource.getMessage(eq(MessageKeys.SKILL_RUBRIC_CRITERIA_NOT_FOUND), any(), any(Locale.class))).thenReturn("not found");
+
+        assertThrows(SkillRubricNotFoundException.class,
+                () -> this.skillRubricService.deleteCriterion(RUBRIC_ID, CRITERION_ID));
+    }
 }
 
