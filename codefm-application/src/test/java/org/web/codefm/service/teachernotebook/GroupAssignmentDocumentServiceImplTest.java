@@ -375,6 +375,103 @@ class GroupAssignmentDocumentServiceImplTest {
                 () -> this.groupAssignmentDocumentService.uploadDocument(ASSIGNMENT_ID, null, file, null, false));
     }
 
+    @Test
+    void uploadDocument_shouldThrowUploadException_whenIOExceptionOnDiskWrite() throws IOException {
+        setupSessionMocks();
+        ReflectionTestUtils.setField(this.groupAssignmentDocumentService, "documentsDirectory", "/nonexistent/invalid/path");
+        when(this.groupAssignmentRepository.findByIdAndTeacherId(ASSIGNMENT_ID, TEACHER_ID))
+                .thenReturn(Optional.of(GroupAssignment.builder().id(ASSIGNMENT_ID).classId(CLASS_ID).build()));
+        when(this.messageSource.getMessage(eq(MessageKeys.GROUP_ASSIGNMENT_DOCUMENT_UPLOAD_ERROR), any(), any(Locale.class)))
+                .thenReturn("Upload error.");
+
+        final MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getBytes()).thenReturn("test content".getBytes());
+        when(file.getOriginalFilename()).thenReturn("document.pdf");
+
+        assertThrows(GroupAssignmentDocumentUploadException.class,
+                () -> this.groupAssignmentDocumentService.uploadDocument(ASSIGNMENT_ID, null, file, null, false));
+    }
+
+    @Test
+    void downloadDocument_shouldThrowNotFoundException_whenFileNotExistsOnDisk() {
+        setupSessionMocks();
+        setupDocumentsDirectory();
+        when(this.groupAssignmentRepository.findByIdAndTeacherId(ASSIGNMENT_ID, TEACHER_ID))
+                .thenReturn(Optional.of(GroupAssignment.builder().id(ASSIGNMENT_ID).build()));
+        when(this.messageSource.getMessage(eq(MessageKeys.GROUP_ASSIGNMENT_DOCUMENT_NOT_FOUND), any(), any(Locale.class)))
+                .thenReturn("Not found.");
+
+        final GroupAssignmentDocument doc = GroupAssignmentDocument.builder()
+                .id(DOCUMENT_ID).groupAssignmentId(ASSIGNMENT_ID).document("missing_file.pdf").build();
+        when(this.groupAssignmentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(doc));
+
+        assertThrows(GroupAssignmentDocumentNotFoundException.class,
+                () -> this.groupAssignmentDocumentService.downloadDocument(ASSIGNMENT_ID, DOCUMENT_ID));
+    }
+
+    @Test
+    void downloadDocument_shouldThrowNotFoundException_whenIOExceptionOnRead() throws IOException {
+        setupSessionMocks();
+        when(this.groupAssignmentRepository.findByIdAndTeacherId(ASSIGNMENT_ID, TEACHER_ID))
+                .thenReturn(Optional.of(GroupAssignment.builder().id(ASSIGNMENT_ID).build()));
+        when(this.messageSource.getMessage(eq(MessageKeys.GROUP_ASSIGNMENT_DOCUMENT_NOT_FOUND), any(), any(Locale.class)))
+                .thenReturn("Not found.");
+
+        final Path subDir = tempDir.resolve("restricted");
+        Files.createDirectory(subDir);
+        ReflectionTestUtils.setField(this.groupAssignmentDocumentService, "documentsDirectory", tempDir.toString());
+
+        final GroupAssignmentDocument doc = GroupAssignmentDocument.builder()
+                .id(DOCUMENT_ID).groupAssignmentId(ASSIGNMENT_ID).document("restricted").build();
+        when(this.groupAssignmentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(doc));
+
+        assertThrows(GroupAssignmentDocumentNotFoundException.class,
+                () -> this.groupAssignmentDocumentService.downloadDocument(ASSIGNMENT_ID, DOCUMENT_ID));
+    }
+
+    @Test
+    void deleteDocumentsByGroupAssignmentIds_shouldDeleteAllDocumentsAndFiles_whenListIsNotEmpty() throws IOException {
+        setupDocumentsDirectory();
+        final String file1 = "batch_doc1.pdf";
+        final String file2 = "batch_doc2.pdf";
+        Files.write(tempDir.resolve(file1), "content1".getBytes());
+        Files.write(tempDir.resolve(file2), "content2".getBytes());
+
+        final List<Integer> assignmentIds = List.of(ASSIGNMENT_ID, 101);
+        final List<GroupAssignmentDocument> docs = List.of(
+                GroupAssignmentDocument.builder().id(1).document(file1).build(),
+                GroupAssignmentDocument.builder().id(2).document(file2).build());
+        when(this.groupAssignmentDocumentRepository.findByGroupAssignmentIds(assignmentIds)).thenReturn(docs);
+
+        this.groupAssignmentDocumentService.deleteDocumentsByGroupAssignmentIds(assignmentIds);
+
+        verify(this.groupAssignmentDocumentRepository).deleteByGroupAssignmentIds(assignmentIds);
+        assertFalse(Files.exists(tempDir.resolve(file1)));
+        assertFalse(Files.exists(tempDir.resolve(file2)));
+    }
+
+    @Test
+    void deleteDocumentsByGroupIds_shouldDeleteDocumentsAndFiles_whenListIsNotEmpty() throws IOException {
+        setupDocumentsDirectory();
+        final String file1 = "grp_doc1.pdf";
+        final String file2 = "grp_doc2.pdf";
+        Files.write(tempDir.resolve(file1), "content1".getBytes());
+        Files.write(tempDir.resolve(file2), "content2".getBytes());
+
+        final List<Integer> groupIds = List.of(GROUP_ID, 51);
+        final List<GroupAssignmentDocument> docs = List.of(
+                GroupAssignmentDocument.builder().id(1).document(file1).build(),
+                GroupAssignmentDocument.builder().id(2).document(file2).build());
+        when(this.groupAssignmentDocumentRepository.findByGroupIds(groupIds)).thenReturn(docs);
+
+        this.groupAssignmentDocumentService.deleteDocumentsByGroupIds(groupIds);
+
+        verify(this.groupAssignmentDocumentRepository).deleteByGroupIds(groupIds);
+        assertFalse(Files.exists(tempDir.resolve(file1)));
+        assertFalse(Files.exists(tempDir.resolve(file2)));
+    }
+
     private void setupSessionMocks() {
         when(this.sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         lenient().when(this.sessionUser.getLocale()).thenReturn(Locale.ENGLISH);

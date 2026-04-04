@@ -18,6 +18,7 @@ import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepo
 import org.web.codefm.domain.service.teachernotebook.ExerciseStudentDocumentService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
+import org.web.codefm.domain.util.FileNameUtil;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -73,7 +74,7 @@ public class ExerciseStudentDocumentServiceImpl implements ExerciseStudentDocume
             );
         }
 
-        final String extension = this.extractExtension(originalFilename);
+        final String extension = FileNameUtil.extractExtension(originalFilename);
 
         if (!MimeTypeEnum.isAllowedExtension(extension)) {
             throw new ExerciseStudentDocumentUploadException(
@@ -83,7 +84,7 @@ public class ExerciseStudentDocumentServiceImpl implements ExerciseStudentDocume
 
         try {
             final Path directory = Paths.get(this.documentsDirectory);
-            final String baseName = this.extractBaseName(originalFilename);
+            final String baseName = FileNameUtil.extractBaseName(originalFilename);
             final String uuid = UUID.randomUUID().toString().substring(0, 8);
             final String diskFilename = gradeId + "_" + baseName + "_" + uuid + "." + extension;
             final Path filePath = directory.resolve(diskFilename);
@@ -258,28 +259,6 @@ public class ExerciseStudentDocumentServiceImpl implements ExerciseStudentDocume
                     this.messageSource.getMessage(MessageKeys.EXERCISE_STUDENT_DOCUMENT_DELETE_ERROR, null, this.sessionUser.getLocale()), e
             );
         }
-    }
-
-    private String extractExtension(String filename) {
-        if (filename == null) {
-            return "";
-        }
-        final int dotIndex = filename.lastIndexOf('.');
-        if (dotIndex > 0) {
-            return filename.substring(dotIndex + 1).toLowerCase();
-        }
-        return "";
-    }
-
-    private String extractBaseName(String filename) {
-        if (filename == null) {
-            return "";
-        }
-        final int dotIndex = filename.lastIndexOf('.');
-        if (dotIndex > 0) {
-            return filename.substring(0, dotIndex).replaceAll("[^a-zA-Z0-9._-]", "_");
-        }
-        return filename.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 }
 

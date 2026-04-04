@@ -23,6 +23,7 @@ import org.web.codefm.domain.repository.teachernotebook.SavedStudentGroupReposit
 import org.web.codefm.domain.service.teachernotebook.GroupAssignmentDocumentService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
+import org.web.codefm.domain.util.FileNameUtil;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,7 +54,7 @@ public class GroupAssignmentDocumentServiceImpl implements GroupAssignmentDocume
         final Locale locale = this.sessionUser.getLocale();
         final GroupAssignment assignment = this.findAssignmentOrThrow(assignmentId, teacherId, locale);
 
-        final Boolean isGroupDoc = Boolean.TRUE.equals(groupDocument);
+        final boolean isGroupDoc = Boolean.TRUE.equals(groupDocument);
 
         if (isGroupDoc) {
             this.validateGroupBelongsToClass(groupId, assignment.getClassId(), teacherId, locale);
@@ -79,7 +80,7 @@ public class GroupAssignmentDocumentServiceImpl implements GroupAssignmentDocume
                     this.messageSource.getMessage(MessageKeys.GROUP_ASSIGNMENT_DOCUMENT_SIZE_EXCEEDED, null, this.sessionUser.getLocale()));
         }
 
-        final String extension = this.extractExtension(originalFilename);
+        final String extension = FileNameUtil.extractExtension(originalFilename);
         if (!MimeTypeEnum.isAllowedExtension(extension)) {
             throw new GroupAssignmentDocumentUploadException(
                     this.messageSource.getMessage(MessageKeys.GROUP_ASSIGNMENT_DOCUMENT_INVALID_EXTENSION, null, this.sessionUser.getLocale()));
@@ -89,7 +90,7 @@ public class GroupAssignmentDocumentServiceImpl implements GroupAssignmentDocume
 
         try {
             final Path directory = Paths.get(this.documentsDirectory);
-            final String baseName = this.extractBaseName(originalFilename);
+            final String baseName = FileNameUtil.extractBaseName(originalFilename);
             final String uuid = UUID.randomUUID().toString().substring(0, 8);
             final String diskFilename = assignmentId + "_" + baseName + "_" + uuid + "." + extension;
             final Path filePath = directory.resolve(diskFilename);
@@ -238,27 +239,6 @@ public class GroupAssignmentDocumentServiceImpl implements GroupAssignmentDocume
         }
     }
 
-    private String extractExtension(String filename) {
-        if (filename == null) {
-            return "";
-        }
-        final int dotIndex = filename.lastIndexOf('.');
-        if (dotIndex > 0) {
-            return filename.substring(dotIndex + 1).toLowerCase();
-        }
-        return "";
-    }
-
-    private String extractBaseName(String filename) {
-        if (filename == null) {
-            return "";
-        }
-        final int dotIndex = filename.lastIndexOf('.');
-        if (dotIndex > 0) {
-            return filename.substring(0, dotIndex).replaceAll("[^a-zA-Z0-9._-]", "_");
-        }
-        return filename.replaceAll("[^a-zA-Z0-9._-]", "_");
-    }
 
     private Integer getTeacherId() {
         return this.sessionUser.getParameter(SessionParameter.TEACHER_ID);
