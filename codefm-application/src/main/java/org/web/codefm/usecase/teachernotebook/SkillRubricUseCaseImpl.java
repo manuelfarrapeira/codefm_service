@@ -56,7 +56,9 @@ public class SkillRubricUseCaseImpl implements SkillRubricUseCase {
     }
 
     @Override
+    @Transactional
     public void deleteCriterion(Integer rubricId, Integer criterionId) {
+        this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSkillRubricCriteria(criterionId);
         this.skillRubricService.deleteCriterion(rubricId, criterionId);
     }
 }

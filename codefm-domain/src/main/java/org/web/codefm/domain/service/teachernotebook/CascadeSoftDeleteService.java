@@ -92,4 +92,12 @@ public interface CascadeSoftDeleteService {
      * @param classRubricId The unique identifier of the class-rubric assignment.
      */
     void cascadeDeleteChildrenOfClassRubric(Integer classRubricId);
+
+	/**
+	 * Cascades soft-delete for all children of the given skill rubric criterion:
+	 * student_class_rubric_criteria entries that reference this criterion.
+	 *
+	 * @param criterionId The unique identifier of the skill rubric criterion.
+	 */
+	void cascadeDeleteChildrenOfSkillRubricCriteria(Integer criterionId);
 }

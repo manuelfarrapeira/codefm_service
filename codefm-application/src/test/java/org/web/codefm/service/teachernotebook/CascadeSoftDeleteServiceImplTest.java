@@ -337,4 +337,13 @@ class CascadeSoftDeleteServiceImplTest {
 
 		verify(this.studentClassRubricCriteriaRepository).softDeleteByClassRubricId(classRubricId);
 	}
+
+	@Test
+	void cascadeDeleteChildrenOfSkillRubricCriteria_shouldSoftDeleteStudentCriteria() {
+		final Integer criterionId = 50;
+
+		this.cascadeSoftDeleteService.cascadeDeleteChildrenOfSkillRubricCriteria(criterionId);
+
+		verify(this.studentClassRubricCriteriaRepository).softDeleteByCriterionId(criterionId);
+	}
 }

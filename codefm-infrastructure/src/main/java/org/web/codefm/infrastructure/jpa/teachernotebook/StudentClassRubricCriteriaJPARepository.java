@@ -53,6 +53,12 @@ public interface StudentClassRubricCriteriaJPARepository extends JpaRepository<S
             "WHERE sc.classRubricId IN :classRubricIds AND sc.deletionDate IS NULL")
     void softDeleteByClassRubricIds(@Param("classRubricIds") List<Integer> classRubricIds);
 
+    @Transactional
+    @Modifying
+    @Query("UPDATE StudentClassRubricCriteriaEntity sc SET sc.deletionDate = CURRENT_DATE " +
+            "WHERE sc.criterionId = :criterionId AND sc.deletionDate IS NULL")
+    void softDeleteByCriterionId(@Param("criterionId") Integer criterionId);
+
     @Query("SELECT CASE WHEN COUNT(sc) > 0 THEN true ELSE false END FROM StudentClassRubricCriteriaEntity sc " +
             "WHERE sc.classRubricId = :classRubricId AND sc.studentId = :studentId AND sc.deletionDate IS NULL")
     boolean existsByClassRubricIdAndStudentIdAndDeletionDateIsNull(

@@ -75,6 +75,11 @@ public class StudentClassRubricCriteriaRepositoryImpl implements StudentClassRub
     }
 
     @Override
+    public void softDeleteByCriterionId(Integer criterionId) {
+        this.studentClassRubricCriteriaJPARepository.softDeleteByCriterionId(criterionId);
+    }
+
+    @Override
     public boolean existsByClassRubricIdAndStudentIdAndDeletionDateIsNull(Integer classRubricId, Integer studentId) {
         return this.studentClassRubricCriteriaJPARepository
                 .existsByClassRubricIdAndStudentIdAndDeletionDateIsNull(classRubricId, studentId);
