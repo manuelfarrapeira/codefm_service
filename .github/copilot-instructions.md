@@ -681,11 +681,13 @@ spring:
 
 - `codefm-boot/src/main/resources/messages_en.properties` (Inglés)
 - `codefm-boot/src/main/resources/messages_es.properties` (Español)
+- `codefm-boot/src/main/resources/messages_ga.properties` (Gallego)
 
 **OBLIGATORIO**:
 
-- Archivos en Spanish DEBEN estar en ASCII con escape Unicode
-- Caracteres españoles: `ñ` → `\u00f1`, `á` → `\u00e1`, `é` → `\u00e9`, `í` → `\u00ed`, `ó` → `\u00f3`, `ú` → `\u00fa`
+- Archivos en Spanish y Gallego DEBEN estar en ASCII con escape Unicode
+- Caracteres españoles/gallegos: `ñ` → `\u00f1`, `á` → `\u00e1`, `é` → `\u00e9`, `í` → `\u00ed`, `ó` → `\u00f3`, `ú` →
+  `\u00fa`
 
 Ejemplo:
 
@@ -753,40 +755,76 @@ La cascada está centralizada en un único servicio:
 
 #### Cadena de dependencias actual
 
+**IMPORTANTE**: Cada vez que se añada una nueva entidad dependiente, se DEBE actualizar esta cadena de dependencias
+para reflejar la nueva relación y actualizar `CascadeSoftDeleteServiceImpl` con el nuevo paso de cascada.
+
 ```
 School
   └── Classes (school_id)
-        ├── StudentClasses (id_class)
-        │     └── ExerciseStudentGrades (id_student + exercises de la clase) [soft delete]
-        ├── SubjectClasses (id_class)
-        │     └── Exercises (id_subject_class)
+        ├── StudentClasses (id_class) [soft delete]
+        │     └── StudentAbsences (student_class_id) [hard delete]
+        ├── SubjectClasses (id_class) [soft delete]
+        │     └── Exercises (id_subject_class) [soft delete]
         │           ├── ExerciseStudentGrades (id_exercise) [soft delete]
+        │           │     └── ExerciseStudentDocuments (class_subject_exercise_student) [hard delete + borrar archivo]
         │           └── ExerciseDocuments (class_subject_exercise) [hard delete + borrar archivo]
-        └── Schedules (class_id)
+        ├── Schedules (class_id) [soft delete]
+        ├── ClassRubrics (id_class) [soft delete]
+        │     └── StudentClassRubricCriteria (id_class_rubric) [soft delete]
+        ├── SavedStudentGroups (class_id) [soft delete]
+        │     ├── SavedStudentGroupMembers (student_group_id) [hard delete]
+        │     ├── GroupAssignmentGrades (group_id) [soft delete]
+        │     └── GroupAssignmentDocuments (group_id) [hard delete + borrar archivo]
+        └── GroupAssignments (class_id) [soft delete]
+              ├── GroupAssignmentGrades (group_assignment_id) [soft delete]
+              └── GroupAssignmentDocuments (group_assignment_id) [hard delete + borrar archivo]
 
 Subject
-  ├── SubjectClasses (id_subject)
-  │     └── Exercises (id_subject_class)
+  ├── SubjectClasses (id_subject) [soft delete]
+  │     └── Exercises (id_subject_class) [soft delete]
   │           ├── ExerciseStudentGrades (id_exercise) [soft delete]
+  │           │     └── ExerciseStudentDocuments (class_subject_exercise_student) [hard delete + borrar archivo]
   │           └── ExerciseDocuments (class_subject_exercise) [hard delete + borrar archivo]
-  └── Schedules (subject_id)
+  └── Schedules (subject_id) [soft delete]
 
 Student
   ├── ExerciseStudentGrades (id_student) [soft delete]
-  └── StudentClasses (student_id)
-        └── ExerciseStudentGrades (id_student + exercises de la clase) [soft delete]
+  │     └── ExerciseStudentDocuments [hard delete + borrar archivo]
+  ├── StudentAbsences (vía student_class_id) [hard delete]
+  └── StudentClasses (student_id) [soft delete]
+
+Skill
+  └── SkillRubrics (id_skill) [soft delete]
+        └── SkillRubricCriteria (id_rubric) [soft delete]
+              └── StudentClassRubricCriteria (id_criterion) [soft delete]
+
+SkillRubric
+  ├── SkillRubricCriteria (id_rubric) [soft delete]
+  ├── ClassRubrics (id_rubric) [soft delete]
+  │     └── StudentClassRubricCriteria (id_class_rubric) [soft delete]
+  └── StudentClassRubricCriteria (vía criterion) [soft delete]
+
+GroupAssignment
+  ├── GroupAssignmentGrades (group_assignment_id) [soft delete]
+  └── GroupAssignmentDocuments (group_assignment_id) [hard delete + borrar archivo]
 ```
 
 #### Métodos disponibles en CascadeSoftDeleteService
 
-| Método                                                        | Descripción                                                                              |
-|---------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `cascadeDeleteChildrenOfSchool(Integer schoolId)`             | Elimina en cascada clases → subjectClasses → exercises → grades/docs + schedules         |
-| `cascadeDeleteChildrenOfClass(Integer classId)`               | Elimina en cascada subjectClasses → exercises → grades/docs + studentClasses + schedules |
-| `cascadeDeleteChildrenOfSubjectClass(Integer subjectClassId)` | Elimina en cascada exercises → grades + docs                                             |
-| `cascadeDeleteChildrenOfSubject(Integer subjectId)`           | Elimina en cascada subjectClasses → exercises + schedules                                |
-| `cascadeDeleteChildrenOfExercise(Integer exerciseId)`         | Elimina grades + docs del ejercicio                                                      |
-| `cascadeDeleteChildrenOfStudent(Integer studentId)`           | Elimina grades + studentClasses del alumno                                               |
+| Método                                                            | Descripción                                                                                                                    |
+|-------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| `cascadeDeleteChildrenOfSchool(Integer schoolId)`                 | Elimina en cascada clases → subjectClasses → exercises → grades/docs + schedules + classRubrics + groups + assignments         |
+| `cascadeDeleteChildrenOfClass(Integer classId)`                   | Elimina en cascada subjectClasses → exercises → grades/docs + studentClasses + schedules + classRubrics + groups + assignments |
+| `cascadeDeleteChildrenOfSubjectClass(Integer subjectClassId)`     | Elimina en cascada exercises → grades + docs + absences                                                                        |
+| `cascadeDeleteChildrenOfSubject(Integer subjectId)`               | Elimina en cascada subjectClasses → exercises + schedules                                                                      |
+| `cascadeDeleteChildrenOfExercise(Integer exerciseId)`             | Elimina grades + exerciseStudentDocuments + exerciseDocuments del ejercicio                                                    |
+| `cascadeDeleteChildrenOfStudent(Integer studentId)`               | Elimina exerciseStudentDocuments + grades + absences + studentClasses del alumno                                               |
+| `cascadeDeleteChildrenOfStudentClass(Integer studentClassId)`     | Elimina exerciseStudentDocuments + grades vinculados al alumno en la clase + absences                                          |
+| `cascadeDeleteChildrenOfSkill(Integer skillId)`                   | Elimina en cascada rubrics → criteria                                                                                          |
+| `cascadeDeleteChildrenOfRubric(Integer rubricId)`                 | Elimina criteria + classRubrics → studentClassRubricCriteria                                                                   |
+| `cascadeDeleteChildrenOfClassRubric(Integer classRubricId)`       | Elimina studentClassRubricCriteria del classRubric                                                                             |
+| `cascadeDeleteChildrenOfSkillRubricCriteria(Integer criterionId)` | Elimina studentClassRubricCriteria que referencian al criterion                                                                |
+| `cascadeDeleteChildrenOfGroupAssignment(Integer assignmentId)`    | Elimina grades + documents del group assignment                                                                                |
 
 #### Implementación obligatoria en el UseCase
 
@@ -805,7 +843,7 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
     @Override
     @Transactional
     public void softDeleteSchool(Integer schoolId) {
-        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(schoolId);
         schoolService.softDeleteSchool(schoolId, teacherId);
     }
@@ -819,7 +857,7 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
 @Override
 @Transactional
 public void softDeleteClass(Integer classId) {
-    Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+    Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
     cascadeSoftDeleteService.cascadeDeleteChildrenOfClass(classId);
     classService.softDeleteClass(classId, teacherId);
 }
@@ -896,7 +934,7 @@ class SchoolUseCaseImplTest {
         Integer schoolId = 1;
         Integer teacherId = 1;
 
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class)).thenReturn(teacherId);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(teacherId);
         doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfSchool(schoolId);
         doNothing().when(schoolService).softDeleteSchool(schoolId, teacherId);
 
@@ -1172,7 +1210,7 @@ class SchoolServiceImplTest {
         
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(schoolRepository, times(1)).findByTeacherId(teacherId);
+        verify(this.schoolRepository, times(1)).findByTeacherId(teacherId);
     }
 }
 ```
@@ -1220,7 +1258,7 @@ Scenario: Get schools by teacher
     - [ ] Mapear DTO request → Domain → DTO response
 17. [ ] Crear excepciones personalizadas si es necesario (siguiendo pasos de Manejo de Errores)
 18. [ ] Crear claves i18n en MessageKeys
-19. [ ] Agregar mensajes en messages_en.properties y messages_es.properties
+19. [ ] Agregar mensajes en messages_en.properties, messages_es.properties y messages_ga.properties
 20. [ ] Crear Test de Karate
 21. [ ] Crear o actualizar colección de Postman en `postman/`
 22. [ ] Ejecutar `mvn clean compile`
@@ -1241,34 +1279,73 @@ autenticado. Si en cualquier punto de la cadena la validación falla, se debe la
 
 ### Cadena de Pertenencia
 
+**IMPORTANTE**: Cada vez que se cree una nueva entidad, se DEBE revisar y actualizar esta cadena de pertenencia
+para reflejar dónde encaja la nueva entidad en la jerarquía del profesor.
+
 ```
 Teacher (teacherId de SessionUser)
   ├── Schools (teacher_id)
   │     └── Classes (school_id → school.teacher_id)
-  │           ├── StudentClasses (id_class)
-  │           ├── SubjectClasses (id_class)
+  │           ├── StudentClasses (id_class + id_student)
+  │           │     └── StudentAbsences (student_class_id + subject_id)
+  │           ├── SubjectClasses (id_class + id_subject)
   │           │     └── Exercises (id_subject_class)
-  │           │           ├── ExerciseStudentGrades (id_exercise)
+  │           │           ├── ExerciseStudentGrades (id_exercise + id_student)
+  │           │           │     └── ExerciseStudentDocuments (class_subject_exercise_student)
   │           │           └── ExerciseDocuments (class_subject_exercise)
-  │           └── Schedules (class_id)
+  │           ├── Schedules (class_id + subject_id)
+  │           ├── ClassRubrics (id_class + id_rubric)
+  │           │     └── StudentClassRubricCriteria (id_class_rubric + id_student + id_criterion)
+  │           ├── SavedStudentGroups (class_id)
+  │           │     └── SavedStudentGroupMembers (student_group_id + student_id)
+  │           └── GroupAssignments (class_id)
+  │                 ├── GroupAssignmentGrades (group_assignment_id + group_id)
+  │                 └── GroupAssignmentDocuments (group_assignment_id + group_id)
   ├── Subjects (id_teacher)
-  └── Students (teacher_id)
+  │     ├── SubjectClasses (id_subject) → ver rama Classes
+  │     └── Schedules (subject_id) → ver rama Classes
+  ├── Students (teacher_id)
+  │     ├── StudentClasses (id_student) → ver rama Classes
+  │     ├── ExerciseStudentGrades (id_student) → ver rama Exercises
+  │     ├── StudentAbsences (vía student_class_id) → ver rama StudentClasses
+  │     ├── SavedStudentGroupMembers (student_id) → ver rama SavedStudentGroups
+  │     └── StudentClassRubricCriteria (id_student) → ver rama ClassRubrics
+  ├── Skills (id_teacher)
+  │     └── SkillRubrics (id_skill)
+  │           └── SkillRubricCriteria (id_rubric)
+  │                 └── StudentClassRubricCriteria (id_criterion) → ver rama ClassRubrics
+  └── CalendarAlerts (teacher_id)
 ```
 
 ### Validaciones Obligatorias por Entidad
 
-| Entidad              | Validación de Ownership                                                                                                     |
-|----------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| School               | `schoolRepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)`                                           |
-| Class                | `classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId)`                                             |
-| Subject              | `subjectRepository.findByIdAndTeacherId(subjectId, teacherId)`                                                              |
-| Student              | `studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId)`                                         |
-| SubjectClass         | Validar que la **clase** y la **asignatura** pertenecen al profesor                                                         |
-| Schedule             | Validar que la **clase** pertenece al profesor                                                                              |
-| Exercise             | `exerciseRepository.findByIdAndTeacherId(exerciseId, teacherId)` (valida cadena exercise→subjectClass→class→school→teacher) |
-| ExerciseStudentGrade | `exerciseStudentGradeRepository.findByIdAndTeacherId(gradeId, teacherId)` (valida cadena completa)                          |
-| ExerciseDocument     | Validar que el **exercise** pertenece al profesor                                                                           |
-| StudentClass         | Validar que la **clase** y el **estudiante** pertenecen al profesor                                                         |
+**IMPORTANTE**: Cada vez que se cree una nueva entidad, se DEBE añadir su validación de ownership a esta tabla.
+
+| Entidad                    | Validación de Ownership                                                                                                     |
+|----------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| School                     | `schoolRepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)`                                           |
+| Class                      | `classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId)`                                             |
+| Subject                    | `subjectRepository.findByIdAndTeacherId(subjectId, teacherId)`                                                              |
+| Student                    | `studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId)`                                         |
+| Skill                      | `skillRepository.findByIdAndTeacherIdAndDeletionDateIsNull(skillId, teacherId)`                                             |
+| CalendarAlert              | `calendarAlertRepository.findByIdAndTeacherId(alertId, teacherId)`                                                          |
+| SubjectClass               | Validar que la **clase** y la **asignatura** pertenecen al profesor                                                         |
+| StudentClass               | Validar que la **clase** y el **estudiante** pertenecen al profesor                                                         |
+| Schedule                   | Validar que la **clase** pertenece al profesor                                                                              |
+| Exercise                   | `exerciseRepository.findByIdAndTeacherId(exerciseId, teacherId)` (valida cadena exercise→subjectClass→class→school→teacher) |
+| ExerciseStudentGrade       | `exerciseStudentGradeRepository.findByIdAndTeacherId(gradeId, teacherId)` (valida cadena completa)                          |
+| ExerciseDocument           | Validar que el **exercise** pertenece al profesor                                                                           |
+| ExerciseStudentDocument    | Validar que el **grade** (exercise student) pertenece al profesor                                                           |
+| SkillRubric                | Validar que el **skill** pertenece al profesor                                                                              |
+| SkillRubricCriteria        | Validar que la **rúbrica** pertenece al profesor (vía skill)                                                                |
+| ClassRubric                | Validar que la **clase** y la **rúbrica** pertenecen al profesor                                                            |
+| StudentClassRubricCriteria | Validar que el **classRubric**, el **student** y el **criterion** pertenecen al profesor                                    |
+| SavedStudentGroup          | Validar que la **clase** pertenece al profesor                                                                              |
+| SavedStudentGroupMember    | Validar que el **grupo guardado** y el **estudiante** pertenecen al profesor                                                |
+| GroupAssignment            | Validar que la **clase** pertenece al profesor                                                                              |
+| GroupAssignmentGrade       | Validar que el **group assignment** pertenece al profesor (vía clase)                                                       |
+| GroupAssignmentDocument    | Validar que el **group assignment** pertenece al profesor (vía clase)                                                       |
+| StudentAbsence             | Validar que la **clase** y el **estudiante** pertenecen al profesor                                                         |
 
 ### Reglas de Validación por Tipo de Operación
 
@@ -1313,7 +1390,7 @@ public ExerciseStudentGrade createGrade(Integer exerciseId, ExerciseStudentGrade
             .orElseThrow(() -> new ExerciseStudentGradeNotFoundException(
                     messageSource.getMessage(MessageKeys.EXERCISE_NOT_FOUND, null, locale)));
 
-    validateStudentId(grade.getStudentId(), teacherId, errors, locale);
+    this.validateStudentId(grade.getStudentId(), teacherId, errors, locale);
     validateGrade(grade, exercise, errors, locale);
     validateStudentInExerciseClass(grade.getStudentId(), exercise, teacherId, errors, locale);
     validateNoDuplicate(grade.getStudentId(), exerciseId, teacherId, errors, locale);
@@ -1328,7 +1405,7 @@ private void validateStudentId(Integer studentId, Integer teacherId, List<ErrorM
         return;
     }
 
-    Optional<Student> student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
+    final Optional<Student> student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
     if (student.isEmpty()) {
         errors.add(new ErrorMessage("studentId", messageSource.getMessage(
                 MessageKeys.STUDENT_NOT_FOUND, null, locale)));
@@ -1354,14 +1431,25 @@ Optional<ExerciseStudentGradeEntity> findByIdAndTeacherId(@Param("id") Integer i
 
 ### Validaciones de Asociaciones entre Entidades
 
-| Operación                  | Validación requerida                                                                                                         |
-|----------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| Asignar asignatura a clase | Clase pertenece al profesor + Asignatura pertenece al profesor + No existe duplicado                                         |
-| Crear schedule             | Clase pertenece al profesor + Asignatura asignada a la clase (`subject_classes`)                                             |
-| Crear exercise             | SubjectClass existe y pertenece al profesor (vía clase)                                                                      |
-| Crear grade de alumno      | Exercise pertenece al profesor + Student pertenece al profesor + Student está en la clase del exercise + No existe duplicado |
-| Subir documento a exercise | Exercise pertenece al profesor                                                                                               |
-| Matricular alumno en clase | Clase pertenece al profesor + Alumno pertenece al profesor                                                                   |
+**IMPORTANTE**: Cada vez que se cree una nueva entidad con asociaciones, se DEBE añadir su validación a esta tabla.
+
+| Operación                             | Validación requerida                                                                                                         |
+|---------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| Asignar asignatura a clase            | Clase pertenece al profesor + Asignatura pertenece al profesor + No existe duplicado                                         |
+| Crear schedule                        | Clase pertenece al profesor + Asignatura asignada a la clase (`subject_classes`)                                             |
+| Crear exercise                        | SubjectClass existe y pertenece al profesor (vía clase)                                                                      |
+| Crear grade de alumno                 | Exercise pertenece al profesor + Student pertenece al profesor + Student está en la clase del exercise + No existe duplicado |
+| Subir documento a exercise            | Exercise pertenece al profesor                                                                                               |
+| Subir documento de alumno a exercise  | Grade (exercise student) pertenece al profesor                                                                               |
+| Matricular alumno en clase            | Clase pertenece al profesor + Alumno pertenece al profesor                                                                   |
+| Registrar ausencia de alumno          | Clase pertenece al profesor + Alumno pertenece al profesor + Alumno matriculado en la clase + Asignatura asignada a la clase |
+| Asignar rúbrica a clase (ClassRubric) | Clase pertenece al profesor + Rúbrica pertenece al profesor (vía skill) + No existe duplicado                                |
+| Evaluar alumno con rúbrica            | ClassRubric pertenece al profesor + Student pertenece al profesor + Criterion pertenece a la rúbrica                         |
+| Crear grupo guardado de alumnos       | Clase pertenece al profesor                                                                                                  |
+| Añadir miembro a grupo guardado       | Grupo guardado pertenece al profesor (vía clase) + Alumno pertenece al profesor                                              |
+| Crear group assignment                | Clase pertenece al profesor                                                                                                  |
+| Evaluar grupo en assignment           | GroupAssignment pertenece al profesor (vía clase) + Grupo pertenece al profesor (vía clase)                                  |
+| Subir documento a group assignment    | GroupAssignment pertenece al profesor (vía clase)                                                                            |
 
 ### Tests Obligatorios de Ownership
 
@@ -1430,7 +1518,7 @@ Los mensajes de error de validación de asignaturas deben mostrar el **nombre de
 
 ```java
 var subject = subjectRepository.findById(subjectId);
-String subjectName = subject.map(Subject::getName).orElse(String.valueOf(subjectId));
+String subjectName = this.subject.map(Subject::getName).orElse(String.valueOf(subjectId));
 String message = messageSource.getMessage(MessageKeys.SUBJECT_CLASS_ALREADY_EXISTS, new Object[]{this.subjectName}, locale);
 ```
 
