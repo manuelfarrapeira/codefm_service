@@ -1,11 +1,9 @@
 package org.web.codefm.infrastructure.config;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
@@ -45,10 +43,11 @@ public class RedisConfig {
 
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        final RedisCacheConfiguration defaultConfig = this.buildCacheConfig(this.timeToLive);
+        final GenericJackson2JsonRedisSerializer serializer = this.buildSerializer();
+        final RedisCacheConfiguration defaultConfig = this.buildCacheConfig(this.timeToLive, serializer);
 
         final Map<String, RedisCacheConfiguration> cacheConfigurations = this.ttl.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> this.buildCacheConfig(entry.getValue())));
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> this.buildCacheConfig(entry.getValue(), serializer)));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
@@ -56,23 +55,20 @@ public class RedisConfig {
                 .build();
     }
 
-    private RedisCacheConfiguration buildCacheConfig(long ttlMillis) {
-        final ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        objectMapper.activateDefaultTyping(
-                BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build(),
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY
-        );
+    private GenericJackson2JsonRedisSerializer buildSerializer() {
+        final PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
+                .allowIfBaseType(Object.class)
+                .build();
+        final ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.activateDefaultTyping(typeValidator, ObjectMapper.DefaultTyping.EVERYTHING, JsonTypeInfo.As.PROPERTY);
+        return new GenericJackson2JsonRedisSerializer(mapper);
+    }
 
+    private RedisCacheConfiguration buildCacheConfig(long ttlMillis, GenericJackson2JsonRedisSerializer serializer) {
         return RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMillis(ttlMillis))
                 .prefixCacheNameWith(this.keyPrefix)
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
-                        new GenericJackson2JsonRedisSerializer(objectMapper)
-                ));
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(serializer));
     }
 }

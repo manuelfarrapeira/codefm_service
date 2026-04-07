@@ -6,6 +6,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.StudentAbsence;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.StudentAbsenceEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.StudentClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.StudentEntity;
@@ -42,6 +44,9 @@ class StudentAbsenceRepositoryImplTest {
 
 	@Mock
 	private StudentAbsenceMapper studentAbsenceMapper;
+
+	@Mock
+	private CacheEvictionService cacheEvictionService;
 
 	@InjectMocks
 	private StudentAbsenceRepositoryImpl studentAbsenceRepository;
@@ -233,6 +238,7 @@ class StudentAbsenceRepositoryImplTest {
 		when(this.studentClassJPARepository.findAllById(any())).thenReturn(List.of(studentClassEntity));
 		when(this.studentJPARepository.findAllById(any())).thenReturn(List.of(studentEntity));
 		when(this.subjectJPARepository.findAllById(any())).thenReturn(List.of(subjectEntity));
+		when(this.studentClassJPARepository.findDistinctClassIdsByStudentClassIds(List.of(STUDENT_CLASS_ID))).thenReturn(List.of(CLASS_ID));
 
 		final List<StudentAbsence> result = this.studentAbsenceRepository.saveAll(List.of(inputAbsence));
 
@@ -244,23 +250,32 @@ class StudentAbsenceRepositoryImplTest {
 		assertEquals("López Sánchez", result.get(0).getStudentSurnames());
 		assertEquals("Ciencias", result.get(0).getSubjectName());
 		verify(this.studentAbsenceJPARepository).saveAll(List.of(inputEntity));
+		verify(this.cacheEvictionService).evict(CacheName.STUDENT_ABSENCES_BY_CLASS, CLASS_ID);
 	}
 
 	@Test
-	void deleteById_shouldDelegate() {
+	void deleteById_shouldEvictCacheAndDelegate() {
 		final Integer id = 1;
+		final StudentAbsenceEntity entity = new StudentAbsenceEntity(id, STUDENT_CLASS_ID, SUBJECT_ID, LocalDate.now());
+
+		when(this.studentAbsenceJPARepository.findById(id)).thenReturn(Optional.of(entity));
+		when(this.studentClassJPARepository.findDistinctClassIdsByStudentClassIds(List.of(STUDENT_CLASS_ID))).thenReturn(List.of(CLASS_ID));
 
 		this.studentAbsenceRepository.deleteById(id);
 
+		verify(this.cacheEvictionService).evict(CacheName.STUDENT_ABSENCES_BY_CLASS, CLASS_ID);
 		verify(this.studentAbsenceJPARepository).deleteById(id);
 	}
 
 	@Test
-	void deleteByStudentClassIdAndDate_shouldDelegate() {
+	void deleteByStudentClassIdAndDate_shouldEvictCacheAndDelegate() {
 		final LocalDate date = LocalDate.of(2025, 5, 20);
+
+		when(this.studentClassJPARepository.findDistinctClassIdsByStudentClassIds(List.of(STUDENT_CLASS_ID))).thenReturn(List.of(CLASS_ID));
 
 		this.studentAbsenceRepository.deleteByStudentClassIdAndDate(STUDENT_CLASS_ID, date);
 
+		verify(this.cacheEvictionService).evict(CacheName.STUDENT_ABSENCES_BY_CLASS, CLASS_ID);
 		verify(this.studentAbsenceJPARepository).deleteByStudentClassIdAndAbsenceDate(STUDENT_CLASS_ID, date);
 	}
 
@@ -280,32 +295,42 @@ class StudentAbsenceRepositoryImplTest {
 	}
 
 	@Test
-	void deleteByStudentClassId_shouldDelegate() {
+	void deleteByStudentClassId_shouldEvictCacheAndDelegate() {
+		when(this.studentClassJPARepository.findDistinctClassIdsByStudentClassIds(List.of(STUDENT_CLASS_ID))).thenReturn(List.of(CLASS_ID));
+
 		this.studentAbsenceRepository.deleteByStudentClassId(STUDENT_CLASS_ID);
 
+		verify(this.cacheEvictionService).evict(CacheName.STUDENT_ABSENCES_BY_CLASS, CLASS_ID);
 		verify(this.studentAbsenceJPARepository).deleteByStudentClassId(STUDENT_CLASS_ID);
 	}
 
 	@Test
-	void hardDeleteByClassId_shouldDelegate() {
+	void hardDeleteByClassId_shouldEvictCacheAndDelegate() {
 		this.studentAbsenceRepository.hardDeleteByClassId(CLASS_ID);
 
+		verify(this.cacheEvictionService).evict(CacheName.STUDENT_ABSENCES_BY_CLASS, CLASS_ID);
 		verify(this.studentAbsenceJPARepository).hardDeleteByClassId(CLASS_ID);
 	}
 
 	@Test
-	void hardDeleteByStudentId_shouldDelegate() {
+	void hardDeleteByStudentId_shouldEvictCacheAndDelegate() {
+		when(this.studentClassJPARepository.findDistinctClassIdsByStudentId(STUDENT_ID)).thenReturn(List.of(CLASS_ID));
+
 		this.studentAbsenceRepository.hardDeleteByStudentId(STUDENT_ID);
 
+		verify(this.cacheEvictionService).evict(CacheName.STUDENT_ABSENCES_BY_CLASS, CLASS_ID);
 		verify(this.studentAbsenceJPARepository).hardDeleteByStudentId(STUDENT_ID);
 	}
 
 	@Test
-	void hardDeleteBySubjectClassId_shouldDelegate() {
-		Integer subjectClassId = 99;
+	void hardDeleteBySubjectClassId_shouldEvictCacheAndDelegate() {
+		final Integer subjectClassId = 99;
+
+		when(this.subjectJPARepository.findDistinctClassIdBySubjectClassId(subjectClassId)).thenReturn(Optional.of(CLASS_ID));
 
 		this.studentAbsenceRepository.hardDeleteBySubjectClassId(subjectClassId);
 
+		verify(this.cacheEvictionService).evict(CacheName.STUDENT_ABSENCES_BY_CLASS, CLASS_ID);
 		verify(this.studentAbsenceJPARepository).hardDeleteBySubjectClassId(subjectClassId);
 	}
 }

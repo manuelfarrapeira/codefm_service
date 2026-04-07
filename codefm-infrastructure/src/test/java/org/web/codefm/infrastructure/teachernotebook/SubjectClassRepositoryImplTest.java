@@ -11,6 +11,8 @@ import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClass;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectEntity;
@@ -42,6 +44,8 @@ class SubjectClassRepositoryImplTest {
     private SubjectClassMapper subjectClassMapper;
     @Mock
     private ClassMapper classMapper;
+    @Mock
+    private CacheEvictionService cacheEvictionService;
 
     @InjectMocks
     private SubjectClassRepositoryImpl subjectClassRepository;
@@ -56,7 +60,7 @@ class SubjectClassRepositoryImplTest {
         MockitoAnnotations.openMocks(this);
         subjectClassRepository = new SubjectClassRepositoryImpl(
                 subjectClassJPARepository, subjectJPARepository, classJPARepository,
-                subjectClassMapper, classMapper);
+                subjectClassMapper, classMapper, cacheEvictionService);
     }
 
     @Test
@@ -122,6 +126,8 @@ class SubjectClassRepositoryImplTest {
         assertNotNull(result);
         assertEquals(2, result.size());
         verify(subjectClassJPARepository).saveAll(entities);
+        verify(cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, CLASS_ID);
+        verify(cacheEvictionService).evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Test
@@ -133,6 +139,8 @@ class SubjectClassRepositoryImplTest {
         assertDoesNotThrow(() -> subjectClassRepository.softDeleteAll(CLASS_ID, subjectIds));
 
         verify(subjectClassJPARepository).softDeleteByClassIdAndSubjectIds(CLASS_ID, subjectIds);
+        verify(cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, CLASS_ID);
+        verify(cacheEvictionService).evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Test
@@ -204,15 +212,23 @@ class SubjectClassRepositoryImplTest {
         subjectClassRepository.softDeleteByClassId(CLASS_ID);
 
         verify(subjectClassJPARepository).softDeleteByClassId(CLASS_ID);
+        verify(cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, CLASS_ID);
+        verify(cacheEvictionService).evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Test
     void softDeleteBySubjectId_shouldCallJpaRepository() {
+        when(subjectClassJPARepository.findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(SUBJECT_ID_1))
+                .thenReturn(Arrays.asList(CLASS_ID, 20));
         doNothing().when(subjectClassJPARepository).softDeleteBySubjectId(SUBJECT_ID_1);
 
         subjectClassRepository.softDeleteBySubjectId(SUBJECT_ID_1);
 
+        verify(subjectClassJPARepository).findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(SUBJECT_ID_1);
         verify(subjectClassJPARepository).softDeleteBySubjectId(SUBJECT_ID_1);
+        verify(cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, CLASS_ID);
+        verify(cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, 20);
+        verify(cacheEvictionService).evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Test

@@ -6,7 +6,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.SkillRubric;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SkillRubricEntity;
+import org.web.codefm.infrastructure.jpa.teachernotebook.ClassRubricJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SkillRubricJPARepository;
 import org.web.codefm.infrastructure.mapper.SkillRubricMapper;
 
@@ -25,6 +28,10 @@ class SkillRubricRepositoryImplTest {
     private SkillRubricJPARepository skillRubricJPARepository;
     @Mock
     private SkillRubricMapper skillRubricMapper;
+    @Mock
+    private ClassRubricJPARepository classRubricJPARepository;
+    @Mock
+    private CacheEvictionService cacheEvictionService;
 
     @InjectMocks
     private SkillRubricRepositoryImpl skillRubricRepository;
@@ -67,7 +74,7 @@ class SkillRubricRepositoryImplTest {
     }
 
     @Test
-    void save_shouldMapAndSave() {
+    void save_shouldMapAndSaveAndEvictCache() {
         final SkillRubric rubric = SkillRubric.builder().title("New").skillId(10).build();
         final SkillRubricEntity entity = new SkillRubricEntity();
         final SkillRubricEntity saved = new SkillRubricEntity(1, "New", 10, null);
@@ -76,22 +83,34 @@ class SkillRubricRepositoryImplTest {
         when(skillRubricMapper.toEntity(rubric)).thenReturn(entity);
         when(skillRubricJPARepository.save(entity)).thenReturn(saved);
         when(skillRubricMapper.toModel(saved)).thenReturn(savedModel);
+        when(classRubricJPARepository.findDistinctClassIdsByRubricId(1)).thenReturn(List.of(10));
 
         final SkillRubric result = skillRubricRepository.save(rubric);
 
         assertNotNull(result);
         assertEquals(1, result.getId());
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 10);
     }
 
     @Test
-    void softDeleteById_shouldDelegate() {
+    void softDeleteById_shouldEvictCacheAndDelegate() {
+        when(classRubricJPARepository.findDistinctClassIdsByRubricId(1)).thenReturn(List.of(10));
+
         skillRubricRepository.softDeleteById(1);
+
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 10);
         verify(skillRubricJPARepository).softDeleteById(1);
     }
 
     @Test
-    void softDeleteBySkillId_shouldDelegate() {
+    void softDeleteBySkillId_shouldEvictCacheAndDelegate() {
+        when(skillRubricJPARepository.findActiveIdsBySkillId(10)).thenReturn(Arrays.asList(1, 2));
+        when(classRubricJPARepository.findDistinctClassIdsByRubricIds(Arrays.asList(1, 2))).thenReturn(List.of(100, 200));
+
         skillRubricRepository.softDeleteBySkillId(10);
+
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 100);
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 200);
         verify(skillRubricJPARepository).softDeleteBySkillId(10);
     }
 
@@ -104,4 +123,3 @@ class SkillRubricRepositoryImplTest {
         assertEquals(2, result.size());
     }
 }
-

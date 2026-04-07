@@ -1,11 +1,14 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentDocument;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentGrade;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseStudentGradeRepository;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.*;
 import org.web.codefm.infrastructure.jpa.teachernotebook.*;
 import org.web.codefm.infrastructure.mapper.ExerciseStudentDocumentMapper;
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeRepository {
 
+
     private final ExerciseStudentGradeJPARepository exerciseStudentGradeJPARepository;
     private final ExerciseJPARepository exerciseJPARepository;
     private final SubjectClassJPARepository subjectClassJPARepository;
@@ -26,8 +30,10 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
     private final ExerciseStudentDocumentJPARepository exerciseStudentDocumentJPARepository;
     private final ExerciseStudentGradeMapper exerciseStudentGradeMapper;
     private final ExerciseStudentDocumentMapper exerciseStudentDocumentMapper;
+    private final CacheEvictionService cacheEvictionService;
 
     @Override
+    @Cacheable(value = CacheName.EXERCISE_STUDENT_GRADES_BY_CLASS, key = "#classId")
     public List<ExerciseStudentGrade> findByClassId(Integer classId) {
         List<Integer> exerciseIds = getActiveExerciseIdsByClassId(classId);
         if (exerciseIds.isEmpty()) {
@@ -75,6 +81,7 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
         ExerciseStudentGradeEntity saved = exerciseStudentGradeJPARepository.save(entity);
         ExerciseStudentGrade result = exerciseStudentGradeMapper.toModel(saved);
         enrichSingleGrade(result);
+        this.evictCacheForExercises(List.of(grade.getExerciseId()));
         return result;
     }
 
@@ -86,6 +93,8 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
     @Override
     @Transactional
     public void softDelete(Integer id) {
+        this.exerciseStudentGradeJPARepository.findById(id)
+                .ifPresent(entity -> this.evictCacheForExercises(List.of(entity.getExerciseId())));
         exerciseStudentGradeJPARepository.softDeleteById(id);
     }
 
@@ -97,6 +106,7 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
     @Override
     public void softDeleteByExerciseIds(List<Integer> exerciseIds) {
         if (exerciseIds != null && !exerciseIds.isEmpty()) {
+            this.evictCacheForExercises(exerciseIds);
             exerciseStudentGradeJPARepository.softDeleteByExerciseIds(exerciseIds);
         }
     }
@@ -104,11 +114,15 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
     @Override
     public void softDeleteByStudentIdAndClassId(Integer studentId, Integer classId) {
         exerciseStudentGradeJPARepository.softDeleteByStudentIdAndClassId(studentId, classId);
+        this.cacheEvictionService.evict(CacheName.EXERCISE_STUDENT_GRADES_BY_CLASS, classId);
     }
 
     @Override
     public void softDeleteByStudentId(Integer studentId) {
+        final List<Integer> classIds = this.exerciseStudentGradeJPARepository
+                .findDistinctClassIdsByStudentId(studentId);
         exerciseStudentGradeJPARepository.softDeleteByStudentId(studentId);
+        classIds.forEach(classId -> this.cacheEvictionService.evict(CacheName.EXERCISE_STUDENT_GRADES_BY_CLASS, classId));
     }
 
     private List<Integer> getActiveExerciseIdsByClassId(Integer classId) {
@@ -206,5 +220,10 @@ public class ExerciseStudentGradeRepositoryImpl implements ExerciseStudentGradeR
 
         grade.setDocuments(this.exerciseStudentDocumentMapper.toModelList(
                 this.exerciseStudentDocumentJPARepository.findByGradeId(grade.getId())));
+    }
+
+    private void evictCacheForExercises(List<Integer> exerciseIds) {
+        this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(exerciseIds)
+                .forEach(classId -> this.cacheEvictionService.evict(CacheName.EXERCISE_STUDENT_GRADES_BY_CLASS, classId));
     }
 }

@@ -6,8 +6,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentDocument;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ExerciseStudentDocumentEntity;
+import org.web.codefm.infrastructure.jpa.teachernotebook.ExerciseJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.ExerciseStudentDocumentJPARepository;
+import org.web.codefm.infrastructure.jpa.teachernotebook.ExerciseStudentGradeJPARepository;
 import org.web.codefm.infrastructure.mapper.ExerciseStudentDocumentMapper;
 
 import java.util.List;
@@ -25,6 +28,15 @@ class ExerciseStudentDocumentRepositoryImplTest {
     @Mock
     private ExerciseStudentDocumentMapper exerciseStudentDocumentMapper;
 
+    @Mock
+    private ExerciseStudentGradeJPARepository exerciseStudentGradeJPARepository;
+
+    @Mock
+    private ExerciseJPARepository exerciseJPARepository;
+
+    @Mock
+    private CacheEvictionService cacheEvictionService;
+
     @InjectMocks
     private ExerciseStudentDocumentRepositoryImpl exerciseStudentDocumentRepository;
 
@@ -32,7 +44,7 @@ class ExerciseStudentDocumentRepositoryImplTest {
     private static final Integer DOCUMENT_ID = 200;
 
     @Test
-    void save_shouldPersistAndReturnMappedEntity() {
+    void save_shouldPersistAndReturnMappedEntityAndEvictCache() {
         final ExerciseStudentDocument document = ExerciseStudentDocument.builder().gradeId(GRADE_ID).build();
         final ExerciseStudentDocumentEntity entity = new ExerciseStudentDocumentEntity();
         final ExerciseStudentDocumentEntity saved = new ExerciseStudentDocumentEntity();
@@ -41,14 +53,16 @@ class ExerciseStudentDocumentRepositoryImplTest {
         when(exerciseStudentDocumentMapper.toEntity(document)).thenReturn(entity);
         when(exerciseStudentDocumentJPARepository.save(entity)).thenReturn(saved);
         when(exerciseStudentDocumentMapper.toModel(saved)).thenReturn(expected);
+        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
 
         final ExerciseStudentDocument result = exerciseStudentDocumentRepository.save(document);
 
         assertEquals(expected, result);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
     }
 
     @Test
-    void update_shouldPersistAndReturnMappedEntity() {
+    void update_shouldPersistAndReturnMappedEntityAndEvictCache() {
         final ExerciseStudentDocument document = ExerciseStudentDocument.builder().id(DOCUMENT_ID).gradeId(GRADE_ID).build();
         final ExerciseStudentDocumentEntity entity = new ExerciseStudentDocumentEntity();
         final ExerciseStudentDocumentEntity saved = new ExerciseStudentDocumentEntity();
@@ -57,10 +71,12 @@ class ExerciseStudentDocumentRepositoryImplTest {
         when(exerciseStudentDocumentMapper.toEntity(document)).thenReturn(entity);
         when(exerciseStudentDocumentJPARepository.save(entity)).thenReturn(saved);
         when(exerciseStudentDocumentMapper.toModel(saved)).thenReturn(expected);
+        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
 
         final ExerciseStudentDocument result = exerciseStudentDocumentRepository.update(document);
 
         assertEquals(expected, result);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
     }
 
     @Test
@@ -100,26 +116,36 @@ class ExerciseStudentDocumentRepositoryImplTest {
     }
 
     @Test
-    void deleteById_shouldCallJpaDeleteById() {
+    void deleteById_shouldCallJpaDeleteByIdAndEvictCache() {
+        final ExerciseStudentDocumentEntity entity = new ExerciseStudentDocumentEntity(DOCUMENT_ID, GRADE_ID, "doc.pdf", null);
+        when(exerciseStudentDocumentJPARepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(entity));
+        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
+
         exerciseStudentDocumentRepository.deleteById(DOCUMENT_ID);
 
         verify(exerciseStudentDocumentJPARepository).deleteById(DOCUMENT_ID);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
     }
 
     @Test
-    void deleteByGradeId_shouldCallJpaDeleteByGradeId() {
+    void deleteByGradeId_shouldCallJpaDeleteByGradeIdAndEvictCache() {
+        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
+
         exerciseStudentDocumentRepository.deleteByGradeId(GRADE_ID);
 
         verify(exerciseStudentDocumentJPARepository).deleteByGradeId(GRADE_ID);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
     }
 
     @Test
-    void deleteByGradeIds_shouldCallJpaDeleteByGradeIdIn_whenNotEmpty() {
+    void deleteByGradeIds_shouldCallJpaDeleteByGradeIdInAndEvictCache_whenNotEmpty() {
         final List<Integer> gradeIds = List.of(1, 2, 3);
+        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(gradeIds)).thenReturn(List.of(10));
 
         exerciseStudentDocumentRepository.deleteByGradeIds(gradeIds);
 
         verify(exerciseStudentDocumentJPARepository).deleteByGradeIdIn(gradeIds);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
     }
 
     @Test
@@ -207,21 +233,25 @@ class ExerciseStudentDocumentRepositoryImplTest {
     }
 
     @Test
-    void deleteByExerciseId_shouldCallJpaDeleteByExerciseId() {
+    void deleteByExerciseId_shouldCallJpaDeleteByExerciseIdAndEvictCache() {
         final Integer exerciseId = 50;
+        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(exerciseId))).thenReturn(List.of(1));
 
         exerciseStudentDocumentRepository.deleteByExerciseId(exerciseId);
 
         verify(exerciseStudentDocumentJPARepository).deleteByExerciseId(exerciseId);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
     }
 
     @Test
-    void deleteByExerciseIds_shouldCallJpaDeleteByExerciseIdIn_whenNotEmpty() {
+    void deleteByExerciseIds_shouldCallJpaDeleteByExerciseIdInAndEvictCache_whenNotEmpty() {
         final List<Integer> exerciseIds = List.of(50, 51);
+        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(exerciseIds)).thenReturn(List.of(1));
 
         exerciseStudentDocumentRepository.deleteByExerciseIds(exerciseIds);
 
         verify(exerciseStudentDocumentJPARepository).deleteByExerciseIdIn(exerciseIds);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
     }
 
     @Test
@@ -254,12 +284,14 @@ class ExerciseStudentDocumentRepositoryImplTest {
     }
 
     @Test
-    void deleteByStudentId_shouldCallJpaDeleteByStudentId() {
+    void deleteByStudentId_shouldCallJpaDeleteByStudentIdAndEvictCache() {
         final Integer studentId = 7;
+        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByStudentId(studentId)).thenReturn(List.of(10));
 
         exerciseStudentDocumentRepository.deleteByStudentId(studentId);
 
         verify(exerciseStudentDocumentJPARepository).deleteByStudentId(studentId);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
     }
 }
 

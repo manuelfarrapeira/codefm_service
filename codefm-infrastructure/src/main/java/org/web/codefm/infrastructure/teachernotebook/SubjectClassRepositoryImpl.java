@@ -2,6 +2,7 @@ package org.web.codefm.infrastructure.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.teachernotebook.Class;
@@ -9,6 +10,8 @@ import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClass;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
 import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectEntity;
@@ -32,8 +35,10 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
     private final ClassJPARepository classJPARepository;
     private final SubjectClassMapper subjectClassMapper;
     private final ClassMapper classMapper;
+    private final CacheEvictionService cacheEvictionService;
 
     @Override
+    @Cacheable(value = CacheName.SUBJECT_CLASSES_BY_CLASS, key = "#classId")
     public List<SubjectClassDetail> findSubjectsByClassId(Integer classId) {
         List<SubjectClassEntity> subjectClassEntities = subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(classId);
 
@@ -67,6 +72,11 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
     public List<SubjectClass> saveAll(List<SubjectClass> subjectClasses) {
         List<SubjectClassEntity> entities = subjectClassMapper.toEntityList(subjectClasses);
         List<SubjectClassEntity> savedEntities = subjectClassJPARepository.saveAll(entities);
+        subjectClasses.stream()
+                .map(SubjectClass::getClassId)
+                .distinct()
+                .forEach(classId -> this.cacheEvictionService.evict(CacheName.SUBJECT_CLASSES_BY_CLASS, classId));
+        this.cacheEvictionService.evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
         return subjectClassMapper.toModelList(savedEntities);
     }
 
@@ -74,6 +84,8 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
     @Transactional
     public void softDeleteAll(Integer classId, List<Integer> subjectIds) {
         subjectClassJPARepository.softDeleteByClassIdAndSubjectIds(classId, subjectIds);
+        this.cacheEvictionService.evict(CacheName.SUBJECT_CLASSES_BY_CLASS, classId);
+        this.cacheEvictionService.evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Override
@@ -82,6 +94,7 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
     }
 
     @Override
+    @Cacheable(value = CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER, key = "#teacherId")
     public List<ClassWithSubjects> findAllClassesWithSubjectsByTeacherId(Integer teacherId) {
         List<Integer> classIds = subjectClassJPARepository.findClassIdsByTeacherId(teacherId);
 
@@ -114,11 +127,16 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
     @Override
     public void softDeleteByClassId(Integer classId) {
         subjectClassJPARepository.softDeleteByClassId(classId);
+        this.cacheEvictionService.evict(CacheName.SUBJECT_CLASSES_BY_CLASS, classId);
+        this.cacheEvictionService.evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Override
     public void softDeleteBySubjectId(Integer subjectId) {
+        List<Integer> classIds = subjectClassJPARepository.findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(subjectId);
         subjectClassJPARepository.softDeleteBySubjectId(subjectId);
+        classIds.forEach(classId -> this.cacheEvictionService.evict(CacheName.SUBJECT_CLASSES_BY_CLASS, classId));
+        this.cacheEvictionService.evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Override

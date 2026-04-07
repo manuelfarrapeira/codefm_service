@@ -1,14 +1,14 @@
 package org.web.codefm.domain.entity.teachernotebook;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.Generated;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.List;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Generated
 public class Exercise {
     private Integer id;

@@ -22,6 +22,13 @@ public class CacheEvictionService {
         }
     }
 
+    public void evictAll(String cacheName) {
+        final Cache cache = this.cacheManager.getCache(cacheName);
+        if (cache != null) {
+            cache.clear();
+        }
+    }
+
     public void evictByTeacher(String cacheName) {
         this.evict(cacheName, this.sessionUser.getParameter(SessionParameter.TEACHER_ID));
     }

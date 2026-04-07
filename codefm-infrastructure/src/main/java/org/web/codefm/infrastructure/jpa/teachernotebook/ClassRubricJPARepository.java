@@ -54,6 +54,15 @@ public interface ClassRubricJPARepository extends JpaRepository<ClassRubricEntit
     boolean existsByClassIdAndRubricIdAndDeletionDateIsNull(
             @Param("classId") Integer classId,
             @Param("rubricId") Integer rubricId);
+
+    @Query("SELECT DISTINCT cr.classId FROM ClassRubricEntity cr WHERE cr.id IN :ids")
+    List<Integer> findDistinctClassIdsByIds(@Param("ids") List<Integer> ids);
+
+    @Query("SELECT DISTINCT cr.classId FROM ClassRubricEntity cr WHERE cr.rubricId = :rubricId AND cr.deletionDate IS NULL")
+    List<Integer> findDistinctClassIdsByRubricId(@Param("rubricId") Integer rubricId);
+
+    @Query("SELECT DISTINCT cr.classId FROM ClassRubricEntity cr WHERE cr.rubricId IN :rubricIds AND cr.deletionDate IS NULL")
+    List<Integer> findDistinctClassIdsByRubricIds(@Param("rubricIds") List<Integer> rubricIds);
 }
 
 

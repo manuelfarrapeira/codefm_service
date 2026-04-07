@@ -75,6 +75,13 @@ spring:
       time-to-live: 1800000
       ttl:
         studentsByTeacher: 3600000
+        studentClassRubricCriteriaByClass: 3600000
+        exerciseStudentGradesByClass: 3600000
+        exercisesByClass: 3600000
+        classRubricsByClass: 3600000
+        subjectClassesByClass: 3600000
+        classesWithSubjectsByTeacher: 3600000
+        studentAbsencesByClass: 3600000
   datasource:
     codefm:
       driver-class-name: com.p6spy.engine.spy.P6SpyDriver

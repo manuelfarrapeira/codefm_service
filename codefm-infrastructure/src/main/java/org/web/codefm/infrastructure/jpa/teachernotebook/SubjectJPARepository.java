@@ -20,4 +20,7 @@ public interface SubjectJPARepository extends JpaRepository<SubjectEntity, Integ
 
     @Query("SELECT s FROM SubjectEntity s WHERE s.id = :id AND s.teacherId = :teacherId AND s.deletionDate IS NULL")
     Optional<SubjectEntity> findByIdAndTeacherIdAndDeletionDateIsNull(@Param("id") Integer id, @Param("teacherId") Integer teacherId);
+
+    @Query("SELECT sc.classId FROM SubjectClassEntity sc WHERE sc.id = :subjectClassId")
+    Optional<Integer> findDistinctClassIdBySubjectClassId(@Param("subjectClassId") Integer subjectClassId);
 }

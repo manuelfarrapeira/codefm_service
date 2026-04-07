@@ -2,6 +2,9 @@ package org.web.codefm.service.teachernotebook;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -18,6 +21,7 @@ import org.web.codefm.domain.session.SessionUser;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,39 +52,26 @@ class StudentGroupServiceImplTest {
     @InjectMocks
     private StudentGroupServiceImpl studentGroupService;
 
-    @Test
-    void generateGroups_shouldReturnOneGroupOfFour_whenFourStudents() {
-        List<Student> students = buildStudents(4);
+    @ParameterizedTest
+    @MethodSource("groupSizeTestCases")
+    void generateGroups_shouldReturnExpectedGroupSizes(int studentCount, List<Integer> expectedSizes) {
+        final List<Student> students = buildStudents(studentCount);
         setupMocks(students);
 
-        List<List<Integer>> groups = this.studentGroupService.generateGroups(CLASS_ID, true);
+        final List<List<Integer>> groups = this.studentGroupService.generateGroups(CLASS_ID, true);
 
-        assertEquals(1, groups.size());
-        assertEquals(4, groups.get(0).size());
+        assertEquals(expectedSizes.size(), groups.size());
+        for (int i = 0; i < expectedSizes.size(); i++) {
+            assertEquals(expectedSizes.get(i), groups.get(i).size());
+        }
     }
 
-    @Test
-    void generateGroups_shouldReturnTwoGroupsOfFour_whenEightStudents() {
-        List<Student> students = buildStudents(8);
-        setupMocks(students);
-
-        List<List<Integer>> groups = this.studentGroupService.generateGroups(CLASS_ID, true);
-
-        assertEquals(2, groups.size());
-        assertEquals(4, groups.get(0).size());
-        assertEquals(4, groups.get(1).size());
-    }
-
-    @Test
-    void generateGroups_shouldReturnOneGroupOfFourAndOneOfThree_whenSevenStudents() {
-        List<Student> students = buildStudents(7);
-        setupMocks(students);
-
-        List<List<Integer>> groups = this.studentGroupService.generateGroups(CLASS_ID, true);
-
-        assertEquals(2, groups.size());
-        assertEquals(4, groups.get(0).size());
-        assertEquals(3, groups.get(1).size());
+    static Stream<Arguments> groupSizeTestCases() {
+        return Stream.of(
+                Arguments.of(4, List.of(4)),
+                Arguments.of(8, List.of(4, 4)),
+                Arguments.of(7, List.of(4, 3))
+        );
     }
 
     @Test

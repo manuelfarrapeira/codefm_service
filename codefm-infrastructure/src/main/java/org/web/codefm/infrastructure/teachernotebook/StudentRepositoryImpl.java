@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import org.web.codefm.domain.entity.teachernotebook.Student;
 import org.web.codefm.domain.repository.teachernotebook.StudentRepository;
 import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.StudentEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.StudentJPARepository;
 import org.web.codefm.infrastructure.mapper.StudentMapper;
@@ -22,16 +23,13 @@ public class StudentRepositoryImpl implements StudentRepository {
 
     private final StudentJPARepository studentJPARepository;
     private final StudentMapper studentMapper;
-
-    private static final String CACHE_NAME = "studentsByTeacher";
-
     private final CacheEvictionService cacheEvictionService;
 
     @Override
     public Student save(Student student) {
         StudentEntity studentEntity = studentMapper.toEntity(student);
         StudentEntity savedEntity = studentJPARepository.save(studentEntity);
-        this.cacheEvictionService.evictByTeacher(CACHE_NAME);
+        this.cacheEvictionService.evictByTeacher(CacheName.STUDENTS_BY_TEACHER);
         return studentMapper.toModel(savedEntity);
     }
 
@@ -45,7 +43,7 @@ public class StudentRepositoryImpl implements StudentRepository {
     public Student update(Student student) {
         StudentEntity studentEntity = studentMapper.toEntity(student);
         StudentEntity updatedEntity = studentJPARepository.save(studentEntity);
-        this.cacheEvictionService.evictByTeacher(CACHE_NAME);
+        this.cacheEvictionService.evictByTeacher(CacheName.STUDENTS_BY_TEACHER);
         return studentMapper.toModel(updatedEntity);
     }
 
@@ -56,7 +54,7 @@ public class StudentRepositoryImpl implements StudentRepository {
 
         studentEntity.setDeletionDate(LocalDate.now());
         StudentEntity updatedEntity = studentJPARepository.save(studentEntity);
-        this.cacheEvictionService.evictByTeacher(CACHE_NAME);
+        this.cacheEvictionService.evictByTeacher(CacheName.STUDENTS_BY_TEACHER);
         return studentMapper.toModel(updatedEntity);
     }
 
@@ -68,7 +66,7 @@ public class StudentRepositoryImpl implements StudentRepository {
     }
 
     @Override
-    @Cacheable(value = CACHE_NAME, key = "#teacherId")
+    @Cacheable(value = CacheName.STUDENTS_BY_TEACHER, key = "#teacherId")
     public List<Student> findAllByTeacherId(Integer teacherId) {
         return studentMapper.toModelList(
                 studentJPARepository.findAllByTeacherIdAndDeletionDateIsNull(teacherId)

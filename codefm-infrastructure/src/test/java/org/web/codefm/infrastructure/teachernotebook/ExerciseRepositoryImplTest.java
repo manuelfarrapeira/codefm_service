@@ -6,6 +6,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Exercise;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ExerciseEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectEntity;
@@ -43,6 +45,9 @@ class ExerciseRepositoryImplTest {
 
     @Mock
     private ExerciseDocumentMapper exerciseDocumentMapper;
+
+    @Mock
+    private CacheEvictionService cacheEvictionService;
 
     @InjectMocks
     private ExerciseRepositoryImpl exerciseRepository;
@@ -136,6 +141,7 @@ class ExerciseRepositoryImplTest {
         assertEquals(1, result.getSubjectId());
         assertEquals("Mathematics", result.getSubjectName());
         verify(exerciseJPARepository).save(entity);
+        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 10);
     }
 
     @Test
@@ -159,14 +165,18 @@ class ExerciseRepositoryImplTest {
         assertEquals("Updated", result.getTitle());
         assertEquals(1, result.getSubjectId());
         assertEquals("Mathematics", result.getSubjectName());
+        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 10);
     }
 
     @Test
-    void softDelete_shouldCallJPARepository() {
+    void softDelete_shouldEvictCacheAndCallJPARepository() {
         Integer id = 1;
+
+        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(id))).thenReturn(List.of(10));
 
         exerciseRepository.softDelete(id);
 
+        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 10);
         verify(exerciseJPARepository).softDeleteById(id);
     }
 
@@ -185,11 +195,14 @@ class ExerciseRepositoryImplTest {
     }
 
     @Test
-    void softDeleteBySubjectClassIds_shouldCallJPARepository_whenListIsNotEmpty() {
+    void softDeleteBySubjectClassIds_shouldEvictCacheAndCallJPARepository_whenListIsNotEmpty() {
         List<Integer> subjectClassIds = List.of(1, 2, 3);
+
+        when(subjectClassJPARepository.findDistinctClassIdsBySubjectClassIds(subjectClassIds)).thenReturn(List.of(10));
 
         exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);
 
+        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 10);
         verify(exerciseJPARepository).softDeleteBySubjectClassIds(subjectClassIds);
     }
 

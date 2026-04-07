@@ -118,7 +118,7 @@ El flujo debe seguir estrictamente este patrón:
 Aplicar estas convenciones de forma consistente:
 
 | Concepto              | Ejemplo                |
-|-----------------------|------------------------|
+||---|---|---|---|---|--------||---|---|---|---|---|---------|
 | Domain entity         | `School`               |
 | JPA entity            | `SchoolEntity`         |
 | DTO                   | `SchoolDTO`            |
@@ -812,7 +812,7 @@ GroupAssignment
 #### Métodos disponibles en CascadeSoftDeleteService
 
 | Método                                                            | Descripción                                                                                                                    |
-|-------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|-------||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|--------|
 | `cascadeDeleteChildrenOfSchool(Integer schoolId)`                 | Elimina en cascada clases → subjectClasses → exercises → grades/docs + schedules + classRubrics + groups + assignments         |
 | `cascadeDeleteChildrenOfClass(Integer classId)`                   | Elimina en cascada subjectClasses → exercises → grades/docs + studentClasses + schedules + classRubrics + groups + assignments |
 | `cascadeDeleteChildrenOfSubjectClass(Integer subjectClassId)`     | Elimina en cascada exercises → grades + docs + absences                                                                        |
@@ -902,7 +902,7 @@ public void softDeleteStudent(Integer studentId) {
 #### Métodos necesarios en cada capa para soporte de cascada
 
 | Capa              | Método                                                                      | Ejemplo                                                  |
-|-------------------|-----------------------------------------------------------------------------|----------------------------------------------------------|
+||---|---|---|---|---|----||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|--||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|-------------|
 | JPA Repository    | `@Modifying @Query("UPDATE ... SET deletionDate = CURRENT_DATE WHERE ...")` | `softDeleteByClassId(Integer classId)`                   |
 | Domain Repository | Interfaz con JavaDoc                                                        | `void softDeleteByClassId(Integer classId)`              |
 | RepositoryImpl    | Delegación al JPA                                                           | `subjectClassJPARepository.softDeleteByClassId(classId)` |
@@ -1322,7 +1322,7 @@ Teacher (teacherId de SessionUser)
 **IMPORTANTE**: Cada vez que se cree una nueva entidad, se DEBE añadir su validación de ownership a esta tabla.
 
 | Entidad                    | Validación de Ownership                                                                                                     |
-|----------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+||---|---|---|---|---|-------------||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|-----|
 | School                     | `schoolRepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)`                                           |
 | Class                      | `classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId)`                                             |
 | Subject                    | `subjectRepository.findByIdAndTeacherId(subjectId, teacherId)`                                                              |
@@ -1434,7 +1434,7 @@ Optional<ExerciseStudentGradeEntity> findByIdAndTeacherId(@Param("id") Integer i
 **IMPORTANTE**: Cada vez que se cree una nueva entidad con asociaciones, se DEBE añadir su validación a esta tabla.
 
 | Operación                             | Validación requerida                                                                                                         |
-|---------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+||---|---|---|---|---||---|---|---|---|---|---------||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|------|
 | Asignar asignatura a clase            | Clase pertenece al profesor + Asignatura pertenece al profesor + No existe duplicado                                         |
 | Crear schedule                        | Clase pertenece al profesor + Asignatura asignada a la clase (`subject_classes`)                                             |
 | Crear exercise                        | SubjectClass existe y pertenece al profesor (vía clase)                                                                      |
@@ -1461,6 +1461,40 @@ Para cada operación CRUD, SIEMPRE crear tests que verifiquen:
    `ForbiddenException`
 4. ✅ **Entidades asociadas inválidas**: IDs referenciados no pertenecen al profesor → `ValidationException`
 
+---
+
+## Cache Redis (codefm-infrastructure)
+
+La cache se implementa con `@Cacheable` de Spring sobre **Redis** y se gestiona SOLO en los **RepositoryImpl**.
+
+### Archivos clave
+
+- **`CacheName`** (`codefm-infrastructure/cache/teachernotebook/CacheName.java`): `@UtilityClass` con constantes `public static final String`. Se usan tanto en `@Cacheable(value = ...)` como en `cacheEvictionService.evict(...)`. NUNCA usar strings literales ni enums con `getValue()`.
+- **`CacheEvictionService`** (`codefm-infrastructure/cache/teachernotebook/CacheEvictionService.java`): Servicio con metodos `evict(cacheName, key)`, `evictAll(cacheName)` y `evictByTeacher(cacheName)`.
+- **`RedisConfig`** (`codefm-infrastructure/config/RedisConfig.java`): Lee TTLs por cache desde `application.yml`.
+- **TTLs** en `codefm-boot/src/main/resources/application.yml` bajo `spring.cache.redis.ttl`.
+
+### Pasos para crear una nueva cache
+
+1. Anadir constante en `CacheName` (ej: `public static final String X = "x";`)
+2. Anadir TTL en `application.yml` bajo `spring.cache.redis.ttl`
+3. Anadir `@Cacheable(value = CacheName.X, key = "#classId")` en el metodo de lectura del RepositoryImpl
+4. Inyectar `CacheEvictionService` en el RepositoryImpl
+5. En CADA metodo de mutacion (`save`, `update`, `softDelete`, `softDeleteByXxx`), llamar a `this.cacheEvictionService.evict(CacheName.X, classId)`
+6. Si no se tiene el `classId` directamente, resolverlo con query batch `findDistinctClassIdsByXxx` (NUNCA N queries individuales)
+7. Si el resultado cacheado incluye datos de OTRAS entidades, los RepositoryImpl de esas entidades TAMBIEN deben invalidar esta cache
+8. En tests: `@Mock CacheEvictionService` y `verify(cacheEvictionService).evict(CacheName.X, id)` en cada mutacion
+
+### Caches activas actualmente
+
+| Cache | Constante | Key | Donde se cachea | Quien invalida |
+|---|---|---|---|---|
+| `studentsByTeacher` | `STUDENTS_BY_TEACHER` | teacherId | `StudentRepositoryImpl` | `StudentRepositoryImpl` |
+| `studentClassRubricCriteriaByClass` | `STUDENT_CLASS_RUBRIC_CRITERIA_BY_CLASS` | classId | `StudentClassRubricCriteriaRepositoryImpl` | `StudentClassRubricCriteriaRepositoryImpl` |
+| `exerciseStudentGradesByClass` | `EXERCISE_STUDENT_GRADES_BY_CLASS` | classId | `ExerciseStudentGradeRepositoryImpl` | `ExerciseStudentGradeRepositoryImpl`, `ExerciseStudentDocumentRepositoryImpl` |
+| `exercisesByClass` | `EXERCISES_BY_CLASS` | classId | `ExerciseRepositoryImpl` | `ExerciseRepositoryImpl`, `ExerciseDocumentRepositoryImpl` |
+
+**IMPORTANTE**: Actualizar esta tabla cada vez que se anada una nueva cache.
 ---
 
 ## Notas Importantes
@@ -1506,7 +1540,7 @@ aplican:
 ### Endpoints de SubjectClass
 
 | Método | Endpoint                                          | Descripción                                              |
-|--------|---------------------------------------------------|----------------------------------------------------------|
+|--------||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|------||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|-------------|
 | GET    | `/teacher-notebook/v1/classes/{classId}/subjects` | Obtener asignaturas de una clase                         |
 | GET    | `/teacher-notebook/v1/classes-subjects`           | Obtener todas las clases con sus asignaturas             |
 | PUT    | `/teacher-notebook/v1/classes/{classId}/subjects` | Asignar asignaturas a una clase (body: `subjectIds[]`)   |

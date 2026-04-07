@@ -1,11 +1,14 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.teachernotebook.Exercise;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseDocument;
 import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.ExerciseDocumentJPARepository;
@@ -31,8 +34,10 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
     private final ExerciseDocumentJPARepository exerciseDocumentJPARepository;
     private final ExerciseMapper exerciseMapper;
     private final ExerciseDocumentMapper exerciseDocumentMapper;
+    private final CacheEvictionService cacheEvictionService;
 
     @Override
+    @Cacheable(value = CacheName.EXERCISES_BY_CLASS, key = "#classId")
     public List<Exercise> findByClassId(Integer classId) {
         List<SubjectClassEntity> subjectClassEntities = subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(classId);
 
@@ -93,6 +98,7 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
         var saved = exerciseJPARepository.save(entity);
         Exercise result = exerciseMapper.toModel(saved);
         enrichWithSubjectData(result);
+        this.evictCacheForSubjectClass(exercise.getSubjectClassId());
         return result;
     }
 
@@ -104,6 +110,8 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
     @Override
     @Transactional
     public void softDelete(Integer id) {
+        this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(id))
+                .forEach(classId -> this.cacheEvictionService.evict(CacheName.EXERCISES_BY_CLASS, classId));
         exerciseJPARepository.softDeleteById(id);
     }
 
@@ -115,6 +123,8 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
     @Override
     public void softDeleteBySubjectClassIds(List<Integer> subjectClassIds) {
         if (subjectClassIds != null && !subjectClassIds.isEmpty()) {
+            this.subjectClassJPARepository.findDistinctClassIdsBySubjectClassIds(subjectClassIds)
+                    .forEach(classId -> this.cacheEvictionService.evict(CacheName.EXERCISES_BY_CLASS, classId));
             exerciseJPARepository.softDeleteBySubjectClassIds(subjectClassIds);
         }
     }
@@ -149,5 +159,10 @@ public class ExerciseRepositoryImpl implements ExerciseRepository {
                         exerciseDocumentJPARepository.findByExerciseId(exercise.getId())
                 )
         );
+    }
+
+    private void evictCacheForSubjectClass(Integer subjectClassId) {
+        this.subjectClassJPARepository.findById(subjectClassId)
+                .ifPresent(sc -> this.cacheEvictionService.evict(CacheName.EXERCISES_BY_CLASS, sc.getClassId()));
     }
 }

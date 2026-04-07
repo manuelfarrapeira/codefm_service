@@ -1,9 +1,12 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 import org.web.codefm.domain.entity.teachernotebook.StudentClassRubricCriteria;
 import org.web.codefm.domain.repository.teachernotebook.StudentClassRubricCriteriaRepository;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.StudentClassRubricCriteriaEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.*;
 import org.web.codefm.infrastructure.mapper.StudentClassRubricCriteriaMapper;
@@ -21,8 +24,10 @@ public class StudentClassRubricCriteriaRepositoryImpl implements StudentClassRub
     private final SkillRubricCriteriaJPARepository skillRubricCriteriaJPARepository;
     private final SkillRubricJPARepository skillRubricJPARepository;
     private final StudentClassRubricCriteriaMapper studentClassRubricCriteriaMapper;
+    private final CacheEvictionService cacheEvictionService;
 
     @Override
+    @Cacheable(value = CacheName.STUDENT_CLASS_RUBRIC_CRITERIA_BY_CLASS, key = "#classId")
     public List<StudentClassRubricCriteria> findByClassId(Integer classId) {
         final List<StudentClassRubricCriteriaEntity> entities =
                 this.studentClassRubricCriteriaJPARepository.findByClassIdAndDeletionDateIsNull(classId);
@@ -54,29 +59,37 @@ public class StudentClassRubricCriteriaRepositoryImpl implements StudentClassRub
         final StudentClassRubricCriteriaEntity saved = this.studentClassRubricCriteriaJPARepository.save(entity);
         final StudentClassRubricCriteria result = this.studentClassRubricCriteriaMapper.toModel(saved);
         this.enrichWithDisplayData(result);
+        this.evictCacheForClassRubrics(List.of(criteria.getClassRubricId()));
         return result;
     }
 
     @Override
     public void softDeleteById(Integer id) {
+        final Optional<Integer> classId = this.studentClassRubricCriteriaJPARepository.findClassIdById(id);
         this.studentClassRubricCriteriaJPARepository.softDeleteById(id);
+        classId.ifPresent(cId -> this.cacheEvictionService.evict(CacheName.STUDENT_CLASS_RUBRIC_CRITERIA_BY_CLASS, cId));
     }
 
     @Override
     public void softDeleteByClassRubricId(Integer classRubricId) {
         this.studentClassRubricCriteriaJPARepository.softDeleteByClassRubricId(classRubricId);
+        this.evictCacheForClassRubrics(List.of(classRubricId));
     }
 
     @Override
     public void softDeleteByClassRubricIds(List<Integer> classRubricIds) {
         if (!classRubricIds.isEmpty()) {
             this.studentClassRubricCriteriaJPARepository.softDeleteByClassRubricIds(classRubricIds);
+            this.evictCacheForClassRubrics(classRubricIds);
         }
     }
 
     @Override
     public void softDeleteByCriterionId(Integer criterionId) {
+        final List<Integer> classIds = this.studentClassRubricCriteriaJPARepository
+                .findDistinctClassIdsByCriterionId(criterionId);
         this.studentClassRubricCriteriaJPARepository.softDeleteByCriterionId(criterionId);
+        classIds.forEach(classId -> this.cacheEvictionService.evict(CacheName.STUDENT_CLASS_RUBRIC_CRITERIA_BY_CLASS, classId));
     }
 
     @Override
@@ -107,6 +120,9 @@ public class StudentClassRubricCriteriaRepositoryImpl implements StudentClassRub
                     criteria.setGradeEnd(criterion.getGradeEnd());
                 });
     }
+
+    private void evictCacheForClassRubrics(List<Integer> classRubricIds) {
+        this.classRubricJPARepository.findDistinctClassIdsByIds(classRubricIds)
+                .forEach(classId -> this.cacheEvictionService.evict(CacheName.STUDENT_CLASS_RUBRIC_CRITERIA_BY_CLASS, classId));
+    }
 }
-
-
