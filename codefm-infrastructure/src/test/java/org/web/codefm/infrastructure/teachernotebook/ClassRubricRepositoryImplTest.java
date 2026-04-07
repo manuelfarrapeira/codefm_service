@@ -7,6 +7,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.ClassRubric;
 import org.web.codefm.domain.entity.teachernotebook.SkillRubricCriteria;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ClassRubricEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SkillRubricCriteriaEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SkillRubricEntity;
@@ -37,6 +39,8 @@ class ClassRubricRepositoryImplTest {
     private ClassRubricMapper classRubricMapper;
     @Mock
     private SkillRubricCriteriaMapper skillRubricCriteriaMapper;
+    @Mock
+    private CacheEvictionService cacheEvictionService;
 
     @InjectMocks
     private ClassRubricRepositoryImpl classRubricRepository;
@@ -143,7 +147,7 @@ class ClassRubricRepositoryImplTest {
     }
 
     @Test
-    void save_shouldMapAndPersist() {
+    void save_shouldMapAndPersistAndEvictCache() {
         final ClassRubric classRubric = ClassRubric.builder().classId(10).rubricId(50).build();
         final ClassRubricEntity entity = new ClassRubricEntity(null, 10, 50, null);
         final ClassRubricEntity saved = new ClassRubricEntity(1, 10, 50, null);
@@ -158,23 +162,35 @@ class ClassRubricRepositoryImplTest {
         assertNotNull(result);
         assertEquals(1, result.getId());
         verify(classRubricJPARepository).save(entity);
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 10);
     }
 
     @Test
-    void softDeleteById_shouldDelegate() {
+    void softDeleteById_shouldEvictCacheAndDelegate() {
+        when(classRubricJPARepository.findDistinctClassIdsByIds(List.of(1))).thenReturn(List.of(10));
+
         classRubricRepository.softDeleteById(1);
+
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 10);
         verify(classRubricJPARepository).softDeleteById(1);
     }
 
     @Test
-    void softDeleteByClassId_shouldDelegate() {
+    void softDeleteByClassId_shouldEvictCacheAndDelegate() {
         classRubricRepository.softDeleteByClassId(10);
+
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 10);
         verify(classRubricJPARepository).softDeleteByClassId(10);
     }
 
     @Test
-    void softDeleteByRubricId_shouldDelegate() {
+    void softDeleteByRubricId_shouldEvictCacheAndDelegate() {
+        when(classRubricJPARepository.findDistinctClassIdsByRubricId(50)).thenReturn(List.of(10, 20));
+
         classRubricRepository.softDeleteByRubricId(50);
+
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 10);
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 20);
         verify(classRubricJPARepository).softDeleteByRubricId(50);
     }
 

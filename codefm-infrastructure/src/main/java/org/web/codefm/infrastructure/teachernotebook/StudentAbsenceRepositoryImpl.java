@@ -1,9 +1,12 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 import org.web.codefm.domain.entity.teachernotebook.StudentAbsence;
 import org.web.codefm.domain.repository.teachernotebook.StudentAbsenceRepository;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.StudentAbsenceEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.StudentClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.StudentEntity;
@@ -31,6 +34,7 @@ public class StudentAbsenceRepositoryImpl implements StudentAbsenceRepository {
 	private final StudentJPARepository studentJPARepository;
 	private final SubjectJPARepository subjectJPARepository;
 	private final StudentAbsenceMapper studentAbsenceMapper;
+	private final CacheEvictionService cacheEvictionService;
 
 	@Override
 	public List<StudentAbsence> findByStudentClassId(Integer studentClassId) {
@@ -51,6 +55,7 @@ public class StudentAbsenceRepositoryImpl implements StudentAbsenceRepository {
 	}
 
 	@Override
+	@Cacheable(value = CacheName.STUDENT_ABSENCES_BY_CLASS, key = "#classId")
 	public List<StudentAbsence> findByClassId(Integer classId) {
 		final List<StudentAbsenceEntity> entities = this.studentAbsenceJPARepository.findByClassId(classId);
 		final List<StudentAbsence> absences = this.studentAbsenceMapper.toModelList(entities);
@@ -79,16 +84,20 @@ public class StudentAbsenceRepositoryImpl implements StudentAbsenceRepository {
 		final List<StudentAbsenceEntity> saved = this.studentAbsenceJPARepository.saveAll(entities);
 		final List<StudentAbsence> result = this.studentAbsenceMapper.toModelList(saved);
 		this.enrichWithDetails(result);
+		this.evictCacheForStudentClassIds(absences.stream().map(StudentAbsence::getStudentClassId).distinct().toList());
 		return result;
 	}
 
 	@Override
 	public void deleteById(Integer id) {
+		this.studentAbsenceJPARepository.findById(id)
+				.ifPresent(entity -> this.evictCacheForStudentClassIds(List.of(entity.getStudentClassId())));
 		this.studentAbsenceJPARepository.deleteById(id);
 	}
 
 	@Override
 	public void deleteByStudentClassIdAndDate(Integer studentClassId, LocalDate date) {
+		this.evictCacheForStudentClassIds(List.of(studentClassId));
 		this.studentAbsenceJPARepository.deleteByStudentClassIdAndAbsenceDate(studentClassId, date);
 	}
 
@@ -101,22 +110,36 @@ public class StudentAbsenceRepositoryImpl implements StudentAbsenceRepository {
 
 	@Override
 	public void deleteByStudentClassId(Integer studentClassId) {
+		this.evictCacheForStudentClassIds(List.of(studentClassId));
 		this.studentAbsenceJPARepository.deleteByStudentClassId(studentClassId);
 	}
 
 	@Override
 	public void hardDeleteByClassId(Integer classId) {
+		this.cacheEvictionService.evict(CacheName.STUDENT_ABSENCES_BY_CLASS, classId);
 		this.studentAbsenceJPARepository.hardDeleteByClassId(classId);
 	}
 
 	@Override
 	public void hardDeleteByStudentId(Integer studentId) {
+		this.studentClassJPARepository.findDistinctClassIdsByStudentId(studentId)
+				.forEach(classId -> this.cacheEvictionService.evict(CacheName.STUDENT_ABSENCES_BY_CLASS, classId));
 		this.studentAbsenceJPARepository.hardDeleteByStudentId(studentId);
 	}
 
 	@Override
 	public void hardDeleteBySubjectClassId(Integer subjectClassId) {
+		this.subjectJPARepository.findDistinctClassIdBySubjectClassId(subjectClassId)
+				.ifPresent(classId -> this.cacheEvictionService.evict(CacheName.STUDENT_ABSENCES_BY_CLASS, classId));
 		this.studentAbsenceJPARepository.hardDeleteBySubjectClassId(subjectClassId);
+	}
+
+	private void evictCacheForStudentClassIds(List<Integer> studentClassIds) {
+		if (studentClassIds == null || studentClassIds.isEmpty()) {
+			return;
+		}
+		this.studentClassJPARepository.findDistinctClassIdsByStudentClassIds(studentClassIds)
+				.forEach(classId -> this.cacheEvictionService.evict(CacheName.STUDENT_ABSENCES_BY_CLASS, classId));
 	}
 
 	private void enrichWithDetails(List<StudentAbsence> absences) {

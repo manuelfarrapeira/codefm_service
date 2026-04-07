@@ -6,7 +6,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.SkillRubricCriteria;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SkillRubricCriteriaEntity;
+import org.web.codefm.infrastructure.jpa.teachernotebook.ClassRubricJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SkillRubricCriteriaJPARepository;
 import org.web.codefm.infrastructure.mapper.SkillRubricCriteriaMapper;
 
@@ -24,6 +27,10 @@ class SkillRubricCriteriaRepositoryImplTest {
     private SkillRubricCriteriaJPARepository skillRubricCriteriaJPARepository;
     @Mock
     private SkillRubricCriteriaMapper skillRubricCriteriaMapper;
+    @Mock
+    private ClassRubricJPARepository classRubricJPARepository;
+    @Mock
+    private CacheEvictionService cacheEvictionService;
 
     @InjectMocks
     private SkillRubricCriteriaRepositoryImpl skillRubricCriteriaRepository;
@@ -64,7 +71,7 @@ class SkillRubricCriteriaRepositoryImplTest {
     }
 
     @Test
-    void save_shouldMapAndSave() {
+    void save_shouldMapAndSaveAndEvictCache() {
         final SkillRubricCriteria criteria = SkillRubricCriteria.builder().description("A").rubricId(100).gradeStart(0).gradeEnd(4).build();
         final SkillRubricCriteriaEntity entity = new SkillRubricCriteriaEntity();
         final SkillRubricCriteriaEntity saved = new SkillRubricCriteriaEntity(1, "A", null, 100, 0, 4, null);
@@ -73,28 +80,45 @@ class SkillRubricCriteriaRepositoryImplTest {
         when(skillRubricCriteriaJPARepository.save(entity)).thenReturn(saved);
         when(skillRubricCriteriaMapper.toModel(saved)).thenReturn(
                 SkillRubricCriteria.builder().id(1).description("A").rubricId(100).gradeStart(0).gradeEnd(4).build());
+        when(classRubricJPARepository.findDistinctClassIdsByRubricId(100)).thenReturn(List.of(10));
 
         final SkillRubricCriteria result = skillRubricCriteriaRepository.save(criteria);
 
         assertNotNull(result);
         assertEquals(1, result.getId());
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 10);
     }
 
     @Test
-    void softDeleteById_shouldDelegate() {
+    void softDeleteById_shouldEvictCacheAndDelegate() {
+        final SkillRubricCriteriaEntity entity = new SkillRubricCriteriaEntity(1, "Desc", null, 100, 0, 4, null);
+        when(skillRubricCriteriaJPARepository.findActiveById(1)).thenReturn(Optional.of(entity));
+        when(classRubricJPARepository.findDistinctClassIdsByRubricId(100)).thenReturn(List.of(10));
+
         skillRubricCriteriaRepository.softDeleteById(1);
+
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 10);
         verify(skillRubricCriteriaJPARepository).softDeleteById(1);
     }
 
     @Test
-    void softDeleteByRubricId_shouldDelegate() {
+    void softDeleteByRubricId_shouldEvictCacheAndDelegate() {
+        when(classRubricJPARepository.findDistinctClassIdsByRubricId(100)).thenReturn(List.of(10, 20));
+
         skillRubricCriteriaRepository.softDeleteByRubricId(100);
+
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 10);
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 20);
         verify(skillRubricCriteriaJPARepository).softDeleteByRubricId(100);
     }
 
     @Test
-    void softDeleteByRubricIds_shouldDelegateWhenNotEmpty() {
+    void softDeleteByRubricIds_shouldEvictCacheAndDelegateWhenNotEmpty() {
+        when(classRubricJPARepository.findDistinctClassIdsByRubricIds(Arrays.asList(1, 2))).thenReturn(List.of(10));
+
         skillRubricCriteriaRepository.softDeleteByRubricIds(Arrays.asList(1, 2));
+
+        verify(cacheEvictionService).evict(CacheName.CLASS_RUBRICS_BY_CLASS, 10);
         verify(skillRubricCriteriaJPARepository).softDeleteByRubricIds(Arrays.asList(1, 2));
     }
 
@@ -104,4 +128,3 @@ class SkillRubricCriteriaRepositoryImplTest {
         verify(skillRubricCriteriaJPARepository, never()).softDeleteByRubricIds(any());
     }
 }
-

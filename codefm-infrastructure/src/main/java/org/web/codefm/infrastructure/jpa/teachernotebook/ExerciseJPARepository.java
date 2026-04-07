@@ -53,4 +53,9 @@ public interface ExerciseJPARepository extends JpaRepository<ExerciseEntity, Int
     Integer sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(@Param("subjectClassId") Integer subjectClassId,
                                                                     @Param("quarter") Integer quarter,
                                                                     @Param("excludeId") Integer excludeId);
+
+    @Query("SELECT DISTINCT sc.classId FROM ExerciseEntity e " +
+            "JOIN SubjectClassEntity sc ON e.subjectClassId = sc.id " +
+            "WHERE e.id IN :exerciseIds")
+    List<Integer> findDistinctClassIdsByExerciseIds(@Param("exerciseIds") List<Integer> exerciseIds);
 }

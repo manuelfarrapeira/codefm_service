@@ -6,7 +6,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Subject;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectEntity;
+import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectClassJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectJPARepository;
 import org.web.codefm.infrastructure.mapper.SubjectMapper;
 
@@ -27,6 +30,12 @@ class SubjectRepositoryImplTest {
 
     @Mock
     private SubjectMapper subjectMapper;
+
+    @Mock
+    private SubjectClassJPARepository subjectClassJPARepository;
+
+    @Mock
+    private CacheEvictionService cacheEvictionService;
 
     @InjectMocks
     private SubjectRepositoryImpl subjectRepository;
@@ -78,6 +87,8 @@ class SubjectRepositoryImplTest {
         when(subjectMapper.toEntity(subjectToSave)).thenReturn(subjectEntity);
         when(subjectJPARepository.save(subjectEntity)).thenReturn(savedSubjectEntity);
         when(subjectMapper.toModel(savedSubjectEntity)).thenReturn(savedSubject);
+        when(subjectClassJPARepository.findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(1))
+                .thenReturn(Arrays.asList(10, 20));
 
         Subject result = subjectRepository.save(subjectToSave);
 
@@ -87,6 +98,9 @@ class SubjectRepositoryImplTest {
         verify(subjectMapper, times(1)).toEntity(subjectToSave);
         verify(subjectJPARepository, times(1)).save(subjectEntity);
         verify(subjectMapper, times(1)).toModel(savedSubjectEntity);
+        verify(cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, 10);
+        verify(cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, 20);
+        verify(cacheEvictionService).evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Test
@@ -158,6 +172,8 @@ class SubjectRepositoryImplTest {
         SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Chemistry", teacherId, null);
         Subject updatedSubject = Subject.builder().id(subjectId).name("Chemistry").teacherId(teacherId).deletionDate(LocalDate.now()).build();
 
+        when(subjectClassJPARepository.findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(subjectId))
+                .thenReturn(Arrays.asList(10));
         when(subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId)).thenReturn(Optional.of(subjectEntity));
         when(subjectJPARepository.save(any(SubjectEntity.class))).thenReturn(subjectEntity);
         when(subjectMapper.toModel(any(SubjectEntity.class))).thenReturn(updatedSubject);
@@ -171,6 +187,8 @@ class SubjectRepositoryImplTest {
         verify(subjectJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId);
         verify(subjectJPARepository, times(1)).save(subjectEntity);
         verify(subjectMapper, times(1)).toModel(subjectEntity);
+        verify(cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, 10);
+        verify(cacheEvictionService).evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Test
@@ -178,6 +196,8 @@ class SubjectRepositoryImplTest {
         Integer subjectId = 1;
         Integer teacherId = 101;
 
+        when(subjectClassJPARepository.findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(subjectId))
+                .thenReturn(Collections.emptyList());
         when(subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> subjectRepository.softDeleteSubject(subjectId, teacherId));
@@ -191,6 +211,8 @@ class SubjectRepositoryImplTest {
         Integer subjectId = 1;
         Integer teacherId = 101;
 
+        when(subjectClassJPARepository.findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(subjectId))
+                .thenReturn(Collections.emptyList());
         when(subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> subjectRepository.softDeleteSubject(subjectId, teacherId));

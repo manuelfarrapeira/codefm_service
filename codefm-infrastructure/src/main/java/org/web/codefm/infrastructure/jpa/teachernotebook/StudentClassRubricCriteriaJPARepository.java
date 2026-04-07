@@ -64,6 +64,17 @@ public interface StudentClassRubricCriteriaJPARepository extends JpaRepository<S
     boolean existsByClassRubricIdAndStudentIdAndDeletionDateIsNull(
             @Param("classRubricId") Integer classRubricId,
             @Param("studentId") Integer studentId);
+
+    @Query("SELECT cr.classId FROM StudentClassRubricCriteriaEntity sc " +
+            "JOIN ClassRubricEntity cr ON sc.classRubricId = cr.id " +
+            "WHERE sc.id = :id")
+    Optional<Integer> findClassIdById(@Param("id") Integer id);
+
+
+    @Query("SELECT DISTINCT cr.classId FROM StudentClassRubricCriteriaEntity sc " +
+            "JOIN ClassRubricEntity cr ON sc.classRubricId = cr.id " +
+            "WHERE sc.criterionId = :criterionId AND sc.deletionDate IS NULL")
+    List<Integer> findDistinctClassIdsByCriterionId(@Param("criterionId") Integer criterionId);
 }
 
 

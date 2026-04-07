@@ -6,8 +6,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseDocument;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ExerciseDocumentEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.ExerciseDocumentJPARepository;
+import org.web.codefm.infrastructure.jpa.teachernotebook.ExerciseJPARepository;
 import org.web.codefm.infrastructure.mapper.ExerciseDocumentMapper;
 
 import java.util.List;
@@ -25,11 +28,17 @@ class ExerciseDocumentRepositoryImplTest {
     @Mock
     private ExerciseDocumentMapper exerciseDocumentMapper;
 
+    @Mock
+    private ExerciseJPARepository exerciseJPARepository;
+
+    @Mock
+    private CacheEvictionService cacheEvictionService;
+
     @InjectMocks
     private ExerciseDocumentRepositoryImpl exerciseDocumentRepository;
 
     @Test
-    void save_shouldMapAndSaveEntity() {
+    void save_shouldMapAndSaveEntityAndEvictCache() {
         ExerciseDocument input = ExerciseDocument.builder()
                 .exerciseId(1).document("file.pdf").description("desc").build();
         ExerciseDocumentEntity entity = new ExerciseDocumentEntity(null, 1, "file.pdf", "desc");
@@ -40,16 +49,18 @@ class ExerciseDocumentRepositoryImplTest {
         when(exerciseDocumentMapper.toEntity(input)).thenReturn(entity);
         when(exerciseDocumentJPARepository.save(entity)).thenReturn(savedEntity);
         when(exerciseDocumentMapper.toModel(savedEntity)).thenReturn(expected);
+        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(10));
 
         ExerciseDocument result = exerciseDocumentRepository.save(input);
 
         assertNotNull(result);
         assertEquals(10, result.getId());
         verify(exerciseDocumentJPARepository).save(entity);
+        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 10);
     }
 
     @Test
-    void update_shouldMapAndUpdateEntity() {
+    void update_shouldMapAndUpdateEntityAndEvictCache() {
         ExerciseDocument input = ExerciseDocument.builder()
                 .id(10).exerciseId(1).document("file.pdf").description("updated").build();
         ExerciseDocumentEntity entity = new ExerciseDocumentEntity(10, 1, "file.pdf", "updated");
@@ -59,12 +70,14 @@ class ExerciseDocumentRepositoryImplTest {
         when(exerciseDocumentMapper.toEntity(input)).thenReturn(entity);
         when(exerciseDocumentJPARepository.save(entity)).thenReturn(entity);
         when(exerciseDocumentMapper.toModel(entity)).thenReturn(expected);
+        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(10));
 
         ExerciseDocument result = exerciseDocumentRepository.update(input);
 
         assertNotNull(result);
         assertEquals("updated", result.getDescription());
         verify(exerciseDocumentJPARepository).save(entity);
+        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 10);
     }
 
     @Test
@@ -113,25 +126,37 @@ class ExerciseDocumentRepositoryImplTest {
     }
 
     @Test
-    void deleteById_shouldDelegateToJPARepository() {
+    void deleteById_shouldEvictCacheAndDelegateToJPARepository() {
+        ExerciseDocumentEntity entity = new ExerciseDocumentEntity(10, 1, "file.pdf", "desc");
+
+        when(exerciseDocumentJPARepository.findById(10)).thenReturn(Optional.of(entity));
+        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(20));
+
         exerciseDocumentRepository.deleteById(10);
 
+        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 20);
         verify(exerciseDocumentJPARepository).deleteById(10);
     }
 
     @Test
-    void deleteByExerciseId_shouldDelegateToJPARepository() {
+    void deleteByExerciseId_shouldEvictCacheAndDelegateToJPARepository() {
+        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(20));
+
         exerciseDocumentRepository.deleteByExerciseId(1);
 
+        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 20);
         verify(exerciseDocumentJPARepository).deleteByExerciseId(1);
     }
 
     @Test
-    void deleteByExerciseIds_shouldDelegateToJPARepository() {
+    void deleteByExerciseIds_shouldEvictCacheAndDelegateToJPARepository() {
         List<Integer> exerciseIds = List.of(1, 2, 3);
+
+        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(exerciseIds)).thenReturn(List.of(20));
 
         exerciseDocumentRepository.deleteByExerciseIds(exerciseIds);
 
+        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 20);
         verify(exerciseDocumentJPARepository).deleteByExerciseIdIn(exerciseIds);
     }
 

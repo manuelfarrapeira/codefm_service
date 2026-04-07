@@ -8,6 +8,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Class;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ClassEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.ClassJPARepository;
 import org.web.codefm.infrastructure.mapper.ClassMapper;
@@ -28,6 +30,9 @@ class ClassRepositoryImplTest {
 
     @Mock
     private ClassMapper classMapper;
+
+    @Mock
+    private CacheEvictionService cacheEvictionService;
 
     @InjectMocks
     private ClassRepositoryImpl classRepository;
@@ -104,6 +109,7 @@ class ClassRepositoryImplTest {
         verify(classMapper, times(1)).toEntity(classToSave);
         verify(classJPARepository, times(1)).save(entityToSave);
         verify(classMapper, times(1)).toModel(savedEntity);
+        verify(cacheEvictionService).evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Test
@@ -238,6 +244,7 @@ class ClassRepositoryImplTest {
         verify(classJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
         verify(classJPARepository, times(1)).save(any(ClassEntity.class));
         verify(classMapper, times(1)).toModel(updatedEntity);
+        verify(cacheEvictionService).evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Test
@@ -253,6 +260,18 @@ class ClassRepositoryImplTest {
 
         verify(classJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId);
         verify(classJPARepository, never()).save(any());
+    }
+
+    @Test
+    void softDeleteBySchoolId_shouldCallJpaRepositoryAndEvictCache() {
+        Integer schoolId = 1;
+
+        doNothing().when(classJPARepository).softDeleteBySchoolId(schoolId);
+
+        classRepository.softDeleteBySchoolId(schoolId);
+
+        verify(classJPARepository).softDeleteBySchoolId(schoolId);
+        verify(cacheEvictionService).evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 }
 

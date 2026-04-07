@@ -1,10 +1,13 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 import org.web.codefm.domain.entity.teachernotebook.ClassRubric;
 import org.web.codefm.domain.entity.teachernotebook.SkillRubricCriteria;
 import org.web.codefm.domain.repository.teachernotebook.ClassRubricRepository;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ClassRubricEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.ClassRubricJPARepository;
 import org.web.codefm.infrastructure.jpa.teachernotebook.SkillRubricCriteriaJPARepository;
@@ -24,8 +27,10 @@ public class ClassRubricRepositoryImpl implements ClassRubricRepository {
     private final SkillRubricCriteriaJPARepository skillRubricCriteriaJPARepository;
     private final ClassRubricMapper classRubricMapper;
     private final SkillRubricCriteriaMapper skillRubricCriteriaMapper;
+    private final CacheEvictionService cacheEvictionService;
 
     @Override
+    @Cacheable(value = CacheName.CLASS_RUBRICS_BY_CLASS, key = "#classId")
     public List<ClassRubric> findByClassId(Integer classId) {
         final List<ClassRubricEntity> entities = this.classRubricJPARepository.findByClassIdAndDeletionDateIsNull(classId);
         final List<ClassRubric> classRubrics = this.classRubricMapper.toModelList(entities);
@@ -45,21 +50,27 @@ public class ClassRubricRepositoryImpl implements ClassRubricRepository {
     public ClassRubric save(ClassRubric classRubric) {
         final ClassRubricEntity entity = this.classRubricMapper.toEntity(classRubric);
         final ClassRubricEntity saved = this.classRubricJPARepository.save(entity);
+        this.cacheEvictionService.evict(CacheName.CLASS_RUBRICS_BY_CLASS, classRubric.getClassId());
         return this.classRubricMapper.toModel(saved);
     }
 
     @Override
     public void softDeleteById(Integer id) {
+        this.classRubricJPARepository.findDistinctClassIdsByIds(List.of(id))
+                .forEach(classId -> this.cacheEvictionService.evict(CacheName.CLASS_RUBRICS_BY_CLASS, classId));
         this.classRubricJPARepository.softDeleteById(id);
     }
 
     @Override
     public void softDeleteByClassId(Integer classId) {
+        this.cacheEvictionService.evict(CacheName.CLASS_RUBRICS_BY_CLASS, classId);
         this.classRubricJPARepository.softDeleteByClassId(classId);
     }
 
     @Override
     public void softDeleteByRubricId(Integer rubricId) {
+        this.classRubricJPARepository.findDistinctClassIdsByRubricId(rubricId)
+                .forEach(classId -> this.cacheEvictionService.evict(CacheName.CLASS_RUBRICS_BY_CLASS, classId));
         this.classRubricJPARepository.softDeleteByRubricId(rubricId);
     }
 
@@ -89,4 +100,3 @@ public class ClassRubricRepositoryImpl implements ClassRubricRepository {
         classRubric.setCriteria(criteria);
     }
 }
-

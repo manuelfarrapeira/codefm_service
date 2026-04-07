@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.StudentClassRubricCriteria;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.*;
 import org.web.codefm.infrastructure.jpa.teachernotebook.*;
 import org.web.codefm.infrastructure.mapper.StudentClassRubricCriteriaMapper;
@@ -32,6 +33,8 @@ class StudentClassRubricCriteriaRepositoryImplTest {
     private SkillRubricJPARepository skillRubricJPARepository;
     @Mock
     private StudentClassRubricCriteriaMapper studentClassRubricCriteriaMapper;
+    @Mock
+    private CacheEvictionService cacheEvictionService;
 
     @InjectMocks
     private StudentClassRubricCriteriaRepositoryImpl studentClassRubricCriteriaRepository;
@@ -209,7 +212,7 @@ class StudentClassRubricCriteriaRepositoryImplTest {
     }
 
     @Test
-    void save_shouldMapAndPersistAndEnrich() {
+    void save_shouldMapAndPersistAndEnrichAndEvictCache() {
         final StudentClassRubricCriteria criteria = StudentClassRubricCriteria.builder()
                 .classRubricId(100).studentId(200).criterionId(300).build();
         final StudentClassRubricCriteriaEntity entity = new StudentClassRubricCriteriaEntity(null, 100, 200, 300, null);
@@ -222,6 +225,8 @@ class StudentClassRubricCriteriaRepositoryImplTest {
         when(studentClassRubricCriteriaMapper.toModel(saved)).thenReturn(savedModel);
         when(classRubricJPARepository.findByIdAndDeletionDateIsNull(100))
                 .thenReturn(Optional.of(new ClassRubricEntity(100, 10, 50, null)));
+        when(classRubricJPARepository.findDistinctClassIdsByIds(List.of(100)))
+                .thenReturn(List.of(10));
         when(skillRubricJPARepository.findById(50))
                 .thenReturn(Optional.of(new SkillRubricEntity(50, "Rubric Title", 1, null)));
         when(studentJPARepository.findById(200))
@@ -241,36 +246,114 @@ class StudentClassRubricCriteriaRepositoryImplTest {
         assertEquals(7, result.getGradeStart());
         assertEquals(10, result.getGradeEnd());
         verify(studentClassRubricCriteriaJPARepository).save(entity);
+        verify(cacheEvictionService).evict("studentClassRubricCriteriaByClass", 10);
     }
 
     @Test
-    void softDeleteById_shouldDelegate() {
+    void save_shouldNotEvictCache_whenClassRubricNotFound() {
+        final StudentClassRubricCriteria criteria = StudentClassRubricCriteria.builder()
+                .classRubricId(999).studentId(200).criterionId(300).build();
+        final StudentClassRubricCriteriaEntity entity = new StudentClassRubricCriteriaEntity(null, 999, 200, 300, null);
+        final StudentClassRubricCriteriaEntity saved = new StudentClassRubricCriteriaEntity(1, 999, 200, 300, null);
+        final StudentClassRubricCriteria savedModel = StudentClassRubricCriteria.builder()
+                .id(1).classRubricId(999).studentId(200).criterionId(300).build();
+
+        when(studentClassRubricCriteriaMapper.toEntity(criteria)).thenReturn(entity);
+        when(studentClassRubricCriteriaJPARepository.save(entity)).thenReturn(saved);
+        when(studentClassRubricCriteriaMapper.toModel(saved)).thenReturn(savedModel);
+        when(classRubricJPARepository.findByIdAndDeletionDateIsNull(999)).thenReturn(Optional.empty());
+        when(classRubricJPARepository.findDistinctClassIdsByIds(List.of(999))).thenReturn(List.of());
+        when(studentJPARepository.findById(200)).thenReturn(Optional.empty());
+        when(skillRubricCriteriaJPARepository.findById(300)).thenReturn(Optional.empty());
+
+        studentClassRubricCriteriaRepository.save(criteria);
+
+        verify(cacheEvictionService, never()).evict(anyString(), any());
+    }
+
+    @Test
+    void softDeleteById_shouldDelegateAndEvictCache() {
+        when(studentClassRubricCriteriaJPARepository.findClassIdById(1)).thenReturn(Optional.of(10));
+
         studentClassRubricCriteriaRepository.softDeleteById(1);
+
         verify(studentClassRubricCriteriaJPARepository).softDeleteById(1);
+        verify(cacheEvictionService).evict("studentClassRubricCriteriaByClass", 10);
     }
 
     @Test
-    void softDeleteByClassRubricId_shouldDelegate() {
+    void softDeleteById_shouldNotEvictCache_whenClassIdNotFound() {
+        when(studentClassRubricCriteriaJPARepository.findClassIdById(999)).thenReturn(Optional.empty());
+
+        studentClassRubricCriteriaRepository.softDeleteById(999);
+
+        verify(studentClassRubricCriteriaJPARepository).softDeleteById(999);
+        verify(cacheEvictionService, never()).evict(anyString(), any());
+    }
+
+    @Test
+    void softDeleteByClassRubricId_shouldDelegateAndEvictCache() {
+        when(classRubricJPARepository.findDistinctClassIdsByIds(List.of(100)))
+                .thenReturn(List.of(10));
+
         studentClassRubricCriteriaRepository.softDeleteByClassRubricId(100);
+
         verify(studentClassRubricCriteriaJPARepository).softDeleteByClassRubricId(100);
+        verify(cacheEvictionService).evict("studentClassRubricCriteriaByClass", 10);
     }
 
     @Test
-    void softDeleteByCriterionId_shouldDelegate() {
+    void softDeleteByClassRubricId_shouldNotEvictCache_whenClassRubricNotFound() {
+        when(classRubricJPARepository.findDistinctClassIdsByIds(List.of(999)))
+                .thenReturn(List.of());
+
+        studentClassRubricCriteriaRepository.softDeleteByClassRubricId(999);
+
+        verify(studentClassRubricCriteriaJPARepository).softDeleteByClassRubricId(999);
+        verify(cacheEvictionService, never()).evict(anyString(), any());
+    }
+
+    @Test
+    void softDeleteByCriterionId_shouldDelegateAndEvictAffectedClassCaches() {
+        when(studentClassRubricCriteriaJPARepository.findDistinctClassIdsByCriterionId(300))
+                .thenReturn(Arrays.asList(10, 20));
+
         studentClassRubricCriteriaRepository.softDeleteByCriterionId(300);
+
         verify(studentClassRubricCriteriaJPARepository).softDeleteByCriterionId(300);
+        verify(cacheEvictionService).evict("studentClassRubricCriteriaByClass", 10);
+        verify(cacheEvictionService).evict("studentClassRubricCriteriaByClass", 20);
     }
 
     @Test
-    void softDeleteByClassRubricIds_shouldDelegate_whenNotEmpty() {
-        studentClassRubricCriteriaRepository.softDeleteByClassRubricIds(Arrays.asList(1, 2, 3));
-        verify(studentClassRubricCriteriaJPARepository).softDeleteByClassRubricIds(Arrays.asList(1, 2, 3));
+    void softDeleteByCriterionId_shouldNotEvictCache_whenNoClassesAffected() {
+        when(studentClassRubricCriteriaJPARepository.findDistinctClassIdsByCriterionId(999))
+                .thenReturn(List.of());
+
+        studentClassRubricCriteriaRepository.softDeleteByCriterionId(999);
+
+        verify(studentClassRubricCriteriaJPARepository).softDeleteByCriterionId(999);
+        verify(cacheEvictionService, never()).evict(anyString(), any());
+    }
+
+    @Test
+    void softDeleteByClassRubricIds_shouldDelegateAndEvictCaches_whenNotEmpty() {
+        when(classRubricJPARepository.findDistinctClassIdsByIds(Arrays.asList(1, 2)))
+                .thenReturn(Arrays.asList(10, 20));
+
+        studentClassRubricCriteriaRepository.softDeleteByClassRubricIds(Arrays.asList(1, 2));
+
+        verify(studentClassRubricCriteriaJPARepository).softDeleteByClassRubricIds(Arrays.asList(1, 2));
+        verify(cacheEvictionService).evict("studentClassRubricCriteriaByClass", 10);
+        verify(cacheEvictionService).evict("studentClassRubricCriteriaByClass", 20);
     }
 
     @Test
     void softDeleteByClassRubricIds_shouldNotDelegate_whenEmpty() {
         studentClassRubricCriteriaRepository.softDeleteByClassRubricIds(List.of());
+
         verify(studentClassRubricCriteriaJPARepository, never()).softDeleteByClassRubricIds(any());
+        verify(cacheEvictionService, never()).evict(anyString(), any());
     }
 
     @Test

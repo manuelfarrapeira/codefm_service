@@ -83,5 +83,29 @@ class CacheEvictionServiceTest {
         verifyNoInteractions(this.cache);
     }
 
+    @Test
+    void evictAll_shouldClearCache_whenCacheExists() {
+        String cacheName = "schools";
+
+        when(this.cacheManager.getCache(cacheName)).thenReturn(this.cache);
+
+        this.cacheEvictionService.evictAll(cacheName);
+
+        verify(this.cacheManager).getCache(cacheName);
+        verify(this.cache).clear();
+    }
+
+    @Test
+    void evictAll_shouldDoNothing_whenCacheDoesNotExist() {
+        String cacheName = "nonExistentCache";
+
+        when(this.cacheManager.getCache(cacheName)).thenReturn(null);
+
+        this.cacheEvictionService.evictAll(cacheName);
+
+        verify(this.cacheManager).getCache(cacheName);
+        verifyNoInteractions(this.cache);
+    }
+
 }
 

@@ -6,6 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentGrade;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.*;
 import org.web.codefm.infrastructure.jpa.teachernotebook.*;
 import org.web.codefm.infrastructure.mapper.ExerciseStudentDocumentMapper;
@@ -44,6 +45,9 @@ class ExerciseStudentGradeRepositoryImplTest {
 
     @Mock
     private ExerciseStudentDocumentMapper exerciseStudentDocumentMapper;
+
+    @Mock
+    private CacheEvictionService cacheEvictionService;
 
     @InjectMocks
     private ExerciseStudentGradeRepositoryImpl exerciseStudentGradeRepository;
@@ -167,7 +171,7 @@ class ExerciseStudentGradeRepositoryImplTest {
     }
 
     @Test
-    void save_shouldSaveAndReturnEnrichedGrade() {
+    void save_shouldSaveAndReturnEnrichedGradeAndEvictCache() {
         ExerciseStudentGrade grade = ExerciseStudentGrade.builder().studentId(5).exerciseId(100).grade(8.0).build();
         ExerciseStudentGradeEntity entity = new ExerciseStudentGradeEntity();
         ExerciseStudentGradeEntity savedEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, null, null);
@@ -176,6 +180,7 @@ class ExerciseStudentGradeRepositoryImplTest {
         when(exerciseStudentGradeMapper.toEntity(grade)).thenReturn(entity);
         when(exerciseStudentGradeJPARepository.save(entity)).thenReturn(savedEntity);
         when(exerciseStudentGradeMapper.toModel(savedEntity)).thenReturn(saved);
+        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(100))).thenReturn(List.of(1));
 
         ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
         when(exerciseJPARepository.findById(100)).thenReturn(Optional.of(exerciseEntity));
@@ -195,13 +200,19 @@ class ExerciseStudentGradeRepositoryImplTest {
 
         assertNotNull(result);
         assertEquals(1, result.getId());
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
     }
 
     @Test
-    void softDelete_shouldCallJPARepository() {
+    void softDelete_shouldCallJPARepositoryAndEvictCache() {
+        ExerciseStudentGradeEntity entity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, null, null);
+        when(exerciseStudentGradeJPARepository.findById(1)).thenReturn(Optional.of(entity));
+        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(100))).thenReturn(List.of(1));
+
         exerciseStudentGradeRepository.softDelete(1);
 
         verify(exerciseStudentGradeJPARepository).softDeleteById(1);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
     }
 
     @Test
@@ -219,12 +230,14 @@ class ExerciseStudentGradeRepositoryImplTest {
     }
 
     @Test
-    void softDeleteByExerciseIds_shouldCallJPARepository_whenListNotEmpty() {
+    void softDeleteByExerciseIds_shouldCallJPARepositoryAndEvictCache_whenListNotEmpty() {
         List<Integer> exerciseIds = List.of(1, 2, 3);
+        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(exerciseIds)).thenReturn(List.of(10));
 
         exerciseStudentGradeRepository.softDeleteByExerciseIds(exerciseIds);
 
         verify(exerciseStudentGradeJPARepository).softDeleteByExerciseIds(exerciseIds);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
     }
 
     @Test
@@ -242,17 +255,23 @@ class ExerciseStudentGradeRepositoryImplTest {
     }
 
     @Test
-    void softDeleteByStudentIdAndClassId_shouldCallJPARepository() {
+    void softDeleteByStudentIdAndClassId_shouldCallJPARepositoryAndEvictCache() {
         exerciseStudentGradeRepository.softDeleteByStudentIdAndClassId(5, 10);
 
         verify(exerciseStudentGradeJPARepository).softDeleteByStudentIdAndClassId(5, 10);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
     }
 
     @Test
-    void softDeleteByStudentId_shouldCallJPARepository() {
+    void softDeleteByStudentId_shouldCallJPARepositoryAndEvictCache() {
+        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByStudentId(5))
+                .thenReturn(List.of(10, 20));
+
         exerciseStudentGradeRepository.softDeleteByStudentId(5);
 
         verify(exerciseStudentGradeJPARepository).softDeleteByStudentId(5);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
+        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 20);
     }
 }
 
