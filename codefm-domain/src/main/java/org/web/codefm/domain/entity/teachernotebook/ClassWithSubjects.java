@@ -1,13 +1,13 @@
 package org.web.codefm.domain.entity.teachernotebook;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.Generated;
+import lombok.*;
 
 import java.util.List;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Generated
 public class ClassWithSubjects {
     private Class classData;
