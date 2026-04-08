@@ -30,6 +30,17 @@ public interface CalendarAlertRepository {
     List<CalendarAlert> findByTeacherIdAndYearAndMonth(Integer teacherId, Integer year, Integer month);
 
     /**
+     * Finds all calendar alerts for a specific teacher, year and month range.
+     *
+     * @param teacherId  The unique identifier of the teacher
+     * @param year       The year to filter by
+     * @param startMonth The start month of the range (1-12)
+     * @param endMonth   The end month of the range (1-12)
+     * @return List of calendar alerts matching the criteria, ordered by date ascending
+     */
+    List<CalendarAlert> findByTeacherIdAndYearAndMonthRange(Integer teacherId, Integer year, Integer startMonth, Integer endMonth);
+
+    /**
      * Finds a calendar alert by its ID and validates teacher ownership.
      *
      * @param id        The unique identifier of the calendar alert

@@ -18,5 +18,8 @@ public interface CalendarAlertJPARepository extends JpaRepository<CalendarAlertE
 
     @Query("SELECT c FROM CalendarAlertEntity c WHERE c.teacherId = :teacherId AND YEAR(c.date) = :year AND MONTH(c.date) = :month ORDER BY c.date ASC")
     List<CalendarAlertEntity> findByTeacherIdAndYearAndMonth(@Param("teacherId") Integer teacherId, @Param("year") Integer year, @Param("month") Integer month);
+
+    @Query("SELECT c FROM CalendarAlertEntity c WHERE c.teacherId = :teacherId AND YEAR(c.date) = :year AND MONTH(c.date) >= :startMonth AND MONTH(c.date) <= :endMonth ORDER BY c.date ASC")
+    List<CalendarAlertEntity> findByTeacherIdAndYearAndMonthRange(@Param("teacherId") Integer teacherId, @Param("year") Integer year, @Param("startMonth") Integer startMonth, @Param("endMonth") Integer endMonth);
 }
 

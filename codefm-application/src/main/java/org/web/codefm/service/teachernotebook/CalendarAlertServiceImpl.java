@@ -35,16 +35,16 @@ public class CalendarAlertServiceImpl implements CalendarAlertService {
 
     @Override
     public List<CalendarAlert> getCalendarAlertsByYearAndMonth(Integer year, Integer month) {
-        List<ErrorMessage> errors = new ArrayList<>();
-        Locale locale = sessionUser.getLocale();
+        final List<ErrorMessage> errors = new ArrayList<>();
+        final Locale locale = sessionUser.getLocale();
 
         if (year == null || year <= 0) {
-            String message = messageSource.getMessage(MessageKeys.CALENDAR_ALERT_VALIDATION_YEAR_INVALID, null, locale);
+            final String message = messageSource.getMessage(MessageKeys.CALENDAR_ALERT_VALIDATION_YEAR_INVALID, null, locale);
             errors.add(new ErrorMessage("year", message));
         }
 
         if (month == null || month < 1 || month > 12) {
-            String message = messageSource.getMessage(MessageKeys.CALENDAR_ALERT_VALIDATION_MONTH_INVALID, null, locale);
+            final String message = messageSource.getMessage(MessageKeys.CALENDAR_ALERT_VALIDATION_MONTH_INVALID, null, locale);
             errors.add(new ErrorMessage("month", message));
         }
 
@@ -52,8 +52,41 @@ public class CalendarAlertServiceImpl implements CalendarAlertService {
             throw new CalendarAlertValidationException(errors);
         }
 
-        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
+        final Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         return calendarAlertRepository.findByTeacherIdAndYearAndMonth(teacherId, year, month);
+    }
+
+    @Override
+    public List<CalendarAlert> getCalendarAlertsByYearAndMonthRange(Integer year, Integer startMonth, Integer endMonth) {
+        final List<ErrorMessage> errors = new ArrayList<>();
+        final Locale locale = this.sessionUser.getLocale();
+
+        if (year == null || year <= 0) {
+            final String message = this.messageSource.getMessage(MessageKeys.CALENDAR_ALERT_VALIDATION_YEAR_INVALID, null, locale);
+            errors.add(new ErrorMessage("year", message));
+        }
+
+        if (startMonth == null || startMonth < 1 || startMonth > 12) {
+            final String message = this.messageSource.getMessage(MessageKeys.CALENDAR_ALERT_VALIDATION_MONTH_INVALID, null, locale);
+            errors.add(new ErrorMessage("startMonth", message));
+        }
+
+        if (endMonth == null || endMonth < 1 || endMonth > 12) {
+            final String message = this.messageSource.getMessage(MessageKeys.CALENDAR_ALERT_VALIDATION_MONTH_INVALID, null, locale);
+            errors.add(new ErrorMessage("endMonth", message));
+        }
+
+        if (startMonth != null && endMonth != null && startMonth >= 1 && startMonth <= 12 && endMonth >= 1 && endMonth <= 12 && endMonth < startMonth) {
+            final String message = this.messageSource.getMessage(MessageKeys.CALENDAR_ALERT_VALIDATION_END_MONTH_BEFORE_START_MONTH, null, locale);
+            errors.add(new ErrorMessage("endMonth", message));
+        }
+
+        if (!errors.isEmpty()) {
+            throw new CalendarAlertValidationException(errors);
+        }
+
+        final Integer teacherId = this.sessionUser.getParameter(SessionParameter.TEACHER_ID);
+        return this.calendarAlertRepository.findByTeacherIdAndYearAndMonthRange(teacherId, year, startMonth, endMonth);
     }
 
     @Override

@@ -145,5 +145,39 @@ class CalendarAlertUseCaseImplTest {
         assertTrue(result.isEmpty());
         verify(calendarAlertService).getCalendarAlertsByYearAndMonth(year, month);
     }
+
+    @Test
+    void getCalendarAlertsByYearAndMonthRange_shouldDelegateToService() {
+        final Integer year = 2026;
+        final Integer startMonth = 1;
+        final Integer endMonth = 6;
+        final List<CalendarAlert> expectedAlerts = Arrays.asList(
+                CalendarAlert.builder().id(1).teacherId(TEACHER_ID).date(LocalDate.of(2026, 3, 15)).title("Meeting").build(),
+                CalendarAlert.builder().id(2).teacherId(TEACHER_ID).date(LocalDate.of(2026, 5, 10)).title("Exam").build()
+        );
+
+        when(calendarAlertService.getCalendarAlertsByYearAndMonthRange(year, startMonth, endMonth)).thenReturn(expectedAlerts);
+
+        List<CalendarAlert> result = calendarAlertUseCase.getCalendarAlertsByYearAndMonthRange(year, startMonth, endMonth);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        verify(calendarAlertService).getCalendarAlertsByYearAndMonthRange(year, startMonth, endMonth);
+    }
+
+    @Test
+    void getCalendarAlertsByYearAndMonthRange_shouldReturnEmptyList_whenNoAlertsFound() {
+        final Integer year = 2099;
+        final Integer startMonth = 1;
+        final Integer endMonth = 12;
+
+        when(calendarAlertService.getCalendarAlertsByYearAndMonthRange(year, startMonth, endMonth)).thenReturn(Collections.emptyList());
+
+        List<CalendarAlert> result = calendarAlertUseCase.getCalendarAlertsByYearAndMonthRange(year, startMonth, endMonth);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(calendarAlertService).getCalendarAlertsByYearAndMonthRange(year, startMonth, endMonth);
+    }
 }
 

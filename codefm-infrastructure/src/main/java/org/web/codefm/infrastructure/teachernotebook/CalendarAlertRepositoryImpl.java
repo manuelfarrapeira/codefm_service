@@ -31,6 +31,11 @@ public class CalendarAlertRepositoryImpl implements CalendarAlertRepository {
     }
 
     @Override
+    public List<CalendarAlert> findByTeacherIdAndYearAndMonthRange(Integer teacherId, Integer year, Integer startMonth, Integer endMonth) {
+        return calendarAlertMapper.toModelList(calendarAlertJPARepository.findByTeacherIdAndYearAndMonthRange(teacherId, year, startMonth, endMonth));
+    }
+
+    @Override
     public Optional<CalendarAlert> findByIdAndTeacherId(Integer id, Integer teacherId) {
         return calendarAlertJPARepository.findByIdAndTeacherId(id, teacherId)
                 .map(calendarAlertMapper::toModel);

@@ -2952,6 +2952,66 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/calendar-alerts/{year}/{startMonth}/{endMonth}:
+    get:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: calendarAlertsByYearAndMonthRange
+      summary: Get calendar alerts for a specific year and month range
+      description: Returns all calendar alerts belonging to the authenticated teacher for the specified year and month range (inclusive), ordered by date ascending.
+      parameters:
+        - name: year
+          in: path
+          required: true
+          description: The year to filter calendar alerts
+          schema:
+            type: integer
+            format: int32
+            example: 2026
+        - name: startMonth
+          in: path
+          required: true
+          description: The start month of the range (1-12)
+          schema:
+            type: integer
+            format: int32
+            example: 1
+        - name: endMonth
+          in: path
+          required: true
+          description: The end month of the range (1-12). Must be greater than or equal to startMonth
+          schema:
+            type: integer
+            format: int32
+            example: 6
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarAlertDTO'
+        '400':
+          description: Validation error - invalid year, months or range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
   /teacher-notebook/v1/calendar-alerts/{id}:
     patch:
       tags:

@@ -166,5 +166,47 @@ class CalendarAlertRepositoryImplTest {
         assertTrue(result.isEmpty());
         verify(calendarAlertJPARepository).findByTeacherIdAndYearAndMonth(teacherId, year, month);
     }
+
+    @Test
+    void findByTeacherIdAndYearAndMonthRange_shouldReturnAlerts_whenFound() {
+        final Integer teacherId = 1;
+        final Integer year = 2026;
+        final Integer startMonth = 1;
+        final Integer endMonth = 6;
+        final CalendarAlertEntity entity1 = new CalendarAlertEntity(1, teacherId, LocalDate.of(2026, 3, 15), "Meeting", null, null, null);
+        final CalendarAlertEntity entity2 = new CalendarAlertEntity(2, teacherId, LocalDate.of(2026, 5, 10), "Exam", null, null, null);
+        final List<CalendarAlertEntity> entities = Arrays.asList(entity1, entity2);
+
+        final CalendarAlert alert1 = CalendarAlert.builder().id(1).teacherId(teacherId).date(LocalDate.of(2026, 3, 15)).title("Meeting").build();
+        final CalendarAlert alert2 = CalendarAlert.builder().id(2).teacherId(teacherId).date(LocalDate.of(2026, 5, 10)).title("Exam").build();
+        final List<CalendarAlert> expectedAlerts = Arrays.asList(alert1, alert2);
+
+        when(calendarAlertJPARepository.findByTeacherIdAndYearAndMonthRange(teacherId, year, startMonth, endMonth)).thenReturn(entities);
+        when(calendarAlertMapper.toModelList(entities)).thenReturn(expectedAlerts);
+
+        List<CalendarAlert> result = calendarAlertRepository.findByTeacherIdAndYearAndMonthRange(teacherId, year, startMonth, endMonth);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        verify(calendarAlertJPARepository).findByTeacherIdAndYearAndMonthRange(teacherId, year, startMonth, endMonth);
+        verify(calendarAlertMapper).toModelList(entities);
+    }
+
+    @Test
+    void findByTeacherIdAndYearAndMonthRange_shouldReturnEmptyList_whenNoAlertsFound() {
+        final Integer teacherId = 1;
+        final Integer year = 2099;
+        final Integer startMonth = 1;
+        final Integer endMonth = 12;
+
+        when(calendarAlertJPARepository.findByTeacherIdAndYearAndMonthRange(teacherId, year, startMonth, endMonth)).thenReturn(Collections.emptyList());
+        when(calendarAlertMapper.toModelList(Collections.emptyList())).thenReturn(Collections.emptyList());
+
+        List<CalendarAlert> result = calendarAlertRepository.findByTeacherIdAndYearAndMonthRange(teacherId, year, startMonth, endMonth);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(calendarAlertJPARepository).findByTeacherIdAndYearAndMonthRange(teacherId, year, startMonth, endMonth);
+    }
 }
 

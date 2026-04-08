@@ -28,6 +28,17 @@ public interface CalendarAlertService {
     List<CalendarAlert> getCalendarAlertsByYearAndMonth(Integer year, Integer month);
 
     /**
+     * Retrieves calendar alerts for the authenticated teacher filtered by year and a month range.
+     *
+     * @param year       The year to filter by
+     * @param startMonth The start month of the range (1-12)
+     * @param endMonth   The end month of the range (1-12), must be greater than or equal to startMonth
+     * @return List of calendar alerts matching the criteria
+     * @throws org.web.codefm.domain.exception.teachernotebook.CalendarAlertValidationException if year or months are invalid or endMonth is before startMonth
+     */
+    List<CalendarAlert> getCalendarAlertsByYearAndMonthRange(Integer year, Integer startMonth, Integer endMonth);
+
+    /**
      * Creates a new calendar alert for the authenticated teacher.
      *
      * @param calendarAlert The calendar alert object to create
