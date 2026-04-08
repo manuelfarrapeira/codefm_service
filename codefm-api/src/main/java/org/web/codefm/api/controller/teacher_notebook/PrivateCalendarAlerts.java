@@ -44,6 +44,14 @@ public class PrivateCalendarAlerts implements TeacherNoteBookCalendarAlertsApi {
 
     @Logged
     @Override
+    @Locale(3)
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<List<CalendarAlertDTO>> calendarAlertsByYearAndMonthRange(Integer year, Integer startMonth, Integer endMonth, String acceptLanguage) {
+        return ResponseEntity.ok(this.calendarAlertDTOMapper.toDTOList(this.calendarAlertUseCase.getCalendarAlertsByYearAndMonthRange(year, startMonth, endMonth)));
+    }
+
+    @Logged
+    @Override
     @Locale(1)
     @PreAuthorize("hasRole('TEACHER')")
     public ResponseEntity<CalendarAlertDTO> createCalendarAlert(CalendarAlertRequestDTO calendarAlertRequestDTO, String acceptLanguage) {

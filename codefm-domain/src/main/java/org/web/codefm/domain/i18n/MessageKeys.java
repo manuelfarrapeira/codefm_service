@@ -102,6 +102,7 @@ public class MessageKeys {
 	public static final String CALENDAR_ALERT_VALIDATION_END_TIME_BEFORE_START_TIME = "calendar.alert.validation.endTime.beforeStartTime";
 	public static final String CALENDAR_ALERT_VALIDATION_MONTH_INVALID = "calendar.alert.validation.month.invalid";
 	public static final String CALENDAR_ALERT_VALIDATION_YEAR_INVALID = "calendar.alert.validation.year.invalid";
+	public static final String CALENDAR_ALERT_VALIDATION_END_MONTH_BEFORE_START_MONTH = "calendar.alert.validation.endMonth.beforeStartMonth";
 
 	public static final String GRADE_EXPORT_STUDENT = "grade.export.student";
 	public static final String GRADE_EXPORT_QUARTER = "grade.export.quarter";
