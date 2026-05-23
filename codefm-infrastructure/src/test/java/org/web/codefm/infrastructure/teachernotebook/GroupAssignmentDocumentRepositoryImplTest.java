@@ -1,8 +1,9 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.GroupAssignmentDocument;
@@ -13,11 +14,13 @@ import org.web.codefm.infrastructure.mapper.GroupAssignmentDocumentMapper;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class GroupAssignmentDocumentRepositoryImplTest {
+
+    private GroupAssignmentDocumentRepositoryImpl groupAssignmentDocumentRepository;
 
     @Mock
     private GroupAssignmentDocumentJPARepository groupAssignmentDocumentJPARepository;
@@ -25,217 +28,268 @@ class GroupAssignmentDocumentRepositoryImplTest {
     @Mock
     private GroupAssignmentDocumentMapper groupAssignmentDocumentMapper;
 
-    @InjectMocks
-    private GroupAssignmentDocumentRepositoryImpl groupAssignmentDocumentRepository;
-
-    @Test
-    void findByAssignmentId_shouldReturnMappedDocuments() {
-        final List<GroupAssignmentDocumentEntity> entities = List.of(
-                new GroupAssignmentDocumentEntity(1, 100, null, "doc1.pdf", "Desc 1", false),
-                new GroupAssignmentDocumentEntity(2, 100, 50, "doc2.pdf", "Desc 2", true));
-        final List<GroupAssignmentDocument> expected = List.of(
-                GroupAssignmentDocument.builder().id(1).groupAssignmentId(100).document("doc1.pdf").groupDocument(false).build(),
-                GroupAssignmentDocument.builder().id(2).groupAssignmentId(100).groupId(50).document("doc2.pdf").groupDocument(true).build());
-
-        when(this.groupAssignmentDocumentJPARepository.findByGroupAssignmentId(100)).thenReturn(entities);
-        when(this.groupAssignmentDocumentMapper.toModelList(entities)).thenReturn(expected);
-
-        final List<GroupAssignmentDocument> result = this.groupAssignmentDocumentRepository.findByAssignmentId(100);
-
-        assertEquals(2, result.size());
-        verify(this.groupAssignmentDocumentJPARepository).findByGroupAssignmentId(100);
+    @BeforeEach
+    void beforeEach() {
+        this.groupAssignmentDocumentRepository = new GroupAssignmentDocumentRepositoryImpl(this.groupAssignmentDocumentJPARepository,
+                this.groupAssignmentDocumentMapper);
     }
 
-    @Test
-    void findByAssignmentIdAndGroupId_shouldReturnMappedDocuments() {
-        final List<GroupAssignmentDocumentEntity> entities = List.of(
-                new GroupAssignmentDocumentEntity(2, 100, 50, "doc2.pdf", "Desc", true));
-        final List<GroupAssignmentDocument> expected = List.of(
-                GroupAssignmentDocument.builder().id(2).groupAssignmentId(100).groupId(50).document("doc2.pdf").groupDocument(true).build());
+    @Nested
+    class FindByAssignmentId {
 
-        when(this.groupAssignmentDocumentJPARepository.findByGroupAssignmentIdAndGroupId(100, 50)).thenReturn(entities);
-        when(this.groupAssignmentDocumentMapper.toModelList(entities)).thenReturn(expected);
+        @Test
+        void when_documents_exist_expect_mapped_documents_returned() {
+            final List<GroupAssignmentDocumentEntity> entities = List.of(
+                    new GroupAssignmentDocumentEntity(1, 100, null, "doc1.pdf", "Desc 1", false),
+                    new GroupAssignmentDocumentEntity(2, 100, 50, "doc2.pdf", "Desc 2", true));
+            final List<GroupAssignmentDocument> expected = List.of(
+                    GroupAssignmentDocument.builder().id(1).groupAssignmentId(100).document("doc1.pdf").groupDocument(false).build(),
+                    GroupAssignmentDocument.builder().id(2).groupAssignmentId(100).groupId(50).document("doc2.pdf").groupDocument(true).build());
 
-        final List<GroupAssignmentDocument> result = this.groupAssignmentDocumentRepository.findByAssignmentIdAndGroupId(100, 50);
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository.findByGroupAssignmentId(100)).thenReturn(entities);
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentMapper.toModelList(entities)).thenReturn(expected);
 
-        assertEquals(1, result.size());
-        assertEquals(50, result.get(0).getGroupId());
+            final List<GroupAssignmentDocument> result = GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.findByAssignmentId(100);
+
+            assertThat(result).hasSize(2);
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository).findByGroupAssignmentId(100);
+        }
     }
 
-    @Test
-    void findById_shouldReturnMappedDocument_whenFound() {
-        final GroupAssignmentDocumentEntity entity = new GroupAssignmentDocumentEntity(1, 100, null, "doc.pdf", "Desc", false);
-        final GroupAssignmentDocument expected = GroupAssignmentDocument.builder()
-                .id(1).groupAssignmentId(100).document("doc.pdf").description("Desc").groupDocument(false).build();
+    @Nested
+    class FindByAssignmentIdAndGroupId {
 
-        when(this.groupAssignmentDocumentJPARepository.findById(1)).thenReturn(Optional.of(entity));
-        when(this.groupAssignmentDocumentMapper.toModel(entity)).thenReturn(expected);
+        @Test
+        void when_documents_exist_expect_mapped_documents_returned() {
+            final List<GroupAssignmentDocumentEntity> entities = List.of(
+                    new GroupAssignmentDocumentEntity(2, 100, 50, "doc2.pdf", "Desc", true));
+            final List<GroupAssignmentDocument> expected = List.of(
+                    GroupAssignmentDocument.builder().id(2).groupAssignmentId(100).groupId(50).document("doc2.pdf").groupDocument(true).build());
 
-        final Optional<GroupAssignmentDocument> result = this.groupAssignmentDocumentRepository.findById(1);
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository.findByGroupAssignmentIdAndGroupId(100, 50)).thenReturn(entities);
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentMapper.toModelList(entities)).thenReturn(expected);
 
-        assertTrue(result.isPresent());
-        assertEquals(1, result.get().getId());
+            final List<GroupAssignmentDocument> result = GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.findByAssignmentIdAndGroupId(100, 50);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getGroupId()).isEqualTo(50);
+        }
     }
 
-    @Test
-    void findById_shouldReturnEmpty_whenNotFound() {
-        when(this.groupAssignmentDocumentJPARepository.findById(999)).thenReturn(Optional.empty());
+    @Nested
+    class FindById {
 
-        final Optional<GroupAssignmentDocument> result = this.groupAssignmentDocumentRepository.findById(999);
+        @Test
+        void when_document_is_found_expect_mapped_document_returned() {
+            final GroupAssignmentDocumentEntity entity = new GroupAssignmentDocumentEntity(1, 100, null, "doc.pdf", "Desc", false);
+            final GroupAssignmentDocument expected = GroupAssignmentDocument.builder()
+                    .id(1).groupAssignmentId(100).document("doc.pdf").description("Desc").groupDocument(false).build();
 
-        assertFalse(result.isPresent());
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository.findById(1)).thenReturn(Optional.of(entity));
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentMapper.toModel(entity)).thenReturn(expected);
+
+            final Optional<GroupAssignmentDocument> result = GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.findById(1);
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getId()).isEqualTo(1);
+        }
+
+        @Test
+        void when_document_is_not_found_expect_empty_optional_returned() {
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository.findById(999)).thenReturn(Optional.empty());
+
+            final Optional<GroupAssignmentDocument> result = GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.findById(999);
+
+            assertThat(result).isNotPresent();
+        }
     }
 
-    @Test
-    void save_shouldMapAndSaveEntity() {
-        final GroupAssignmentDocument input = GroupAssignmentDocument.builder()
-                .groupAssignmentId(100).document("doc.pdf").description("Desc").groupDocument(false).build();
-        final GroupAssignmentDocumentEntity entity = new GroupAssignmentDocumentEntity(null, 100, null, "doc.pdf", "Desc", false);
-        final GroupAssignmentDocumentEntity savedEntity = new GroupAssignmentDocumentEntity(1, 100, null, "doc.pdf", "Desc", false);
-        final GroupAssignmentDocument expected = GroupAssignmentDocument.builder()
-                .id(1).groupAssignmentId(100).document("doc.pdf").description("Desc").groupDocument(false).build();
+    @Nested
+    class Save {
 
-        when(this.groupAssignmentDocumentMapper.toEntity(input)).thenReturn(entity);
-        when(this.groupAssignmentDocumentJPARepository.save(entity)).thenReturn(savedEntity);
-        when(this.groupAssignmentDocumentMapper.toModel(savedEntity)).thenReturn(expected);
+        @Test
+        void when_valid_data_expect_entity_saved() {
+            final GroupAssignmentDocument input = GroupAssignmentDocument.builder()
+                    .groupAssignmentId(100).document("doc.pdf").description("Desc").groupDocument(false).build();
+            final GroupAssignmentDocumentEntity entity = new GroupAssignmentDocumentEntity(null, 100, null, "doc.pdf", "Desc", false);
+            final GroupAssignmentDocumentEntity savedEntity = new GroupAssignmentDocumentEntity(1, 100, null, "doc.pdf", "Desc", false);
+            final GroupAssignmentDocument expected = GroupAssignmentDocument.builder()
+                    .id(1).groupAssignmentId(100).document("doc.pdf").description("Desc").groupDocument(false).build();
 
-        final GroupAssignmentDocument result = this.groupAssignmentDocumentRepository.save(input);
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentMapper.toEntity(input)).thenReturn(entity);
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository.save(entity)).thenReturn(savedEntity);
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentMapper.toModel(savedEntity)).thenReturn(expected);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        verify(this.groupAssignmentDocumentJPARepository).save(entity);
+            final GroupAssignmentDocument result = GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.save(input);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository).save(entity);
+        }
     }
 
-    @Test
-    void deleteById_shouldDelegateToJPARepository() {
-        this.groupAssignmentDocumentRepository.deleteById(1);
+    @Nested
+    class DeleteById {
 
-        verify(this.groupAssignmentDocumentJPARepository).deleteById(1);
+        @Test
+        void when_called_expect_jpa_delegated() {
+            GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.deleteById(1);
+
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository).deleteById(1);
+        }
     }
 
-    @Test
-    void deleteByGroupAssignmentId_shouldDelegateToJPARepository() {
-        this.groupAssignmentDocumentRepository.deleteByGroupAssignmentId(100);
+    @Nested
+    class DeleteByGroupAssignmentId {
 
-        verify(this.groupAssignmentDocumentJPARepository).deleteByGroupAssignmentId(100);
+        @Test
+        void when_called_expect_jpa_delegated() {
+            GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.deleteByGroupAssignmentId(100);
+
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository).deleteByGroupAssignmentId(100);
+        }
     }
 
-    @Test
-    void deleteByGroupAssignmentIds_shouldDelegateToJPARepository() {
-        final List<Integer> ids = List.of(100, 200);
+    @Nested
+    class DeleteByGroupAssignmentIds {
 
-        this.groupAssignmentDocumentRepository.deleteByGroupAssignmentIds(ids);
+        @Test
+        void when_ids_exist_expect_jpa_delegated() {
+            final List<Integer> ids = List.of(100, 200);
 
-        verify(this.groupAssignmentDocumentJPARepository).deleteByGroupAssignmentIds(ids);
+            GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.deleteByGroupAssignmentIds(ids);
+
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository).deleteByGroupAssignmentIds(ids);
+        }
+
+        @Test
+        void when_list_is_null_expect_no_jpa_call() {
+            GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.deleteByGroupAssignmentIds(null);
+
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository, never())
+                    .deleteByGroupAssignmentIds(any());
+        }
+
+        @Test
+        void when_list_is_empty_expect_no_jpa_call() {
+            GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.deleteByGroupAssignmentIds(List.of());
+
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository, never())
+                    .deleteByGroupAssignmentIds(any());
+        }
     }
 
-    @Test
-    void deleteByGroupAssignmentIds_shouldDoNothing_whenListIsNull() {
-        this.groupAssignmentDocumentRepository.deleteByGroupAssignmentIds(null);
+    @Nested
+    class DeleteByGroupId {
 
-        verify(this.groupAssignmentDocumentJPARepository, never()).deleteByGroupAssignmentIds(any());
+        @Test
+        void when_called_expect_jpa_delegated() {
+            GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.deleteByGroupId(50);
+
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository).deleteByGroupId(50);
+        }
     }
 
-    @Test
-    void deleteByGroupAssignmentIds_shouldDoNothing_whenListIsEmpty() {
-        this.groupAssignmentDocumentRepository.deleteByGroupAssignmentIds(List.of());
+    @Nested
+    class DeleteByGroupIds {
 
-        verify(this.groupAssignmentDocumentJPARepository, never()).deleteByGroupAssignmentIds(any());
+        @Test
+        void when_ids_exist_expect_jpa_delegated() {
+            final List<Integer> ids = List.of(50, 60);
+
+            GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.deleteByGroupIds(ids);
+
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository).deleteByGroupIds(ids);
+        }
+
+        @Test
+        void when_list_is_null_expect_no_jpa_call() {
+            GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.deleteByGroupIds(null);
+
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository, never()).deleteByGroupIds(any());
+        }
+
+        @Test
+        void when_list_is_empty_expect_no_jpa_call() {
+            GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.deleteByGroupIds(List.of());
+
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository, never()).deleteByGroupIds(any());
+        }
     }
 
-    @Test
-    void deleteByGroupId_shouldDelegateToJPARepository() {
-        this.groupAssignmentDocumentRepository.deleteByGroupId(50);
+    @Nested
+    class FindByGroupAssignmentIds {
 
-        verify(this.groupAssignmentDocumentJPARepository).deleteByGroupId(50);
+        @Test
+        void when_assignment_ids_exist_expect_mapped_documents_returned() {
+            final List<Integer> assignmentIds = List.of(100, 200);
+            final List<GroupAssignmentDocumentEntity> entities = List.of(
+                    new GroupAssignmentDocumentEntity(1, 100, null, "doc1.pdf", "Desc", false));
+            final List<GroupAssignmentDocument> expected = List.of(
+                    GroupAssignmentDocument.builder().id(1).groupAssignmentId(100).document("doc1.pdf").groupDocument(false).build());
+
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository.findByGroupAssignmentIdIn(assignmentIds)).thenReturn(entities);
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentMapper.toModelList(entities)).thenReturn(expected);
+
+            final List<GroupAssignmentDocument> result = GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.findByGroupAssignmentIds(assignmentIds);
+
+            assertThat(result).hasSize(1);
+        }
+
+        @Test
+        void when_list_is_null_expect_empty_list_returned() {
+            final List<GroupAssignmentDocument> result = GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.findByGroupAssignmentIds(null);
+
+            assertThat(result).isEmpty();
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository, never())
+                    .findByGroupAssignmentIdIn(any());
+        }
+
+        @Test
+        void when_list_is_empty_expect_empty_list_returned() {
+            final List<GroupAssignmentDocument> result = GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.findByGroupAssignmentIds(List.of());
+
+            assertThat(result).isEmpty();
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository, never())
+                    .findByGroupAssignmentIdIn(any());
+        }
     }
 
-    @Test
-    void deleteByGroupIds_shouldDelegateToJPARepository() {
-        final List<Integer> ids = List.of(50, 60);
+    @Nested
+    class FindByGroupIds {
 
-        this.groupAssignmentDocumentRepository.deleteByGroupIds(ids);
+        @Test
+        void when_group_ids_exist_expect_mapped_documents_returned() {
+            final List<Integer> groupIds = List.of(50, 60);
+            final List<GroupAssignmentDocumentEntity> entities = List.of(
+                    new GroupAssignmentDocumentEntity(2, 100, 50, "doc2.pdf", "Desc", true));
+            final List<GroupAssignmentDocument> expected = List.of(
+                    GroupAssignmentDocument.builder().id(2).groupAssignmentId(100).groupId(50).document("doc2.pdf").groupDocument(true).build());
 
-        verify(this.groupAssignmentDocumentJPARepository).deleteByGroupIds(ids);
-    }
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository.findByGroupIdIn(groupIds)).thenReturn(entities);
+            when(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentMapper.toModelList(entities)).thenReturn(expected);
 
-    @Test
-    void deleteByGroupIds_shouldDoNothing_whenListIsNull() {
-        this.groupAssignmentDocumentRepository.deleteByGroupIds(null);
+            final List<GroupAssignmentDocument> result = GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.findByGroupIds(groupIds);
 
-        verify(this.groupAssignmentDocumentJPARepository, never()).deleteByGroupIds(any());
-    }
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getGroupId()).isEqualTo(50);
+        }
 
-    @Test
-    void deleteByGroupIds_shouldDoNothing_whenListIsEmpty() {
-        this.groupAssignmentDocumentRepository.deleteByGroupIds(List.of());
+        @Test
+        void when_list_is_null_expect_empty_list_returned() {
+            final List<GroupAssignmentDocument> result = GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.findByGroupIds(null);
 
-        verify(this.groupAssignmentDocumentJPARepository, never()).deleteByGroupIds(any());
-    }
+            assertThat(result).isEmpty();
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository, never()).findByGroupIdIn(any());
+        }
 
-    @Test
-    void findByGroupAssignmentIds_shouldReturnMappedDocuments() {
-        final List<Integer> assignmentIds = List.of(100, 200);
-        final List<GroupAssignmentDocumentEntity> entities = List.of(
-                new GroupAssignmentDocumentEntity(1, 100, null, "doc1.pdf", "Desc", false));
-        final List<GroupAssignmentDocument> expected = List.of(
-                GroupAssignmentDocument.builder().id(1).groupAssignmentId(100).document("doc1.pdf").groupDocument(false).build());
+        @Test
+        void when_list_is_empty_expect_empty_list_returned() {
+            final List<GroupAssignmentDocument> result = GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentRepository.findByGroupIds(List.of());
 
-        when(this.groupAssignmentDocumentJPARepository.findByGroupAssignmentIdIn(assignmentIds)).thenReturn(entities);
-        when(this.groupAssignmentDocumentMapper.toModelList(entities)).thenReturn(expected);
-
-        final List<GroupAssignmentDocument> result = this.groupAssignmentDocumentRepository.findByGroupAssignmentIds(assignmentIds);
-
-        assertEquals(1, result.size());
-    }
-
-    @Test
-    void findByGroupAssignmentIds_shouldReturnEmptyList_whenListIsNull() {
-        final List<GroupAssignmentDocument> result = this.groupAssignmentDocumentRepository.findByGroupAssignmentIds(null);
-
-        assertTrue(result.isEmpty());
-        verify(this.groupAssignmentDocumentJPARepository, never()).findByGroupAssignmentIdIn(any());
-    }
-
-    @Test
-    void findByGroupAssignmentIds_shouldReturnEmptyList_whenListIsEmpty() {
-        final List<GroupAssignmentDocument> result = this.groupAssignmentDocumentRepository.findByGroupAssignmentIds(List.of());
-
-        assertTrue(result.isEmpty());
-        verify(this.groupAssignmentDocumentJPARepository, never()).findByGroupAssignmentIdIn(any());
-    }
-
-    @Test
-    void findByGroupIds_shouldReturnMappedDocuments() {
-        final List<Integer> groupIds = List.of(50, 60);
-        final List<GroupAssignmentDocumentEntity> entities = List.of(
-                new GroupAssignmentDocumentEntity(2, 100, 50, "doc2.pdf", "Desc", true));
-        final List<GroupAssignmentDocument> expected = List.of(
-                GroupAssignmentDocument.builder().id(2).groupAssignmentId(100).groupId(50).document("doc2.pdf").groupDocument(true).build());
-
-        when(this.groupAssignmentDocumentJPARepository.findByGroupIdIn(groupIds)).thenReturn(entities);
-        when(this.groupAssignmentDocumentMapper.toModelList(entities)).thenReturn(expected);
-
-        final List<GroupAssignmentDocument> result = this.groupAssignmentDocumentRepository.findByGroupIds(groupIds);
-
-        assertEquals(1, result.size());
-        assertEquals(50, result.get(0).getGroupId());
-    }
-
-    @Test
-    void findByGroupIds_shouldReturnEmptyList_whenListIsNull() {
-        final List<GroupAssignmentDocument> result = this.groupAssignmentDocumentRepository.findByGroupIds(null);
-
-        assertTrue(result.isEmpty());
-        verify(this.groupAssignmentDocumentJPARepository, never()).findByGroupIdIn(any());
-    }
-
-    @Test
-    void findByGroupIds_shouldReturnEmptyList_whenListIsEmpty() {
-        final List<GroupAssignmentDocument> result = this.groupAssignmentDocumentRepository.findByGroupIds(List.of());
-
-        assertTrue(result.isEmpty());
-        verify(this.groupAssignmentDocumentJPARepository, never()).findByGroupIdIn(any());
+            assertThat(result).isEmpty();
+            verify(GroupAssignmentDocumentRepositoryImplTest.this.groupAssignmentDocumentJPARepository, never()).findByGroupIdIn(any());
+        }
     }
 }
 

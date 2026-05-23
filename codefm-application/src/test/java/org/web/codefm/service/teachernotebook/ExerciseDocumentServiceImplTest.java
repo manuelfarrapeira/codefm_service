@@ -1,10 +1,11 @@
 package org.web.codefm.service.teachernotebook;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -29,7 +30,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -50,7 +52,6 @@ class ExerciseDocumentServiceImplTest {
     @Mock
     private SessionUser sessionUser;
 
-    @InjectMocks
     private ExerciseDocumentServiceImpl exerciseDocumentService;
 
     @TempDir
@@ -61,397 +62,441 @@ class ExerciseDocumentServiceImplTest {
     private static final Integer DOCUMENT_ID = 200;
 
     @BeforeEach
-    void setUp() {
+    void beforeEach() {
+        exerciseDocumentService = new ExerciseDocumentServiceImpl(
+                exerciseDocumentRepository, exerciseRepository, messageSource, sessionUser);
         ReflectionTestUtils.setField(exerciseDocumentService, "documentsDirectory", tempDir.toString());
 
         when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
-
         when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
     }
 
-    @Test
-    void uploadDocument_shouldSaveDocumentAndFile_whenValid() throws IOException {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class UploadDocument {
 
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getBytes()).thenReturn("file content".getBytes());
-        when(file.getOriginalFilename()).thenReturn("document.pdf");
-        when(exerciseDocumentRepository.save(any(ExerciseDocument.class))).thenAnswer(invocation -> {
-            ExerciseDocument doc = invocation.getArgument(0);
-            return ExerciseDocument.builder().id(DOCUMENT_ID).exerciseId(doc.getExerciseId())
-                    .document(doc.getDocument()).description(doc.getDescription()).build();
-        });
+        @Test
+        void when_valid_expect_save_document_and_file() throws IOException {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
 
-        ExerciseDocument result = exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "Test description");
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getBytes()).thenReturn("file content".getBytes());
+            when(file.getOriginalFilename()).thenReturn("document.pdf");
+            when(exerciseDocumentRepository.save(any(ExerciseDocument.class))).thenAnswer(invocation -> {
+                ExerciseDocument doc = invocation.getArgument(0);
+                return ExerciseDocument.builder().id(DOCUMENT_ID).exerciseId(doc.getExerciseId())
+                        .document(doc.getDocument()).description(doc.getDescription()).build();
+            });
 
-        assertNotNull(result);
-        assertEquals(DOCUMENT_ID, result.getId());
-        assertEquals(EXERCISE_ID, result.getExerciseId());
-        assertTrue(result.getDocument().startsWith(EXERCISE_ID + "_document_"));
-        assertTrue(result.getDocument().endsWith(".pdf"));
-        verify(exerciseDocumentRepository).save(any(ExerciseDocument.class));
+            final ExerciseDocument result = exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "Test description");
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(DOCUMENT_ID);
+            assertThat(result.getExerciseId()).isEqualTo(EXERCISE_ID);
+            assertThat(result.getDocument()).startsWith(EXERCISE_ID + "_document_");
+            assertThat(result.getDocument()).endsWith(".pdf");
+            verify(exerciseDocumentRepository).save(any(ExerciseDocument.class));
+        }
+
+        @Test
+        void when_exercise_not_found_expect_throw_exercise_not_found_exception() {
+            final MultipartFile file = mock(MultipartFile.class);
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseNotFoundException.class);
+        }
+
+        @Test
+        void when_file_is_empty_expect_throw_upload_exception() throws IOException {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(file.isEmpty()).thenReturn(true);
+            when(file.getBytes()).thenReturn(new byte[0]);
+
+            final ThrowingCallable call = () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentUploadException.class);
+        }
+
+        @Test
+        void when_file_is_null_expect_throw_upload_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+
+            final ThrowingCallable call = () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, null, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentUploadException.class);
+        }
+
+        @Test
+        void when_file_size_exceeds_2mb_expect_throw_upload_exception() throws IOException {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
+            final byte[] largeContent = new byte[3 * 1024 * 1024];
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getBytes()).thenReturn(largeContent);
+            when(file.getOriginalFilename()).thenReturn("large.pdf");
+
+            final ThrowingCallable call = () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentUploadException.class);
+        }
+
+        @Test
+        void when_extension_not_allowed_expect_throw_upload_exception() throws IOException {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getBytes()).thenReturn("content".getBytes());
+            when(file.getOriginalFilename()).thenReturn("virus.exe");
+
+            final ThrowingCallable call = () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentUploadException.class);
+        }
+
+        @Test
+        void when_get_bytes_fails_expect_throw_upload_exception() throws IOException {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getBytes()).thenThrow(new IOException("Read error"));
+
+            final ThrowingCallable call = () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentUploadException.class);
+        }
+
+        @Test
+        void when_write_to_file_fails_expect_throw_upload_exception() throws IOException {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getBytes()).thenReturn("content".getBytes());
+            when(file.getOriginalFilename()).thenReturn("document.pdf");
+
+            ReflectionTestUtils.setField(exerciseDocumentService, "documentsDirectory", "/nonexistent/path/that/does/not/exist");
+
+            final ThrowingCallable call = () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentUploadException.class);
+
+            ReflectionTestUtils.setField(exerciseDocumentService, "documentsDirectory", tempDir.toString());
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowExerciseNotFoundException_whenExerciseNotFound() {
-        MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class DownloadDocument {
 
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+        @Test
+        void when_document_exists_expect_return_file_bytes() throws IOException {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final String filename = "100_test_abc12345.pdf";
+            final Path filePath = tempDir.resolve(filename);
+            Files.write(filePath, "pdf content".getBytes());
 
-        assertThrows(ExerciseNotFoundException.class,
-                () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc"));
+            final ExerciseDocument document = ExerciseDocument.builder()
+                    .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document(filename).build();
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            final byte[] result = exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThat(result).isNotNull();
+            assertThat(new String(result)).isEqualTo("pdf content");
+        }
+
+        @Test
+        void when_exercise_not_found_expect_throw_exercise_not_found_exception() {
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseNotFoundException.class);
+        }
+
+        @Test
+        void when_document_not_found_expect_throw_not_found_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentNotFoundException.class);
+        }
+
+        @Test
+        void when_document_belongs_to_different_exercise_expect_throw_not_found_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final ExerciseDocument document = ExerciseDocument.builder()
+                    .id(DOCUMENT_ID).exerciseId(999).document("file.pdf").build();
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            final ThrowingCallable call = () -> exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentNotFoundException.class);
+        }
+
+        @Test
+        void when_file_not_on_disk_expect_throw_not_found_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final ExerciseDocument document = ExerciseDocument.builder()
+                    .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("nonexistent.pdf").build();
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            final ThrowingCallable call = () -> exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentNotFoundException.class);
+        }
+
+        @Test
+        void when_read_all_bytes_fails_expect_throw_not_found_exception() throws IOException {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final String dirName = "fake_file_dir";
+            final Path dirPath = tempDir.resolve(dirName);
+            Files.createDirectory(dirPath);
+
+            final ExerciseDocument document = ExerciseDocument.builder()
+                    .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document(dirName).build();
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            final ThrowingCallable call = () -> exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentNotFoundException.class);
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenFileIsEmpty() throws IOException {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class GetDocumentFilename {
 
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(file.isEmpty()).thenReturn(true);
-        when(file.getBytes()).thenReturn(new byte[0]);
+        @Test
+        void when_document_exists_expect_return_filename() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final ExerciseDocument document = ExerciseDocument.builder()
+                    .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("100_test_abc12345.pdf").build();
 
-        assertThrows(ExerciseDocumentUploadException.class,
-                () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc"));
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            final String result = exerciseDocumentService.getDocumentFilename(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThat(result).isEqualTo("100_test_abc12345.pdf");
+        }
+
+        @Test
+        void when_exercise_not_found_expect_throw_exercise_not_found_exception() {
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseDocumentService.getDocumentFilename(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseNotFoundException.class);
+        }
+
+        @Test
+        void when_document_not_found_expect_throw_not_found_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseDocumentService.getDocumentFilename(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentNotFoundException.class);
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenFileIsNull() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+    @Nested
+    class UpdateDescription {
 
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+        @Test
+        void when_valid_expect_update_and_return() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final ExerciseDocument document = ExerciseDocument.builder()
+                    .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("file.pdf").description("Old").build();
+            final ExerciseDocument updatedDocument = ExerciseDocument.builder()
+                    .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("file.pdf").description("New description").build();
 
-        assertThrows(ExerciseDocumentUploadException.class,
-                () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, null, "desc"));
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+            when(exerciseDocumentRepository.update(any(ExerciseDocument.class))).thenReturn(updatedDocument);
+
+            final ExerciseDocument result = exerciseDocumentService.updateDescription(EXERCISE_ID, DOCUMENT_ID, "New description");
+
+            assertThat(result).isNotNull();
+            assertThat(result.getDescription()).isEqualTo("New description");
+            verify(exerciseDocumentRepository).update(any(ExerciseDocument.class));
+        }
+
+        @Test
+        void when_exercise_not_found_expect_throw_exercise_not_found_exception() {
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseDocumentService.updateDescription(EXERCISE_ID, DOCUMENT_ID, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseNotFoundException.class);
+        }
+
+        @Test
+        void when_document_not_found_expect_throw_not_found_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseDocumentService.updateDescription(EXERCISE_ID, DOCUMENT_ID, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentNotFoundException.class);
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenFileSizeExceeds2MB() throws IOException {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        MultipartFile file = mock(MultipartFile.class);
-        byte[] largeContent = new byte[3 * 1024 * 1024];
+    @Nested
+    class DeleteDocument {
 
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getBytes()).thenReturn(largeContent);
-        when(file.getOriginalFilename()).thenReturn("large.pdf");
+        @Test
+        void when_valid_expect_delete_record_and_file() throws IOException {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final String filename = "100_test_abc12345.pdf";
+            final Path filePath = tempDir.resolve(filename);
+            Files.write(filePath, "content".getBytes());
 
-        assertThrows(ExerciseDocumentUploadException.class,
-                () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc"));
+            final ExerciseDocument document = ExerciseDocument.builder()
+                    .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document(filename).build();
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            exerciseDocumentService.deleteDocument(EXERCISE_ID, DOCUMENT_ID);
+
+            verify(exerciseDocumentRepository).deleteById(DOCUMENT_ID);
+            assertThat(filePath).doesNotExist();
+        }
+
+        @Test
+        void when_exercise_not_found_expect_throw_exercise_not_found_exception() {
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseDocumentService.deleteDocument(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseNotFoundException.class);
+        }
+
+        @Test
+        void when_document_not_found_expect_throw_not_found_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseDocumentService.deleteDocument(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentNotFoundException.class);
+        }
+
+        @Test
+        void when_delete_file_from_disk_fails_expect_throw_exception() throws IOException {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
+            final String dirName = "undeletable_dir";
+            final Path dirPath = tempDir.resolve(dirName);
+            Files.createDirectory(dirPath);
+            Files.write(dirPath.resolve("child.txt"), "block delete".getBytes());
+
+            final ExerciseDocument document = ExerciseDocument.builder()
+                    .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document(dirName).build();
+
+            when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            final ThrowingCallable call = () -> exerciseDocumentService.deleteDocument(EXERCISE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseDocumentUploadException.class);
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenExtensionNotAllowed() throws IOException {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class DeleteDocumentsByExerciseId {
 
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getBytes()).thenReturn("content".getBytes());
-        when(file.getOriginalFilename()).thenReturn("virus.exe");
+        @Test
+        void when_documents_exist_expect_delete_all_documents_and_files() throws IOException {
+            final String filename1 = "100_doc1_abc12345.pdf";
+            final String filename2 = "100_doc2_def67890.png";
+            Files.write(tempDir.resolve(filename1), "content1".getBytes());
+            Files.write(tempDir.resolve(filename2), "content2".getBytes());
 
-        assertThrows(ExerciseDocumentUploadException.class,
-                () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc"));
+            final List<ExerciseDocument> documents = List.of(
+                    ExerciseDocument.builder().id(1).exerciseId(EXERCISE_ID).document(filename1).build(),
+                    ExerciseDocument.builder().id(2).exerciseId(EXERCISE_ID).document(filename2).build()
+            );
+
+            when(exerciseDocumentRepository.findByExerciseId(EXERCISE_ID)).thenReturn(documents);
+
+            exerciseDocumentService.deleteDocumentsByExerciseId(EXERCISE_ID);
+
+            verify(exerciseDocumentRepository).deleteByExerciseId(EXERCISE_ID);
+            assertThat(tempDir.resolve(filename1)).doesNotExist();
+            assertThat(tempDir.resolve(filename2)).doesNotExist();
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenGetBytesFails() throws IOException {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        MultipartFile file = mock(MultipartFile.class);
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getBytes()).thenThrow(new IOException("Read error"));
-
-        assertThrows(ExerciseDocumentUploadException.class,
-                () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc"));
-    }
-
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenWriteToFileFails() throws IOException {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        MultipartFile file = mock(MultipartFile.class);
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getBytes()).thenReturn("content".getBytes());
-        when(file.getOriginalFilename()).thenReturn("document.pdf");
-
-        ReflectionTestUtils.setField(exerciseDocumentService, "documentsDirectory", "/nonexistent/path/that/does/not/exist");
-
-        assertThrows(ExerciseDocumentUploadException.class,
-                () -> exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc"));
-
-        ReflectionTestUtils.setField(exerciseDocumentService, "documentsDirectory", tempDir.toString());
-    }
-
-    @Test
-    void downloadDocument_shouldReturnFileBytes_whenDocumentExists() throws IOException {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        String filename = "100_test_abc12345.pdf";
-        Path filePath = tempDir.resolve(filename);
-        Files.write(filePath, "pdf content".getBytes());
-
-        ExerciseDocument document = ExerciseDocument.builder()
-                .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document(filename).build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        byte[] result = exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID);
-
-        assertNotNull(result);
-        assertEquals("pdf content", new String(result));
-    }
-
-    @Test
-    void downloadDocument_shouldThrowNotFoundException_whenExerciseNotFound() {
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseNotFoundException.class,
-                () -> exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void downloadDocument_shouldThrowNotFoundException_whenDocumentNotFound() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseDocumentNotFoundException.class,
-                () -> exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void downloadDocument_shouldThrowNotFoundException_whenDocumentBelongsToDifferentExercise() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        ExerciseDocument document = ExerciseDocument.builder()
-                .id(DOCUMENT_ID).exerciseId(999).document("file.pdf").build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        assertThrows(ExerciseDocumentNotFoundException.class,
-                () -> exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void downloadDocument_shouldThrowNotFoundException_whenFileNotOnDisk() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        ExerciseDocument document = ExerciseDocument.builder()
-                .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("nonexistent.pdf").build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        assertThrows(ExerciseDocumentNotFoundException.class,
-                () -> exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void downloadDocument_shouldThrowNotFoundException_whenReadAllBytesFails() throws IOException {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        String dirName = "fake_file_dir";
-        Path dirPath = tempDir.resolve(dirName);
-        Files.createDirectory(dirPath);
-
-        ExerciseDocument document = ExerciseDocument.builder()
-                .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document(dirName).build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        assertThrows(ExerciseDocumentNotFoundException.class,
-                () -> exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void getDocumentFilename_shouldReturnFilename_whenDocumentExists() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        ExerciseDocument document = ExerciseDocument.builder()
-                .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("100_test_abc12345.pdf").build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        String result = exerciseDocumentService.getDocumentFilename(EXERCISE_ID, DOCUMENT_ID);
-
-        assertEquals("100_test_abc12345.pdf", result);
-    }
-
-    @Test
-    void getDocumentFilename_shouldThrowNotFoundException_whenExerciseNotFound() {
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseNotFoundException.class,
-                () -> exerciseDocumentService.getDocumentFilename(EXERCISE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void getDocumentFilename_shouldThrowNotFoundException_whenDocumentNotFound() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseDocumentNotFoundException.class,
-                () -> exerciseDocumentService.getDocumentFilename(EXERCISE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void updateDescription_shouldUpdateAndReturn_whenValid() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        ExerciseDocument document = ExerciseDocument.builder()
-                .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("file.pdf").description("Old").build();
-        ExerciseDocument updatedDocument = ExerciseDocument.builder()
-                .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("file.pdf").description("New description").build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-        when(exerciseDocumentRepository.update(any(ExerciseDocument.class))).thenReturn(updatedDocument);
-
-        ExerciseDocument result = exerciseDocumentService.updateDescription(EXERCISE_ID, DOCUMENT_ID, "New description");
-
-        assertNotNull(result);
-        assertEquals("New description", result.getDescription());
-        verify(exerciseDocumentRepository).update(any(ExerciseDocument.class));
-    }
-
-    @Test
-    void updateDescription_shouldThrowNotFoundException_whenExerciseNotFound() {
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseNotFoundException.class,
-                () -> exerciseDocumentService.updateDescription(EXERCISE_ID, DOCUMENT_ID, "desc"));
-    }
-
-    @Test
-    void updateDescription_shouldThrowNotFoundException_whenDocumentNotFound() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseDocumentNotFoundException.class,
-                () -> exerciseDocumentService.updateDescription(EXERCISE_ID, DOCUMENT_ID, "desc"));
-    }
-
-    @Test
-    void deleteDocument_shouldDeleteRecordAndFile_whenValid() throws IOException {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        String filename = "100_test_abc12345.pdf";
-        Path filePath = tempDir.resolve(filename);
-        Files.write(filePath, "content".getBytes());
-
-        ExerciseDocument document = ExerciseDocument.builder()
-                .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document(filename).build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        exerciseDocumentService.deleteDocument(EXERCISE_ID, DOCUMENT_ID);
-
-        verify(exerciseDocumentRepository).deleteById(DOCUMENT_ID);
-        assertFalse(Files.exists(filePath));
-    }
-
-    @Test
-    void deleteDocument_shouldThrowNotFoundException_whenExerciseNotFound() {
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseNotFoundException.class,
-                () -> exerciseDocumentService.deleteDocument(EXERCISE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void deleteDocument_shouldThrowNotFoundException_whenDocumentNotFound() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseDocumentNotFoundException.class,
-                () -> exerciseDocumentService.deleteDocument(EXERCISE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void deleteDocument_shouldThrowException_whenDeleteFileFromDiskFails() throws IOException {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).build();
-        String dirName = "undeletable_dir";
-        Path dirPath = tempDir.resolve(dirName);
-        Files.createDirectory(dirPath);
-        Files.write(dirPath.resolve("child.txt"), "block delete".getBytes());
-
-        ExerciseDocument document = ExerciseDocument.builder()
-                .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document(dirName).build();
-
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(exerciseDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        assertThrows(ExerciseDocumentUploadException.class,
-                () -> exerciseDocumentService.deleteDocument(EXERCISE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void deleteDocumentsByExerciseId_shouldDeleteAllDocumentsAndFiles() throws IOException {
-        String filename1 = "100_doc1_abc12345.pdf";
-        String filename2 = "100_doc2_def67890.png";
-        Files.write(tempDir.resolve(filename1), "content1".getBytes());
-        Files.write(tempDir.resolve(filename2), "content2".getBytes());
-
-        List<ExerciseDocument> documents = List.of(
-                ExerciseDocument.builder().id(1).exerciseId(EXERCISE_ID).document(filename1).build(),
-                ExerciseDocument.builder().id(2).exerciseId(EXERCISE_ID).document(filename2).build()
-        );
-
-        when(exerciseDocumentRepository.findByExerciseId(EXERCISE_ID)).thenReturn(documents);
-
-        exerciseDocumentService.deleteDocumentsByExerciseId(EXERCISE_ID);
-
-        verify(exerciseDocumentRepository).deleteByExerciseId(EXERCISE_ID);
-        assertFalse(Files.exists(tempDir.resolve(filename1)));
-        assertFalse(Files.exists(tempDir.resolve(filename2)));
-    }
-
-    @Test
-    void deleteDocumentsByExerciseIds_shouldDeleteAllDocumentsAndFiles() throws IOException {
-        String filename1 = "100_doc1_abc12345.pdf";
-        String filename2 = "101_doc2_def67890.png";
-        Files.write(tempDir.resolve(filename1), "content1".getBytes());
-        Files.write(tempDir.resolve(filename2), "content2".getBytes());
-
-        List<Integer> exerciseIds = List.of(100, 101);
-        List<ExerciseDocument> documents = List.of(
-                ExerciseDocument.builder().id(1).exerciseId(100).document(filename1).build(),
-                ExerciseDocument.builder().id(2).exerciseId(101).document(filename2).build()
-        );
-
-        when(exerciseDocumentRepository.findByExerciseIds(exerciseIds)).thenReturn(documents);
-
-        exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
-
-        verify(exerciseDocumentRepository).deleteByExerciseIds(exerciseIds);
-        assertFalse(Files.exists(tempDir.resolve(filename1)));
-        assertFalse(Files.exists(tempDir.resolve(filename2)));
-    }
-
-    @Test
-    void deleteDocumentsByExerciseIds_shouldDoNothing_whenListIsNull() {
-        exerciseDocumentService.deleteDocumentsByExerciseIds(null);
-
-        verify(exerciseDocumentRepository, never()).deleteByExerciseIds(any());
-    }
-
-    @Test
-    void deleteDocumentsByExerciseIds_shouldDoNothing_whenListIsEmpty() {
-        exerciseDocumentService.deleteDocumentsByExerciseIds(List.of());
-
-        verify(exerciseDocumentRepository, never()).deleteByExerciseIds(any());
+    @Nested
+    class DeleteDocumentsByExerciseIds {
+
+        @Test
+        void when_documents_exist_expect_delete_all_documents_and_files() throws IOException {
+            final String filename1 = "100_doc1_abc12345.pdf";
+            final String filename2 = "101_doc2_def67890.png";
+            Files.write(tempDir.resolve(filename1), "content1".getBytes());
+            Files.write(tempDir.resolve(filename2), "content2".getBytes());
+
+            final List<Integer> exerciseIds = List.of(100, 101);
+            final List<ExerciseDocument> documents = List.of(
+                    ExerciseDocument.builder().id(1).exerciseId(100).document(filename1).build(),
+                    ExerciseDocument.builder().id(2).exerciseId(101).document(filename2).build()
+            );
+
+            when(exerciseDocumentRepository.findByExerciseIds(exerciseIds)).thenReturn(documents);
+
+            exerciseDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
+
+            verify(exerciseDocumentRepository).deleteByExerciseIds(exerciseIds);
+            assertThat(tempDir.resolve(filename1)).doesNotExist();
+            assertThat(tempDir.resolve(filename2)).doesNotExist();
+        }
+
+        @Test
+        void when_list_is_null_expect_do_nothing() {
+            exerciseDocumentService.deleteDocumentsByExerciseIds(null);
+
+            verifyNoInteractions(exerciseDocumentRepository);
+        }
+
+        @Test
+        void when_list_is_empty_expect_do_nothing() {
+            exerciseDocumentService.deleteDocumentsByExerciseIds(List.of());
+
+            verifyNoInteractions(exerciseDocumentRepository);
+        }
     }
 }
-
-

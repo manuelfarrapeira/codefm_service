@@ -1,89 +1,109 @@
 package org.web.codefm.usecase.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseDocument;
 import org.web.codefm.domain.service.teachernotebook.ExerciseDocumentService;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ExerciseDocumentUseCaseImplTest {
 
+    private ExerciseDocumentUseCaseImpl exerciseDocumentUseCase;
+
     @Mock
     private ExerciseDocumentService exerciseDocumentService;
-
-    @InjectMocks
-    private ExerciseDocumentUseCaseImpl exerciseDocumentUseCase;
 
     private static final Integer EXERCISE_ID = 100;
     private static final Integer DOCUMENT_ID = 200;
 
-    @Test
-    void uploadDocument_shouldDelegateToService() {
-        MultipartFile file = mock(MultipartFile.class);
-        ExerciseDocument expected = ExerciseDocument.builder()
-                .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("file.pdf").build();
-
-        when(exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc")).thenReturn(expected);
-
-        ExerciseDocument result = exerciseDocumentUseCase.uploadDocument(EXERCISE_ID, file, "desc");
-
-        assertNotNull(result);
-        assertEquals(DOCUMENT_ID, result.getId());
-        verify(exerciseDocumentService).uploadDocument(EXERCISE_ID, file, "desc");
+    @BeforeEach
+    void beforeEach() {
+        exerciseDocumentUseCase = new ExerciseDocumentUseCaseImpl(exerciseDocumentService);
     }
 
-    @Test
-    void downloadDocument_shouldDelegateToService() {
-        byte[] expectedBytes = "content".getBytes();
+    @Nested
+    class UploadDocument {
 
-        when(exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID)).thenReturn(expectedBytes);
+        @Test
+        void when_uploading_document_expect_delegated_to_service() {
+            final MultipartFile file = mock(MultipartFile.class);
+            final ExerciseDocument expected = ExerciseDocument.builder()
+                    .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("file.pdf").build();
+            when(exerciseDocumentService.uploadDocument(EXERCISE_ID, file, "desc")).thenReturn(expected);
 
-        byte[] result = exerciseDocumentUseCase.downloadDocument(EXERCISE_ID, DOCUMENT_ID);
+            final ExerciseDocument result = exerciseDocumentUseCase.uploadDocument(EXERCISE_ID, file, "desc");
 
-        assertNotNull(result);
-        assertEquals(expectedBytes.length, result.length);
-        verify(exerciseDocumentService).downloadDocument(EXERCISE_ID, DOCUMENT_ID);
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(DOCUMENT_ID);
+            verify(exerciseDocumentService).uploadDocument(EXERCISE_ID, file, "desc");
+        }
     }
 
-    @Test
-    void getDocumentFilename_shouldDelegateToService() {
-        String expectedFilename = "100_test_abc12345.pdf";
+    @Nested
+    class DownloadDocument {
 
-        when(exerciseDocumentService.getDocumentFilename(EXERCISE_ID, DOCUMENT_ID)).thenReturn(expectedFilename);
+        @Test
+        void when_downloading_document_expect_delegated_to_service() {
+            final byte[] expectedBytes = "content".getBytes();
+            when(exerciseDocumentService.downloadDocument(EXERCISE_ID, DOCUMENT_ID)).thenReturn(expectedBytes);
 
-        String result = exerciseDocumentUseCase.getDocumentFilename(EXERCISE_ID, DOCUMENT_ID);
+            final byte[] result = exerciseDocumentUseCase.downloadDocument(EXERCISE_ID, DOCUMENT_ID);
 
-        assertEquals(expectedFilename, result);
-        verify(exerciseDocumentService).getDocumentFilename(EXERCISE_ID, DOCUMENT_ID);
+            assertThat(result).isNotNull();
+            assertThat(result.length).isEqualTo(expectedBytes.length);
+            verify(exerciseDocumentService).downloadDocument(EXERCISE_ID, DOCUMENT_ID);
+        }
     }
 
-    @Test
-    void updateDescription_shouldDelegateToService() {
-        ExerciseDocument expected = ExerciseDocument.builder()
-                .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("file.pdf").description("Updated").build();
+    @Nested
+    class GetDocumentFilename {
 
-        when(exerciseDocumentService.updateDescription(EXERCISE_ID, DOCUMENT_ID, "Updated")).thenReturn(expected);
+        @Test
+        void when_getting_filename_expect_delegated_to_service() {
+            final String expectedFilename = "100_test_abc12345.pdf";
+            when(exerciseDocumentService.getDocumentFilename(EXERCISE_ID, DOCUMENT_ID)).thenReturn(expectedFilename);
 
-        ExerciseDocument result = exerciseDocumentUseCase.updateDescription(EXERCISE_ID, DOCUMENT_ID, "Updated");
+            final String result = exerciseDocumentUseCase.getDocumentFilename(EXERCISE_ID, DOCUMENT_ID);
 
-        assertNotNull(result);
-        assertEquals("Updated", result.getDescription());
-        verify(exerciseDocumentService).updateDescription(EXERCISE_ID, DOCUMENT_ID, "Updated");
+            assertThat(result).isEqualTo(expectedFilename);
+            verify(exerciseDocumentService).getDocumentFilename(EXERCISE_ID, DOCUMENT_ID);
+        }
     }
 
-    @Test
-    void deleteDocument_shouldDelegateToService() {
-        exerciseDocumentUseCase.deleteDocument(EXERCISE_ID, DOCUMENT_ID);
+    @Nested
+    class UpdateDescription {
 
-        verify(exerciseDocumentService).deleteDocument(EXERCISE_ID, DOCUMENT_ID);
+        @Test
+        void when_updating_description_expect_delegated_to_service() {
+            final ExerciseDocument expected = ExerciseDocument.builder()
+                    .id(DOCUMENT_ID).exerciseId(EXERCISE_ID).document("file.pdf").description("Updated").build();
+            when(exerciseDocumentService.updateDescription(EXERCISE_ID, DOCUMENT_ID, "Updated")).thenReturn(expected);
+
+            final ExerciseDocument result = exerciseDocumentUseCase.updateDescription(EXERCISE_ID, DOCUMENT_ID, "Updated");
+
+            assertThat(result).isNotNull();
+            assertThat(result.getDescription()).isEqualTo("Updated");
+            verify(exerciseDocumentService).updateDescription(EXERCISE_ID, DOCUMENT_ID, "Updated");
+        }
+    }
+
+    @Nested
+    class DeleteDocument {
+
+        @Test
+        void when_deleting_document_expect_delegated_to_service() {
+            exerciseDocumentUseCase.deleteDocument(EXERCISE_ID, DOCUMENT_ID);
+
+            verify(exerciseDocumentService).deleteDocument(EXERCISE_ID, DOCUMENT_ID);
+        }
     }
 }
 

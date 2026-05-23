@@ -1,8 +1,13 @@
 package org.web.codefm.api.mapper;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -10,7 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.MessageSource;
-import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.Student;
 import org.web.codefm.domain.exception.teachernotebook.StudentValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
@@ -20,7 +24,8 @@ import org.web.codefm.model.StudentRequestDTO;
 import java.time.LocalDate;
 import java.util.Locale;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -40,162 +45,68 @@ class StudentRequestMapperTest {
     private SessionUser sessionUser;
 
     @BeforeEach
-    void setUp() {
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
-        when(messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_DATE_FORMAT_INVALID), eq(null), any(Locale.class)))
+    void beforeEach() {
+        when(this.sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(this.messageSource.getMessage(eq(MessageKeys.STUDENT_VALIDATION_DATE_FORMAT_INVALID), eq(null), any(Locale.class)))
                 .thenReturn("Date of birth must be in format dd/MM/yyyy.");
     }
 
-    @Test
-    void toDomain_shouldMapCorrectly_whenDateIsValid() {
-        // Given
-        StudentRequestDTO dto = new StudentRequestDTO();
-        dto.setName("Juan");
-        dto.setSurnames("García López");
-        dto.setDateOfBirth("15/03/2010");
-        dto.setAdditionalInfo("Test info");
-        dto.setShape("CIRCLE");
+    @Nested
+    class ToDomain {
 
-        // When
-        Student result = mapper.toDomain(dto);
+        @Test
+        void when_date_is_valid_expect_mapped_student() {
+            final StudentRequestDTO dto = new StudentRequestDTO();
+            dto.setName("Juan");
+            dto.setSurnames("García López");
+            dto.setDateOfBirth("15/03/2010");
+            dto.setAdditionalInfo("Test info");
+            dto.setShape("CIRCLE");
 
-        // Then
-        assertNotNull(result);
-        assertEquals("Juan", result.getName());
-        assertEquals("García López", result.getSurnames());
-        assertEquals(LocalDate.of(2010, 3, 15), result.getDateOfBirth());
-        assertEquals("Test info", result.getAdditionalInfo());
-        assertEquals("CIRCLE", result.getShape());
-        assertNull(result.getId());
-        assertNull(result.getPhoto());
-        assertNull(result.getDeletionDate());
-    }
+            final Student result = StudentRequestMapperTest.this.mapper.toDomain(dto);
 
-    @Test
-    void toDomain_shouldMapCorrectly_whenDateIsNull() {
-        // Given
-        StudentRequestDTO dto = new StudentRequestDTO();
-        dto.setName("Juan");
-        dto.setSurnames("García López");
-        dto.setDateOfBirth(null);
+            assertThat(result).isNotNull();
+            assertThat(result.getName()).isEqualTo("Juan");
+            assertThat(result.getSurnames()).isEqualTo("García López");
+            assertThat(result.getDateOfBirth()).isEqualTo(LocalDate.of(2010, 3, 15));
+            assertThat(result.getAdditionalInfo()).isEqualTo("Test info");
+            assertThat(result.getShape()).isEqualTo("CIRCLE");
+            assertThat(result.getId()).isNull();
+            assertThat(result.getPhoto()).isNull();
+            assertThat(result.getDeletionDate()).isNull();
+        }
 
-        // When
-        Student result = mapper.toDomain(dto);
+        @ParameterizedTest
+        @NullAndEmptySource
+        void when_date_is_null_or_empty_expect_null_date(final String dateOfBirth) {
+            final StudentRequestDTO dto = new StudentRequestDTO();
+            dto.setName("Juan");
+            dto.setSurnames("García López");
+            dto.setDateOfBirth(dateOfBirth);
 
-        // Then
-        assertNotNull(result);
-        assertEquals("Juan", result.getName());
-        assertEquals("García López", result.getSurnames());
-        assertNull(result.getDateOfBirth());
-    }
+            final Student result = StudentRequestMapperTest.this.mapper.toDomain(dto);
 
-    @Test
-    void toDomain_shouldMapCorrectly_whenDateIsEmpty() {
-        // Given
-        StudentRequestDTO dto = new StudentRequestDTO();
-        dto.setName("Juan");
-        dto.setSurnames("García López");
-        dto.setDateOfBirth("");
+            assertThat(result).isNotNull();
+            assertThat(result.getName()).isEqualTo("Juan");
+            assertThat(result.getSurnames()).isEqualTo("García López");
+            assertThat(result.getDateOfBirth()).isNull();
+        }
 
-        // When
-        Student result = mapper.toDomain(dto);
+        @ParameterizedTest
+        @ValueSource(strings = {"15-03-2010", "2010/03/15", "invalid-date", "32/03/2010", "15/13/2010"})
+        void when_date_is_invalid_expect_validation_exception(final String invalidDate) {
+            final StudentRequestDTO dto = new StudentRequestDTO();
+            dto.setName("Juan");
+            dto.setSurnames("García López");
+            dto.setDateOfBirth(invalidDate);
+            final ThrowingCallable action = () -> StudentRequestMapperTest.this.mapper.toDomain(dto);
 
-        // Then
-        assertNotNull(result);
-        assertEquals("Juan", result.getName());
-        assertEquals("García López", result.getSurnames());
-        assertNull(result.getDateOfBirth());
-    }
-
-    @Test
-    void toDomain_shouldThrowValidationException_whenDateFormatIsInvalid() {
-        // Given
-        StudentRequestDTO dto = new StudentRequestDTO();
-        dto.setName("Juan");
-        dto.setSurnames("García López");
-        dto.setDateOfBirth("15-03-2010"); // Wrong format
-
-        // When & Then
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            mapper.toDomain(dto);
-        });
-
-        assertNotNull(exception);
-        assertFalse(exception.getErrors().isEmpty());
-        ErrorMessage error = exception.getErrors().get(0);
-        assertEquals("dateOfBirth", error.getParam());
-    }
-
-    @Test
-    void toDomain_shouldThrowValidationException_whenDateFormatIsInvalid_withSlashes() {
-        // Given
-        StudentRequestDTO dto = new StudentRequestDTO();
-        dto.setName("Juan");
-        dto.setSurnames("García López");
-        dto.setDateOfBirth("2010/03/15"); // Wrong format (year first)
-
-        // When & Then
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            mapper.toDomain(dto);
-        });
-
-        assertNotNull(exception);
-        assertFalse(exception.getErrors().isEmpty());
-        ErrorMessage error = exception.getErrors().get(0);
-        assertEquals("dateOfBirth", error.getParam());
-    }
-
-    @Test
-    void toDomain_shouldThrowValidationException_whenDateIsInvalidText() {
-        // Given
-        StudentRequestDTO dto = new StudentRequestDTO();
-        dto.setName("Juan");
-        dto.setSurnames("García López");
-        dto.setDateOfBirth("invalid-date");
-
-        // When & Then
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            mapper.toDomain(dto);
-        });
-
-        assertNotNull(exception);
-        assertFalse(exception.getErrors().isEmpty());
-        ErrorMessage error = exception.getErrors().get(0);
-        assertEquals("dateOfBirth", error.getParam());
-    }
-
-    @Test
-    void toDomain_shouldThrowValidationException_whenDateHasInvalidDay() {
-        // Given
-        StudentRequestDTO dto = new StudentRequestDTO();
-        dto.setName("Juan");
-        dto.setSurnames("García López");
-        dto.setDateOfBirth("32/03/2010"); // Day 32 doesn't exist
-
-        // When & Then
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            mapper.toDomain(dto);
-        });
-
-        assertNotNull(exception);
-        assertFalse(exception.getErrors().isEmpty());
-    }
-
-    @Test
-    void toDomain_shouldThrowValidationException_whenDateHasInvalidMonth() {
-        // Given
-        StudentRequestDTO dto = new StudentRequestDTO();
-        dto.setName("Juan");
-        dto.setSurnames("García López");
-        dto.setDateOfBirth("15/13/2010"); // Month 13 doesn't exist
-
-        // When & Then
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            mapper.toDomain(dto);
-        });
-
-        assertNotNull(exception);
-        assertFalse(exception.getErrors().isEmpty());
+            assertThatThrownBy(action)
+                    .isInstanceOf(StudentValidationException.class)
+                    .satisfies(throwable -> assertThat(((StudentValidationException) throwable).getErrors())
+                            .isNotEmpty()
+                            .first()
+                            .satisfies(error -> assertThat(error.getParam()).isEqualTo("dateOfBirth")));
+        }
     }
 }
-

@@ -1,8 +1,9 @@
 package org.web.codefm.usecase.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.ClassRubric;
@@ -13,21 +14,19 @@ import org.web.codefm.domain.service.teachernotebook.ClassRubricService;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ClassRubricUseCaseImplTest {
+
+    private ClassRubricUseCaseImpl classRubricUseCase;
 
     @Mock
     private ClassRubricService classRubricService;
 
     @Mock
     private CascadeSoftDeleteService cascadeSoftDeleteService;
-
-    @InjectMocks
-    private ClassRubricUseCaseImpl classRubricUseCase;
 
     private static final Integer CLASS_ID = 10;
     private static final Integer RUBRIC_ID = 20;
@@ -36,100 +35,133 @@ class ClassRubricUseCaseImplTest {
     private static final Integer CRITERION_ID = 50;
     private static final Integer CRITERIA_ID = 70;
 
-    @Test
-    void getRubricsByClassId_shouldDelegateToService() {
-        final List<ClassRubric> expected = List.of(
-                ClassRubric.builder().id(CLASS_RUBRIC_ID).classId(CLASS_ID).rubricId(RUBRIC_ID).build());
-        when(this.classRubricService.getRubricsByClassId(CLASS_ID)).thenReturn(expected);
-
-        final List<ClassRubric> result = this.classRubricUseCase.getRubricsByClassId(CLASS_ID);
-
-        assertEquals(1, result.size());
-        verify(this.classRubricService).getRubricsByClassId(CLASS_ID);
+    @BeforeEach
+    void beforeEach() {
+        classRubricUseCase = new ClassRubricUseCaseImpl(classRubricService, cascadeSoftDeleteService);
     }
 
-    @Test
-    void assignRubricToClass_shouldDelegateToService() {
-        final ClassRubric expected = ClassRubric.builder().id(CLASS_RUBRIC_ID).classId(CLASS_ID).rubricId(RUBRIC_ID).build();
-        when(this.classRubricService.assignRubricToClass(CLASS_ID, RUBRIC_ID)).thenReturn(expected);
+    @Nested
+    class GetRubricsByClassId {
 
-        final ClassRubric result = this.classRubricUseCase.assignRubricToClass(CLASS_ID, RUBRIC_ID);
+        @Test
+        void when_rubrics_found_expect_delegated_to_service() {
+            final List<ClassRubric> expected = List.of(
+                    ClassRubric.builder().id(CLASS_RUBRIC_ID).classId(CLASS_ID).rubricId(RUBRIC_ID).build());
+            when(classRubricService.getRubricsByClassId(CLASS_ID)).thenReturn(expected);
 
-        assertNotNull(result);
-        assertEquals(CLASS_RUBRIC_ID, result.getId());
-        verify(this.classRubricService).assignRubricToClass(CLASS_ID, RUBRIC_ID);
+            final List<ClassRubric> result = classRubricUseCase.getRubricsByClassId(CLASS_ID);
+
+            assertThat(result).hasSize(1);
+            verify(classRubricService).getRubricsByClassId(CLASS_ID);
+        }
     }
 
-    @Test
-    void removeRubricFromClass_shouldCallCascadeBeforeService() {
-        doNothing().when(this.cascadeSoftDeleteService).cascadeDeleteChildrenOfClassRubric(CLASS_RUBRIC_ID);
-        doNothing().when(this.classRubricService).removeRubricFromClass(CLASS_RUBRIC_ID);
+    @Nested
+    class AssignRubricToClass {
 
-        this.classRubricUseCase.removeRubricFromClass(CLASS_RUBRIC_ID);
+        @Test
+        void when_assigning_rubric_expect_delegated_to_service() {
+            final ClassRubric expected = ClassRubric.builder().id(CLASS_RUBRIC_ID).classId(CLASS_ID).rubricId(RUBRIC_ID).build();
+            when(classRubricService.assignRubricToClass(CLASS_ID, RUBRIC_ID)).thenReturn(expected);
 
-        final var order = inOrder(this.cascadeSoftDeleteService, this.classRubricService);
-        order.verify(this.cascadeSoftDeleteService).cascadeDeleteChildrenOfClassRubric(CLASS_RUBRIC_ID);
-        order.verify(this.classRubricService).removeRubricFromClass(CLASS_RUBRIC_ID);
+            final ClassRubric result = classRubricUseCase.assignRubricToClass(CLASS_ID, RUBRIC_ID);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(CLASS_RUBRIC_ID);
+            verify(classRubricService).assignRubricToClass(CLASS_ID, RUBRIC_ID);
+        }
     }
 
-    @Test
-    void getAllStudentCriteriaByClassId_shouldDelegateToService() {
-        final List<StudentCriteriaGroup> expected = List.of(
-                StudentCriteriaGroup.builder().studentId(STUDENT_ID).studentName("Juan").studentSurnames("Garcia").rubricCriteria(List.of()).build());
-        when(this.classRubricService.getAllStudentCriteriaByClassId(CLASS_ID)).thenReturn(expected);
+    @Nested
+    class RemoveRubricFromClass {
 
-        final List<StudentCriteriaGroup> result = this.classRubricUseCase.getAllStudentCriteriaByClassId(CLASS_ID);
+        @Test
+        void when_removing_rubric_expect_cascade_before_service() {
+            doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfClassRubric(CLASS_RUBRIC_ID);
+            doNothing().when(classRubricService).removeRubricFromClass(CLASS_RUBRIC_ID);
 
-        assertEquals(1, result.size());
-        verify(this.classRubricService).getAllStudentCriteriaByClassId(CLASS_ID);
+            classRubricUseCase.removeRubricFromClass(CLASS_RUBRIC_ID);
+
+            final var order = inOrder(cascadeSoftDeleteService, classRubricService);
+            order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfClassRubric(CLASS_RUBRIC_ID);
+            order.verify(classRubricService).removeRubricFromClass(CLASS_RUBRIC_ID);
+        }
     }
 
-    @Test
-    void getStudentCriteriaByClassAndStudent_shouldDelegateToService() {
-        when(this.classRubricService.getStudentCriteriaByClassAndStudent(CLASS_ID, STUDENT_ID))
-                .thenReturn(List.of());
+    @Nested
+    class GetAllStudentCriteriaByClassId {
 
-        final List<StudentCriteriaGroup> result =
-                this.classRubricUseCase.getStudentCriteriaByClassAndStudent(CLASS_ID, STUDENT_ID);
+        @Test
+        void when_criteria_found_expect_delegated_to_service() {
+            final List<StudentCriteriaGroup> expected = List.of(
+                    StudentCriteriaGroup.builder().studentId(STUDENT_ID).studentName("Juan").studentSurnames("Garcia").rubricCriteria(List.of()).build());
+            when(classRubricService.getAllStudentCriteriaByClassId(CLASS_ID)).thenReturn(expected);
 
-        assertNotNull(result);
-        verify(this.classRubricService).getStudentCriteriaByClassAndStudent(CLASS_ID, STUDENT_ID);
+            final List<StudentCriteriaGroup> result = classRubricUseCase.getAllStudentCriteriaByClassId(CLASS_ID);
+
+            assertThat(result).hasSize(1);
+            verify(classRubricService).getAllStudentCriteriaByClassId(CLASS_ID);
+        }
     }
 
-    @Test
-    void assignCriterionToStudent_shouldDelegateToService() {
-        final StudentClassRubricCriteria expected = StudentClassRubricCriteria.builder()
-                .id(CRITERIA_ID).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID).criterionId(CRITERION_ID).build();
-        when(this.classRubricService.assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID))
-                .thenReturn(expected);
+    @Nested
+    class GetStudentCriteriaByClassAndStudent {
 
-        final StudentClassRubricCriteria result =
-                this.classRubricUseCase.assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID);
+        @Test
+        void when_criteria_requested_expect_delegated_to_service() {
+            when(classRubricService.getStudentCriteriaByClassAndStudent(CLASS_ID, STUDENT_ID)).thenReturn(List.of());
 
-        assertNotNull(result);
-        assertEquals(CRITERIA_ID, result.getId());
-        verify(this.classRubricService).assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID);
+            final List<StudentCriteriaGroup> result = classRubricUseCase.getStudentCriteriaByClassAndStudent(CLASS_ID, STUDENT_ID);
+
+            assertThat(result).isNotNull();
+            verify(classRubricService).getStudentCriteriaByClassAndStudent(CLASS_ID, STUDENT_ID);
+        }
     }
 
-    @Test
-    void updateStudentCriterion_shouldDelegateToService() {
-        final StudentClassRubricCriteria expected = StudentClassRubricCriteria.builder()
-                .id(CRITERIA_ID).criterionId(CRITERION_ID).build();
-        when(this.classRubricService.updateStudentCriterion(CRITERIA_ID, CRITERION_ID)).thenReturn(expected);
+    @Nested
+    class AssignCriterionToStudent {
 
-        final StudentClassRubricCriteria result = this.classRubricUseCase.updateStudentCriterion(CRITERIA_ID, CRITERION_ID);
+        @Test
+        void when_assigning_criterion_expect_delegated_to_service() {
+            final StudentClassRubricCriteria expected = StudentClassRubricCriteria.builder()
+                    .id(CRITERIA_ID).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID).criterionId(CRITERION_ID).build();
+            when(classRubricService.assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID)).thenReturn(expected);
 
-        assertNotNull(result);
-        verify(this.classRubricService).updateStudentCriterion(CRITERIA_ID, CRITERION_ID);
+            final StudentClassRubricCriteria result = classRubricUseCase.assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(CRITERIA_ID);
+            verify(classRubricService).assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID);
+        }
     }
 
-    @Test
-    void removeStudentCriterion_shouldDelegateToService() {
-        doNothing().when(this.classRubricService).removeStudentCriterion(CRITERIA_ID);
+    @Nested
+    class UpdateStudentCriterion {
 
-        this.classRubricUseCase.removeStudentCriterion(CRITERIA_ID);
+        @Test
+        void when_updating_criterion_expect_delegated_to_service() {
+            final StudentClassRubricCriteria expected = StudentClassRubricCriteria.builder()
+                    .id(CRITERIA_ID).criterionId(CRITERION_ID).build();
+            when(classRubricService.updateStudentCriterion(CRITERIA_ID, CRITERION_ID)).thenReturn(expected);
 
-        verify(this.classRubricService).removeStudentCriterion(CRITERIA_ID);
+            final StudentClassRubricCriteria result = classRubricUseCase.updateStudentCriterion(CRITERIA_ID, CRITERION_ID);
+
+            assertThat(result).isNotNull();
+            verify(classRubricService).updateStudentCriterion(CRITERIA_ID, CRITERION_ID);
+        }
+    }
+
+    @Nested
+    class RemoveStudentCriterion {
+
+        @Test
+        void when_removing_criterion_expect_delegated_to_service() {
+            doNothing().when(classRubricService).removeStudentCriterion(CRITERIA_ID);
+
+            classRubricUseCase.removeStudentCriterion(CRITERIA_ID);
+
+            verify(classRubricService).removeStudentCriterion(CRITERIA_ID);
+        }
     }
 }
 

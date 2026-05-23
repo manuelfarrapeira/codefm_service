@@ -1,38 +1,46 @@
 package org.web.codefm.service;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.User;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class HelloWorldServiceImplTest {
 
-    @Test
-    void returnsGreetingWhenUserIsNotNull() {
-        HelloWorldServiceImpl service = new HelloWorldServiceImpl();
-        User user = new User();
-        user.setName("Manuel");
-        String result = service.helloWorld(user);
-        assertEquals("Hi! Manuel", result);
-    }
+    private final HelloWorldServiceImpl service = new HelloWorldServiceImpl();
 
-    @Test
-    void returnsUserNotFoundWhenUserIsNull() {
-        HelloWorldServiceImpl service = new HelloWorldServiceImpl();
-        String result = service.helloWorld(null);
-        assertEquals("User not found", result);
-    }
+    @Nested
+    class HelloWorld {
 
-    @Test
-    void returnsGreetingWhenUserNameIsNull() {
-        HelloWorldServiceImpl service = new HelloWorldServiceImpl();
-        User user = new User();
-        user.setName(null);
-        String result = service.helloWorld(user);
-        assertEquals("Hi! null", result);
-    }
+        @Test
+        void when_user_is_not_null_expect_greeting() {
+            final User user = new User();
+            user.setName("Manuel");
 
+            final String result = service.helloWorld(user);
+
+            assertThat(result).isEqualTo("Hi! Manuel");
+        }
+
+        @Test
+        void when_user_is_null_expect_user_not_found() {
+            final String result = service.helloWorld(null);
+
+            assertThat(result).isEqualTo("User not found");
+        }
+
+        @Test
+        void when_user_name_is_null_expect_greeting() {
+            final User user = new User();
+            user.setName(null);
+
+            final String result = service.helloWorld(user);
+
+            assertThat(result).isEqualTo("Hi! null");
+        }
+    }
 }

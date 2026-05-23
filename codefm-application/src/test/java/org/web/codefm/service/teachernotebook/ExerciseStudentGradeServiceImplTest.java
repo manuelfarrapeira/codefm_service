@@ -1,9 +1,10 @@
 package org.web.codefm.service.teachernotebook;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -23,7 +24,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
@@ -32,6 +34,13 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ExerciseStudentGradeServiceImplTest {
+
+    private static final Integer TEACHER_ID = 1;
+    private static final Integer CLASS_ID = 1;
+    private static final Integer STUDENT_ID = 1;
+    private static final Integer EXERCISE_ID = 1;
+    private static final Integer GRADE_ID = 1;
+    private static final Integer SUBJECT_CLASS_ID = 10;
 
     @Mock
     private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
@@ -57,297 +66,325 @@ class ExerciseStudentGradeServiceImplTest {
     @Mock
     private SessionUser sessionUser;
 
-    @InjectMocks
     private ExerciseStudentGradeServiceImpl exerciseStudentGradeService;
 
-    private static final Integer TEACHER_ID = 1;
-    private static final Integer CLASS_ID = 1;
-    private static final Integer STUDENT_ID = 1;
-    private static final Integer EXERCISE_ID = 1;
-    private static final Integer GRADE_ID = 1;
-    private static final Integer SUBJECT_CLASS_ID = 10;
-
     @BeforeEach
-    void setUp() {
-        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
-        when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("error message");
+    void beforeEach() {
+        this.exerciseStudentGradeService = new ExerciseStudentGradeServiceImpl(
+                this.exerciseStudentGradeRepository,
+                this.exerciseRepository,
+                this.classRepository,
+                this.studentRepository,
+                this.studentClassRepository,
+                this.subjectClassRepository,
+                this.messageSource,
+                this.sessionUser
+        );
+        when(this.sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
+        when(this.sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(this.messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("error message");
     }
 
-    @Test
-    void getGradesByClassId_shouldReturnGrades_whenClassBelongsToTeacher() {
-        Class clazz = Class.builder().id(CLASS_ID).build();
-        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-        when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(clazz));
-        List<ExerciseStudentGrade> expected = List.of(ExerciseStudentGrade.builder().id(1).build());
-        when(exerciseStudentGradeRepository.findByClassId(CLASS_ID)).thenReturn(expected);
+    @Nested
+    class GetGradesByClassId {
 
-        List<ExerciseStudentGrade> result = exerciseStudentGradeService.getGradesByClassId(CLASS_ID);
+        @Test
+        void when_class_belongs_to_teacher_expect_return_grades() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(clazz));
+            final List<ExerciseStudentGrade> expected = List.of(ExerciseStudentGrade.builder().id(1).build());
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.findByClassId(CLASS_ID)).thenReturn(expected);
 
-        assertEquals(1, result.size());
-        verify(classRepository).findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID);
-        verify(exerciseStudentGradeRepository).findByClassId(CLASS_ID);
+            final List<ExerciseStudentGrade> result = ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.getGradesByClassId(CLASS_ID);
+
+            assertThat(result).hasSize(1);
+            verify(ExerciseStudentGradeServiceImplTest.this.classRepository).findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID);
+            verify(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository).findByClassId(CLASS_ID);
+        }
+
+        @Test
+        void when_class_does_not_exist_expect_throw_not_found_exception() {
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findById(CLASS_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.getGradesByClassId(CLASS_ID);
+
+            assertThatThrownBy(action).isInstanceOf(ClassNotFoundException.class);
+        }
+
+        @Test
+        void when_class_is_not_owned_by_teacher_expect_throw_forbidden_exception() {
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.getGradesByClassId(CLASS_ID);
+
+            assertThatThrownBy(action).isInstanceOf(ClassForbiddenException.class);
+        }
     }
 
-    @Test
-    void getGradesByClassId_shouldThrowNotFoundException_whenClassNotExists() {
-        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.empty());
+    @Nested
+    class GetGradesByClassIdAndStudentId {
 
-        assertThrows(ClassNotFoundException.class,
-                () -> exerciseStudentGradeService.getGradesByClassId(CLASS_ID));
+        @Test
+        void when_input_is_valid_expect_return_grades() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(clazz));
+            final StudentClass sc = StudentClass.builder().classId(CLASS_ID).studentId(STUDENT_ID).build();
+            when(ExerciseStudentGradeServiceImplTest.this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
+            final List<ExerciseStudentGrade> expected = List.of(ExerciseStudentGrade.builder().id(1).build());
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(expected);
+
+            final List<ExerciseStudentGrade> result = ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.getGradesByClassIdAndStudentId(CLASS_ID, STUDENT_ID);
+
+            assertThat(result).hasSize(1);
+        }
+
+        @Test
+        void when_student_is_not_in_class_expect_throw_validation_exception() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(clazz));
+            when(ExerciseStudentGradeServiceImplTest.this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.empty());
+            when(ExerciseStudentGradeServiceImplTest.this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.getGradesByClassIdAndStudentId(CLASS_ID, STUDENT_ID);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeValidationException.class);
+        }
+
+        @Test
+        void when_class_does_not_exist_expect_throw_not_found_exception() {
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findById(CLASS_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.getGradesByClassIdAndStudentId(CLASS_ID, STUDENT_ID);
+
+            assertThatThrownBy(action).isInstanceOf(ClassNotFoundException.class);
+        }
+
+        @Test
+        void when_class_is_not_owned_by_teacher_expect_throw_forbidden_exception() {
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
+            when(ExerciseStudentGradeServiceImplTest.this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.getGradesByClassIdAndStudentId(CLASS_ID, STUDENT_ID);
+
+            assertThatThrownBy(action).isInstanceOf(ClassForbiddenException.class);
+        }
     }
 
-    @Test
-    void getGradesByClassId_shouldThrowForbiddenException_whenClassNotOwnedByTeacher() {
-        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
-        when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.empty());
+    @Nested
+    class CreateGrade {
 
-        assertThrows(ClassForbiddenException.class,
-                () -> exerciseStudentGradeService.getGradesByClassId(CLASS_ID));
+        @Test
+        void when_input_is_valid_expect_create_grade() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            final Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
+            when(ExerciseStudentGradeServiceImplTest.this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
+            final SubjectClass sc = SubjectClass.builder().id(SUBJECT_CLASS_ID).classId(CLASS_ID).build();
+            when(ExerciseStudentGradeServiceImplTest.this.subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(sc));
+            final StudentClass studentClass = StudentClass.builder().classId(CLASS_ID).studentId(STUDENT_ID).build();
+            when(ExerciseStudentGradeServiceImplTest.this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(studentClass));
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(STUDENT_ID, EXERCISE_ID)).thenReturn(false);
+            final ExerciseStudentGrade saved = ExerciseStudentGrade.builder().id(1).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(8.0).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.save(any())).thenReturn(saved);
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).description("Good").build();
+            final ExerciseStudentGrade result = ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.createGrade(EXERCISE_ID, input);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getGrade()).isEqualTo(8.0);
+            verify(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository).save(any());
+        }
+
+        @Test
+        void when_exercise_is_not_found_expect_throw_not_found_exception() {
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.createGrade(EXERCISE_ID, input);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeNotFoundException.class);
+        }
+
+        @Test
+        void when_grade_is_null_expect_throw_validation_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            final Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
+            when(ExerciseStudentGradeServiceImplTest.this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(null).build();
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.createGrade(EXERCISE_ID, input);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeValidationException.class);
+        }
+
+        @Test
+        void when_grade_exceeds_max_expect_throw_validation_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            final Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
+            when(ExerciseStudentGradeServiceImplTest.this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(15.0).build();
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.createGrade(EXERCISE_ID, input);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeValidationException.class);
+        }
+
+        @Test
+        void when_student_is_not_in_class_expect_throw_validation_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            final Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
+            when(ExerciseStudentGradeServiceImplTest.this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
+            final SubjectClass sc = SubjectClass.builder().id(SUBJECT_CLASS_ID).classId(CLASS_ID).build();
+            when(ExerciseStudentGradeServiceImplTest.this.subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(sc));
+            when(ExerciseStudentGradeServiceImplTest.this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.empty());
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.createGrade(EXERCISE_ID, input);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeValidationException.class);
+        }
+
+        @Test
+        void when_grade_is_duplicate_expect_throw_validation_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            final Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
+            when(ExerciseStudentGradeServiceImplTest.this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
+            final SubjectClass sc = SubjectClass.builder().id(SUBJECT_CLASS_ID).classId(CLASS_ID).build();
+            when(ExerciseStudentGradeServiceImplTest.this.subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(sc));
+            final StudentClass studentClass = StudentClass.builder().classId(CLASS_ID).studentId(STUDENT_ID).build();
+            when(ExerciseStudentGradeServiceImplTest.this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(studentClass));
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(STUDENT_ID, EXERCISE_ID)).thenReturn(true);
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.createGrade(EXERCISE_ID, input);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeValidationException.class);
+        }
+
+        @Test
+        void when_student_exists_but_is_not_in_class_expect_throw_validation_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            final Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
+            when(ExerciseStudentGradeServiceImplTest.this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
+            final SubjectClass sc = SubjectClass.builder().id(SUBJECT_CLASS_ID).classId(CLASS_ID).build();
+            when(ExerciseStudentGradeServiceImplTest.this.subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(sc));
+            when(ExerciseStudentGradeServiceImplTest.this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.empty());
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.createGrade(EXERCISE_ID, input);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeValidationException.class);
+        }
+
+        @Test
+        void when_student_id_is_null_expect_throw_validation_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(null).grade(8.0).build();
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.createGrade(EXERCISE_ID, input);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeValidationException.class);
+        }
+
+        @Test
+        void when_student_does_not_belong_to_teacher_expect_throw_validation_exception() {
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            when(ExerciseStudentGradeServiceImplTest.this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.createGrade(EXERCISE_ID, input);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeValidationException.class);
+        }
     }
 
-    @Test
-    void getGradesByClassIdAndStudentId_shouldReturnGrades_whenValid() {
-        Class clazz = Class.builder().id(CLASS_ID).build();
-        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-        when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(clazz));
-        StudentClass sc = StudentClass.builder().classId(CLASS_ID).studentId(STUDENT_ID).build();
-        when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
-        List<ExerciseStudentGrade> expected = List.of(ExerciseStudentGrade.builder().id(1).build());
-        when(exerciseStudentGradeRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(expected);
+    @Nested
+    class UpdateGrade {
 
-        List<ExerciseStudentGrade> result = exerciseStudentGradeService.getGradesByClassIdAndStudentId(CLASS_ID, STUDENT_ID);
+        @Test
+        void when_input_is_valid_expect_update_grade() {
+            final ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5.0).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(existing));
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).maxGrade(10).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+            final ExerciseStudentGrade updated = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(9.0).description("Updated").build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.update(any())).thenReturn(updated);
 
-        assertEquals(1, result.size());
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9.0).description("Updated").build();
+            final ExerciseStudentGrade result = ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.updateGrade(GRADE_ID, input);
+
+            assertThat(result.getGrade()).isEqualTo(9.0);
+            assertThat(result.getDescription()).isEqualTo("Updated");
+        }
+
+        @Test
+        void when_grade_is_not_found_expect_throw_not_found_exception() {
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9.0).build();
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.updateGrade(GRADE_ID, input);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeNotFoundException.class);
+        }
+
+        @Test
+        void when_grade_exceeds_max_expect_throw_validation_exception() {
+            final ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5.0).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(existing));
+            final Exercise exercise = Exercise.builder().id(EXERCISE_ID).maxGrade(10).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(15.0).build();
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.updateGrade(GRADE_ID, input);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeValidationException.class);
+        }
+
+        @Test
+        void when_exercise_is_not_found_expect_throw_not_found_exception() {
+            final ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5.0).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(existing));
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9.0).build();
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.updateGrade(GRADE_ID, input);
+
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeNotFoundException.class);
+        }
     }
 
-    @Test
-    void getGradesByClassIdAndStudentId_shouldThrowValidation_whenStudentNotInClass() {
-        Class clazz = Class.builder().id(CLASS_ID).build();
-        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-        when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.of(clazz));
-        when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.empty());
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.empty());
+    @Nested
+    class DeleteGrade {
 
-        assertThrows(ExerciseStudentGradeValidationException.class,
-                () -> exerciseStudentGradeService.getGradesByClassIdAndStudentId(CLASS_ID, STUDENT_ID));
-    }
+        @Test
+        void when_grade_exists_expect_delete_grade() {
+            final ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(existing));
 
-    @Test
-    void getGradesByClassIdAndStudentId_shouldThrowNotFoundException_whenClassNotExists() {
-        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.empty());
+            ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.deleteGrade(GRADE_ID);
 
-        assertThrows(ClassNotFoundException.class,
-                () -> exerciseStudentGradeService.getGradesByClassIdAndStudentId(CLASS_ID, STUDENT_ID));
-    }
+            verify(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository).softDelete(GRADE_ID);
+        }
 
-    @Test
-    void getGradesByClassIdAndStudentId_shouldThrowForbiddenException_whenClassNotOwnedByTeacher() {
-        when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
-        when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID)).thenReturn(Optional.empty());
+        @Test
+        void when_grade_is_not_found_expect_throw_not_found_exception() {
+            when(ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.empty());
 
-        assertThrows(ClassForbiddenException.class,
-                () -> exerciseStudentGradeService.getGradesByClassIdAndStudentId(CLASS_ID, STUDENT_ID));
-    }
+            final ThrowingCallable action = () -> ExerciseStudentGradeServiceImplTest.this.exerciseStudentGradeService.deleteGrade(GRADE_ID);
 
-    @Test
-    void createGrade_shouldCreateGrade_whenValid() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
-        SubjectClass sc = SubjectClass.builder().id(SUBJECT_CLASS_ID).classId(CLASS_ID).build();
-        when(subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(sc));
-        StudentClass studentClass = StudentClass.builder().classId(CLASS_ID).studentId(STUDENT_ID).build();
-        when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(studentClass));
-        when(exerciseStudentGradeRepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(STUDENT_ID, EXERCISE_ID)).thenReturn(false);
-        ExerciseStudentGrade saved = ExerciseStudentGrade.builder().id(1).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(8.0).build();
-        when(exerciseStudentGradeRepository.save(any())).thenReturn(saved);
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).description("Good").build();
-        ExerciseStudentGrade result = exerciseStudentGradeService.createGrade(EXERCISE_ID, input);
-
-        assertNotNull(result);
-        assertEquals(8.0, result.getGrade());
-        verify(exerciseStudentGradeRepository).save(any());
-    }
-
-    @Test
-    void createGrade_shouldThrowNotFoundException_whenExerciseNotFound() {
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
-
-        assertThrows(ExerciseStudentGradeNotFoundException.class,
-                () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
-    }
-
-    @Test
-    void createGrade_shouldThrowValidation_whenGradeIsNull() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(null).build();
-
-        assertThrows(ExerciseStudentGradeValidationException.class,
-                () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
-    }
-
-    @Test
-    void createGrade_shouldThrowValidation_whenGradeExceedsMax() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(15.0).build();
-
-        assertThrows(ExerciseStudentGradeValidationException.class,
-                () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
-    }
-
-    @Test
-    void createGrade_shouldThrowValidation_whenStudentNotInClass() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
-        SubjectClass sc = SubjectClass.builder().id(SUBJECT_CLASS_ID).classId(CLASS_ID).build();
-        when(subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(sc));
-        when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.empty());
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
-
-        assertThrows(ExerciseStudentGradeValidationException.class,
-                () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
-    }
-
-    @Test
-    void createGrade_shouldThrowValidation_whenDuplicate() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
-        SubjectClass sc = SubjectClass.builder().id(SUBJECT_CLASS_ID).classId(CLASS_ID).build();
-        when(subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(sc));
-        StudentClass studentClass = StudentClass.builder().classId(CLASS_ID).studentId(STUDENT_ID).build();
-        when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(studentClass));
-        when(exerciseStudentGradeRepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(STUDENT_ID, EXERCISE_ID)).thenReturn(true);
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
-
-        assertThrows(ExerciseStudentGradeValidationException.class,
-                () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
-    }
-
-    @Test
-    void createGrade_shouldShowStudentFullName_whenStudentExistsButNotInClass() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        Student student = Student.builder().id(STUDENT_ID).name("Juan").surnames("García").build();
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.of(student));
-        SubjectClass sc = SubjectClass.builder().id(SUBJECT_CLASS_ID).classId(CLASS_ID).build();
-        when(subjectClassRepository.findById(SUBJECT_CLASS_ID)).thenReturn(Optional.of(sc));
-        when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.empty());
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
-
-        assertThrows(ExerciseStudentGradeValidationException.class,
-                () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
-    }
-
-    @Test
-    void createGrade_shouldThrowValidation_whenStudentIdIsNull() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(null).grade(8.0).build();
-
-        assertThrows(ExerciseStudentGradeValidationException.class,
-                () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
-    }
-
-    @Test
-    void createGrade_shouldThrowValidation_whenStudentNotBelongsToTeacher() {
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).subjectClassId(SUBJECT_CLASS_ID).maxGrade(10).build();
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID)).thenReturn(Optional.empty());
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().studentId(STUDENT_ID).grade(8.0).build();
-
-        assertThrows(ExerciseStudentGradeValidationException.class,
-                () -> exerciseStudentGradeService.createGrade(EXERCISE_ID, input));
-    }
-
-    @Test
-    void updateGrade_shouldUpdateGrade_whenValid() {
-        ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5.0).build();
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(existing));
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).maxGrade(10).build();
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-        ExerciseStudentGrade updated = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(9.0).description("Updated").build();
-        when(exerciseStudentGradeRepository.update(any())).thenReturn(updated);
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9.0).description("Updated").build();
-        ExerciseStudentGrade result = exerciseStudentGradeService.updateGrade(GRADE_ID, input);
-
-        assertEquals(9.0, result.getGrade());
-        assertEquals("Updated", result.getDescription());
-    }
-
-    @Test
-    void updateGrade_shouldThrowNotFoundException_whenGradeNotFound() {
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.empty());
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9.0).build();
-
-        assertThrows(ExerciseStudentGradeNotFoundException.class,
-                () -> exerciseStudentGradeService.updateGrade(GRADE_ID, input));
-    }
-
-    @Test
-    void updateGrade_shouldThrowValidation_whenGradeExceedsMax() {
-        ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5.0).build();
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(existing));
-        Exercise exercise = Exercise.builder().id(EXERCISE_ID).maxGrade(10).build();
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.of(exercise));
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(15.0).build();
-
-        assertThrows(ExerciseStudentGradeValidationException.class,
-                () -> exerciseStudentGradeService.updateGrade(GRADE_ID, input));
-    }
-
-    @Test
-    void updateGrade_shouldThrowNotFoundException_whenExerciseNotFound() {
-        ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).studentId(STUDENT_ID).exerciseId(EXERCISE_ID).grade(5.0).build();
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(existing));
-        when(exerciseRepository.findByIdAndTeacherId(EXERCISE_ID, TEACHER_ID)).thenReturn(Optional.empty());
-
-        ExerciseStudentGrade input = ExerciseStudentGrade.builder().grade(9.0).build();
-
-        assertThrows(ExerciseStudentGradeNotFoundException.class,
-                () -> exerciseStudentGradeService.updateGrade(GRADE_ID, input));
-    }
-
-    @Test
-    void deleteGrade_shouldDeleteGrade_whenValid() {
-        ExerciseStudentGrade existing = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(existing));
-
-        exerciseStudentGradeService.deleteGrade(GRADE_ID);
-
-        verify(exerciseStudentGradeRepository).softDelete(GRADE_ID);
-    }
-
-    @Test
-    void deleteGrade_shouldThrowNotFoundException_whenGradeNotFound() {
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseStudentGradeNotFoundException.class,
-                () -> exerciseStudentGradeService.deleteGrade(GRADE_ID));
+            assertThatThrownBy(action).isInstanceOf(ExerciseStudentGradeNotFoundException.class);
+        }
     }
 }
 

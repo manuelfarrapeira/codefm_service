@@ -1,8 +1,9 @@
 package org.web.codefm.usecase.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Exercise;
@@ -11,12 +12,13 @@ import org.web.codefm.domain.service.teachernotebook.ExerciseService;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ExerciseUseCaseImplTest {
+
+    private ExerciseUseCaseImpl exerciseUseCase;
 
     @Mock
     private ExerciseService exerciseService;
@@ -24,64 +26,77 @@ class ExerciseUseCaseImplTest {
     @Mock
     private CascadeSoftDeleteService cascadeSoftDeleteService;
 
-    @InjectMocks
-    private ExerciseUseCaseImpl exerciseUseCase;
-
-    @Test
-    void getExercisesByClassId_shouldDelegateToService() {
-        Integer classId = 1;
-        Exercise exercise = Exercise.builder().id(1).subjectClassId(5).title("Exam").quarter(1).percentageGrade(30).maxGrade(10).build();
-
-        when(exerciseService.getExercisesByClassId(classId)).thenReturn(List.of(exercise));
-
-        List<Exercise> result = exerciseUseCase.getExercisesByClassId(classId);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(exerciseService).getExercisesByClassId(classId);
+    @BeforeEach
+    void beforeEach() {
+        exerciseUseCase = new ExerciseUseCaseImpl(exerciseService, cascadeSoftDeleteService);
     }
 
-    @Test
-    void createExercise_shouldDelegateToService() {
-        Integer subjectClassId = 5;
-        Exercise inputExercise = Exercise.builder().title("Exam").quarter(1).percentageGrade(30).maxGrade(10).build();
-        Exercise savedExercise = Exercise.builder().id(1).subjectClassId(subjectClassId).title("Exam").quarter(1).percentageGrade(30).maxGrade(10).build();
+    @Nested
+    class GetExercisesByClassId {
 
-        when(exerciseService.createExercise(subjectClassId, inputExercise)).thenReturn(savedExercise);
+        @Test
+        void when_exercises_found_expect_delegated_to_service() {
+            final Integer classId = 1;
+            final Exercise exercise = Exercise.builder().id(1).subjectClassId(5).title("Exam").quarter(1).percentageGrade(30).maxGrade(10).build();
+            when(exerciseService.getExercisesByClassId(classId)).thenReturn(List.of(exercise));
 
-        Exercise result = exerciseUseCase.createExercise(subjectClassId, inputExercise);
+            final List<Exercise> result = exerciseUseCase.getExercisesByClassId(classId);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        verify(exerciseService).createExercise(subjectClassId, inputExercise);
+            assertThat(result).isNotNull().hasSize(1);
+            verify(exerciseService).getExercisesByClassId(classId);
+        }
     }
 
-    @Test
-    void updateExercise_shouldDelegateToService() {
-        Integer id = 1;
-        Exercise inputExercise = Exercise.builder().title("Updated").quarter(2).percentageGrade(50).maxGrade(12).build();
-        Exercise updatedExercise = Exercise.builder().id(id).subjectClassId(5).title("Updated").quarter(2).percentageGrade(50).maxGrade(12).build();
+    @Nested
+    class CreateExercise {
 
-        when(exerciseService.updateExercise(id, inputExercise)).thenReturn(updatedExercise);
+        @Test
+        void when_creating_exercise_expect_delegated_to_service() {
+            final Integer subjectClassId = 5;
+            final Exercise inputExercise = Exercise.builder().title("Exam").quarter(1).percentageGrade(30).maxGrade(10).build();
+            final Exercise savedExercise = Exercise.builder().id(1).subjectClassId(subjectClassId).title("Exam").quarter(1).percentageGrade(30).maxGrade(10).build();
+            when(exerciseService.createExercise(subjectClassId, inputExercise)).thenReturn(savedExercise);
 
-        Exercise result = exerciseUseCase.updateExercise(id, inputExercise);
+            final Exercise result = exerciseUseCase.createExercise(subjectClassId, inputExercise);
 
-        assertNotNull(result);
-        assertEquals("Updated", result.getTitle());
-        verify(exerciseService).updateExercise(id, inputExercise);
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            verify(exerciseService).createExercise(subjectClassId, inputExercise);
+        }
     }
 
-    @Test
-    void deleteExercise_shouldCallCascadeBeforeService() {
-        Integer id = 1;
+    @Nested
+    class UpdateExercise {
 
-        doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfExercise(id);
-        doNothing().when(exerciseService).deleteExercise(id);
+        @Test
+        void when_updating_exercise_expect_delegated_to_service() {
+            final Integer id = 1;
+            final Exercise inputExercise = Exercise.builder().title("Updated").quarter(2).percentageGrade(50).maxGrade(12).build();
+            final Exercise updatedExercise = Exercise.builder().id(id).subjectClassId(5).title("Updated").quarter(2).percentageGrade(50).maxGrade(12).build();
+            when(exerciseService.updateExercise(id, inputExercise)).thenReturn(updatedExercise);
 
-        exerciseUseCase.deleteExercise(id);
+            final Exercise result = exerciseUseCase.updateExercise(id, inputExercise);
 
-        var order = inOrder(cascadeSoftDeleteService, exerciseService);
-        order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfExercise(id);
-        order.verify(exerciseService).deleteExercise(id);
+            assertThat(result).isNotNull();
+            assertThat(result.getTitle()).isEqualTo("Updated");
+            verify(exerciseService).updateExercise(id, inputExercise);
+        }
+    }
+
+    @Nested
+    class DeleteExercise {
+
+        @Test
+        void when_deleting_exercise_expect_cascade_before_service() {
+            final Integer id = 1;
+            doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfExercise(id);
+            doNothing().when(exerciseService).deleteExercise(id);
+
+            exerciseUseCase.deleteExercise(id);
+
+            final var order = inOrder(cascadeSoftDeleteService, exerciseService);
+            order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfExercise(id);
+            order.verify(exerciseService).deleteExercise(id);
+        }
     }
 }

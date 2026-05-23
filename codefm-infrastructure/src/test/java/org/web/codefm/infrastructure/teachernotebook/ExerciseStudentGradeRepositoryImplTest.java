@@ -1,8 +1,9 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentGrade;
@@ -16,11 +17,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ExerciseStudentGradeRepositoryImplTest {
+
+    private ExerciseStudentGradeRepositoryImpl exerciseStudentGradeRepository;
 
     @Mock
     private ExerciseStudentGradeJPARepository exerciseStudentGradeJPARepository;
@@ -49,229 +52,275 @@ class ExerciseStudentGradeRepositoryImplTest {
     @Mock
     private CacheEvictionService cacheEvictionService;
 
-    @InjectMocks
-    private ExerciseStudentGradeRepositoryImpl exerciseStudentGradeRepository;
-
-    @Test
-    void findByClassId_shouldReturnEnrichedGrades_whenDataExists() {
-        SubjectClassEntity scEntity = new SubjectClassEntity(10, 1, 1, null);
-        when(subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(1)).thenReturn(List.of(scEntity));
-        when(exerciseJPARepository.findActiveIdsBySubjectClassIds(List.of(10))).thenReturn(List.of(100));
-
-        ExerciseStudentGradeEntity gradeEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, "Good", null);
-        when(exerciseStudentGradeJPARepository.findByExerciseIdInAndDeletionDateIsNull(List.of(100))).thenReturn(List.of(gradeEntity));
-        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
-        when(exerciseStudentGradeMapper.toModelList(List.of(gradeEntity))).thenReturn(new ArrayList<>(List.of(grade)));
-
-        ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
-        when(exerciseJPARepository.findAllById(List.of(100))).thenReturn(List.of(exerciseEntity));
-        when(subjectClassJPARepository.findAllById(List.of(10))).thenReturn(List.of(scEntity));
-        SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
-        when(subjectJPARepository.findAllById(List.of(1))).thenReturn(List.of(subjectEntity));
-        StudentEntity studentEntity = new StudentEntity();
-        studentEntity.setId(5);
-        studentEntity.setName("Juan");
-        studentEntity.setSurnames("García");
-        when(studentJPARepository.findAllById(List.of(5))).thenReturn(List.of(studentEntity));
-        when(exerciseStudentDocumentJPARepository.findByGradeIdIn(List.of(1))).thenReturn(List.of());
-        when(exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
-
-        List<ExerciseStudentGrade> result = exerciseStudentGradeRepository.findByClassId(1);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("Math", result.get(0).getSubjectName());
-        assertEquals("Juan", result.get(0).getStudentName());
+    @BeforeEach
+    void beforeEach() {
+        this.exerciseStudentGradeRepository = new ExerciseStudentGradeRepositoryImpl(
+                this.exerciseStudentGradeJPARepository,
+                this.exerciseJPARepository,
+                this.subjectClassJPARepository,
+                this.subjectJPARepository,
+                this.studentJPARepository,
+                this.exerciseStudentDocumentJPARepository,
+                this.exerciseStudentGradeMapper,
+                this.exerciseStudentDocumentMapper,
+                this.cacheEvictionService
+        );
     }
 
-    @Test
-    void findByClassId_shouldReturnEmptyList_whenNoSubjectClasses() {
-        when(subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(1)).thenReturn(new ArrayList<>());
+    @Nested
+    class FindByClassId {
 
-        List<ExerciseStudentGrade> result = exerciseStudentGradeRepository.findByClassId(1);
+        @Test
+        void when_data_exists_expect_enriched_grades_returned() {
+            final SubjectClassEntity scEntity = new SubjectClassEntity(10, 1, 1, null);
+            final ExerciseStudentGradeEntity gradeEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, "Good", null);
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
+            final ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
+            final StudentEntity studentEntity = new StudentEntity();
 
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+            studentEntity.setId(5);
+            studentEntity.setName("Juan");
+            studentEntity.setSurnames("García");
+
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(1)).thenReturn(List.of(scEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseJPARepository.findActiveIdsBySubjectClassIds(List.of(10))).thenReturn(List.of(100));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository.findByExerciseIdInAndDeletionDateIsNull(List.of(100))).thenReturn(List.of(gradeEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeMapper.toModelList(List.of(gradeEntity))).thenReturn(new ArrayList<>(List.of(grade)));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseJPARepository.findAllById(List.of(100))).thenReturn(List.of(exerciseEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectClassJPARepository.findAllById(List.of(10))).thenReturn(List.of(scEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectJPARepository.findAllById(List.of(1))).thenReturn(List.of(subjectEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.studentJPARepository.findAllById(List.of(5))).thenReturn(List.of(studentEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findByGradeIdIn(List.of(1))).thenReturn(List.of());
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
+
+            final List<ExerciseStudentGrade> result = ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.findByClassId(1);
+
+            assertThat(result).isNotNull().hasSize(1);
+            assertThat(result.get(0).getSubjectName()).isEqualTo("Math");
+            assertThat(result.get(0).getStudentName()).isEqualTo("Juan");
+        }
+
+        @Test
+        void when_no_subject_classes_expect_empty_list_returned() {
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(1)).thenReturn(new ArrayList<>());
+
+            final List<ExerciseStudentGrade> result = ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.findByClassId(1);
+
+            assertThat(result).isNotNull().isEmpty();
+        }
     }
 
-    @Test
-    void findByClassIdAndStudentId_shouldReturnGrades_whenDataExists() {
-        SubjectClassEntity scEntity = new SubjectClassEntity(10, 1, 1, null);
-        when(subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(1)).thenReturn(List.of(scEntity));
-        when(exerciseJPARepository.findActiveIdsBySubjectClassIds(List.of(10))).thenReturn(List.of(100));
+    @Nested
+    class FindByClassIdAndStudentId {
 
-        ExerciseStudentGradeEntity gradeEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, "Good", null);
-        when(exerciseStudentGradeJPARepository.findByExerciseIdInAndStudentIdAndDeletionDateIsNull(List.of(100), 5)).thenReturn(List.of(gradeEntity));
-        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
-        when(exerciseStudentGradeMapper.toModelList(List.of(gradeEntity))).thenReturn(new ArrayList<>(List.of(grade)));
+        @Test
+        void when_data_exists_expect_grades_returned() {
+            final SubjectClassEntity scEntity = new SubjectClassEntity(10, 1, 1, null);
+            final ExerciseStudentGradeEntity gradeEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, "Good", null);
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
+            final ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
+            final StudentEntity studentEntity = new StudentEntity();
 
-        ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
-        when(exerciseJPARepository.findAllById(List.of(100))).thenReturn(List.of(exerciseEntity));
-        when(subjectClassJPARepository.findAllById(List.of(10))).thenReturn(List.of(scEntity));
-        SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
-        when(subjectJPARepository.findAllById(List.of(1))).thenReturn(List.of(subjectEntity));
-        StudentEntity studentEntity = new StudentEntity();
-        studentEntity.setId(5);
-        studentEntity.setName("Juan");
-        studentEntity.setSurnames("García");
-        when(studentJPARepository.findAllById(List.of(5))).thenReturn(List.of(studentEntity));
-        when(exerciseStudentDocumentJPARepository.findByGradeIdIn(List.of(1))).thenReturn(List.of());
-        when(exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
+            studentEntity.setId(5);
+            studentEntity.setName("Juan");
+            studentEntity.setSurnames("García");
 
-        List<ExerciseStudentGrade> result = exerciseStudentGradeRepository.findByClassIdAndStudentId(1, 5);
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(1)).thenReturn(List.of(scEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseJPARepository.findActiveIdsBySubjectClassIds(List.of(10))).thenReturn(List.of(100));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository.findByExerciseIdInAndStudentIdAndDeletionDateIsNull(List.of(100), 5)).thenReturn(List.of(gradeEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeMapper.toModelList(List.of(gradeEntity))).thenReturn(new ArrayList<>(List.of(grade)));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseJPARepository.findAllById(List.of(100))).thenReturn(List.of(exerciseEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectClassJPARepository.findAllById(List.of(10))).thenReturn(List.of(scEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectJPARepository.findAllById(List.of(1))).thenReturn(List.of(subjectEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.studentJPARepository.findAllById(List.of(5))).thenReturn(List.of(studentEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findByGradeIdIn(List.of(1))).thenReturn(List.of());
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
+            final List<ExerciseStudentGrade> result = ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.findByClassIdAndStudentId(1, 5);
+
+            assertThat(result).isNotNull().hasSize(1);
+        }
+
+        @Test
+        void when_no_exercises_expect_empty_list_returned() {
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(1)).thenReturn(new ArrayList<>());
+
+            final List<ExerciseStudentGrade> result = ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.findByClassIdAndStudentId(1, 5);
+
+            assertThat(result).isEmpty();
+        }
     }
 
-    @Test
-    void findByClassIdAndStudentId_shouldReturnEmptyList_whenNoExercises() {
-        when(subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(1)).thenReturn(new ArrayList<>());
+    @Nested
+    class FindByIdAndTeacherId {
 
-        List<ExerciseStudentGrade> result = exerciseStudentGradeRepository.findByClassIdAndStudentId(1, 5);
+        @Test
+        void when_grade_found_expect_enriched_grade_returned() {
+            final ExerciseStudentGradeEntity entity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, "Good", null);
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
+            final ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
+            final SubjectClassEntity scEntity = new SubjectClassEntity(10, 1, 1, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
+            final StudentEntity studentEntity = new StudentEntity();
 
-        assertTrue(result.isEmpty());
+            studentEntity.setId(5);
+            studentEntity.setName("Juan");
+            studentEntity.setSurnames("García");
+
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository.findByIdAndTeacherId(1, 1)).thenReturn(Optional.of(entity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeMapper.toModel(entity)).thenReturn(grade);
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseJPARepository.findById(100)).thenReturn(Optional.of(exerciseEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectClassJPARepository.findById(10)).thenReturn(Optional.of(scEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectJPARepository.findById(1)).thenReturn(Optional.of(subjectEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.studentJPARepository.findById(5)).thenReturn(Optional.of(studentEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findByGradeId(1)).thenReturn(List.of());
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
+
+            final Optional<ExerciseStudentGrade> result = ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.findByIdAndTeacherId(1, 1);
+
+            assertThat(result).isPresent();
+            assertThat(result.orElseThrow().getSubjectName()).isEqualTo("Math");
+            assertThat(result.orElseThrow().getStudentName()).isEqualTo("Juan");
+        }
+
+        @Test
+        void when_grade_not_found_expect_empty_optional_returned() {
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository.findByIdAndTeacherId(99, 1)).thenReturn(Optional.empty());
+
+            final Optional<ExerciseStudentGrade> result = ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.findByIdAndTeacherId(99, 1);
+
+            assertThat(result).isNotPresent();
+        }
     }
 
-    @Test
-    void findByIdAndTeacherId_shouldReturnEnrichedGrade_whenFound() {
-        ExerciseStudentGradeEntity entity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, "Good", null);
-        when(exerciseStudentGradeJPARepository.findByIdAndTeacherId(1, 1)).thenReturn(Optional.of(entity));
-        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
-        when(exerciseStudentGradeMapper.toModel(entity)).thenReturn(grade);
+    @Nested
+    class Save {
 
-        ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
-        when(exerciseJPARepository.findById(100)).thenReturn(Optional.of(exerciseEntity));
-        SubjectClassEntity scEntity = new SubjectClassEntity(10, 1, 1, null);
-        when(subjectClassJPARepository.findById(10)).thenReturn(Optional.of(scEntity));
-        SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
-        when(subjectJPARepository.findById(1)).thenReturn(Optional.of(subjectEntity));
-        StudentEntity studentEntity = new StudentEntity();
-        studentEntity.setId(5);
-        studentEntity.setName("Juan");
-        studentEntity.setSurnames("García");
-        when(studentJPARepository.findById(5)).thenReturn(Optional.of(studentEntity));
-        when(exerciseStudentDocumentJPARepository.findByGradeId(1)).thenReturn(List.of());
-        when(exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
+        @Test
+        void when_valid_grade_expect_grade_saved_and_cache_evicted() {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().studentId(5).exerciseId(100).grade(8.0).build();
+            final ExerciseStudentGradeEntity entity = new ExerciseStudentGradeEntity();
+            final ExerciseStudentGradeEntity savedEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, null, null);
+            final ExerciseStudentGrade saved = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
+            final ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
+            final SubjectClassEntity scEntity = new SubjectClassEntity(10, 1, 1, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
+            final StudentEntity studentEntity = new StudentEntity();
 
-        Optional<ExerciseStudentGrade> result = exerciseStudentGradeRepository.findByIdAndTeacherId(1, 1);
+            studentEntity.setId(5);
+            studentEntity.setName("Juan");
+            studentEntity.setSurnames("García");
 
-        assertTrue(result.isPresent());
-        assertEquals("Math", result.get().getSubjectName());
-        assertEquals("Juan", result.get().getStudentName());
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeMapper.toEntity(grade)).thenReturn(entity);
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository.save(entity)).thenReturn(savedEntity);
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeMapper.toModel(savedEntity)).thenReturn(saved);
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(100))).thenReturn(List.of(1));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseJPARepository.findById(100)).thenReturn(Optional.of(exerciseEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectClassJPARepository.findById(10)).thenReturn(Optional.of(scEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.subjectJPARepository.findById(1)).thenReturn(Optional.of(subjectEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.studentJPARepository.findById(5)).thenReturn(Optional.of(studentEntity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findByGradeId(1)).thenReturn(List.of());
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
+
+            final ExerciseStudentGrade result = ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.save(grade);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            verify(ExerciseStudentGradeRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+        }
     }
 
-    @Test
-    void findByIdAndTeacherId_shouldReturnEmpty_whenNotFound() {
-        when(exerciseStudentGradeJPARepository.findByIdAndTeacherId(99, 1)).thenReturn(Optional.empty());
+    @Nested
+    class SoftDelete {
 
-        Optional<ExerciseStudentGrade> result = exerciseStudentGradeRepository.findByIdAndTeacherId(99, 1);
+        @Test
+        void when_grade_exists_expect_jpa_delegated_and_cache_evicted() {
+            final ExerciseStudentGradeEntity entity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, null, null);
 
-        assertFalse(result.isPresent());
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository.findById(1)).thenReturn(Optional.of(entity));
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(100))).thenReturn(List.of(1));
+
+            ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.softDelete(1);
+
+            verify(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository).softDeleteById(1);
+            verify(ExerciseStudentGradeRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+        }
     }
 
-    @Test
-    void save_shouldSaveAndReturnEnrichedGradeAndEvictCache() {
-        ExerciseStudentGrade grade = ExerciseStudentGrade.builder().studentId(5).exerciseId(100).grade(8.0).build();
-        ExerciseStudentGradeEntity entity = new ExerciseStudentGradeEntity();
-        ExerciseStudentGradeEntity savedEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, null, null);
-        ExerciseStudentGrade saved = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
+    @Nested
+    class ExistsByStudentIdAndExerciseIdAndDeletionDateIsNull {
 
-        when(exerciseStudentGradeMapper.toEntity(grade)).thenReturn(entity);
-        when(exerciseStudentGradeJPARepository.save(entity)).thenReturn(savedEntity);
-        when(exerciseStudentGradeMapper.toModel(savedEntity)).thenReturn(saved);
-        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(100))).thenReturn(List.of(1));
+        @Test
+        void when_grade_exists_expect_true_returned() {
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(5, 100)).thenReturn(true);
 
-        ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
-        when(exerciseJPARepository.findById(100)).thenReturn(Optional.of(exerciseEntity));
-        SubjectClassEntity scEntity = new SubjectClassEntity(10, 1, 1, null);
-        when(subjectClassJPARepository.findById(10)).thenReturn(Optional.of(scEntity));
-        SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
-        when(subjectJPARepository.findById(1)).thenReturn(Optional.of(subjectEntity));
-        StudentEntity studentEntity = new StudentEntity();
-        studentEntity.setId(5);
-        studentEntity.setName("Juan");
-        studentEntity.setSurnames("García");
-        when(studentJPARepository.findById(5)).thenReturn(Optional.of(studentEntity));
-        when(exerciseStudentDocumentJPARepository.findByGradeId(1)).thenReturn(List.of());
-        when(exerciseStudentDocumentMapper.toModelList(List.of())).thenReturn(List.of());
+            assertThat(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(5, 100)).isTrue();
+        }
 
-        ExerciseStudentGrade result = exerciseStudentGradeRepository.save(grade);
+        @Test
+        void when_grade_does_not_exist_expect_false_returned() {
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(5, 100)).thenReturn(false);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+            assertThat(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(5, 100)).isFalse();
+        }
     }
 
-    @Test
-    void softDelete_shouldCallJPARepositoryAndEvictCache() {
-        ExerciseStudentGradeEntity entity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, null, null);
-        when(exerciseStudentGradeJPARepository.findById(1)).thenReturn(Optional.of(entity));
-        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(100))).thenReturn(List.of(1));
+    @Nested
+    class SoftDeleteByExerciseIds {
 
-        exerciseStudentGradeRepository.softDelete(1);
+        @Test
+        void when_list_is_not_empty_expect_jpa_delegated_and_cache_evicted() {
+            final List<Integer> exerciseIds = List.of(1, 2, 3);
 
-        verify(exerciseStudentGradeJPARepository).softDeleteById(1);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(exerciseIds)).thenReturn(List.of(10));
+
+            ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.softDeleteByExerciseIds(exerciseIds);
+
+            verify(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository).softDeleteByExerciseIds(exerciseIds);
+            verify(ExerciseStudentGradeRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
+        }
+
+        @Test
+        void when_list_is_empty_expect_no_jpa_interaction() {
+            ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.softDeleteByExerciseIds(List.of());
+
+            verify(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository, never()).softDeleteByExerciseIds(any());
+        }
+
+        @Test
+        void when_list_is_null_expect_no_jpa_interaction() {
+            ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.softDeleteByExerciseIds(null);
+
+            verify(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository, never()).softDeleteByExerciseIds(any());
+        }
     }
 
-    @Test
-    void existsByStudentIdAndExerciseIdAndDeletionDateIsNull_shouldReturnTrue() {
-        when(exerciseStudentGradeJPARepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(5, 100)).thenReturn(true);
+    @Nested
+    class SoftDeleteByStudentIdAndClassId {
 
-        assertTrue(exerciseStudentGradeRepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(5, 100));
+        @Test
+        void when_called_expect_jpa_delegated_and_cache_evicted() {
+            ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.softDeleteByStudentIdAndClassId(5, 10);
+
+            verify(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository).softDeleteByStudentIdAndClassId(5, 10);
+            verify(ExerciseStudentGradeRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
+        }
     }
 
-    @Test
-    void existsByStudentIdAndExerciseIdAndDeletionDateIsNull_shouldReturnFalse() {
-        when(exerciseStudentGradeJPARepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(5, 100)).thenReturn(false);
+    @Nested
+    class SoftDeleteByStudentId {
 
-        assertFalse(exerciseStudentGradeRepository.existsByStudentIdAndExerciseIdAndDeletionDateIsNull(5, 100));
-    }
+        @Test
+        void when_called_expect_jpa_delegated_and_cache_evicted_for_all_classes() {
+            when(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository.findDistinctClassIdsByStudentId(5)).thenReturn(List.of(10, 20));
 
-    @Test
-    void softDeleteByExerciseIds_shouldCallJPARepositoryAndEvictCache_whenListNotEmpty() {
-        List<Integer> exerciseIds = List.of(1, 2, 3);
-        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(exerciseIds)).thenReturn(List.of(10));
+            ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeRepository.softDeleteByStudentId(5);
 
-        exerciseStudentGradeRepository.softDeleteByExerciseIds(exerciseIds);
-
-        verify(exerciseStudentGradeJPARepository).softDeleteByExerciseIds(exerciseIds);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
-    }
-
-    @Test
-    void softDeleteByExerciseIds_shouldNotCallJPARepository_whenListEmpty() {
-        exerciseStudentGradeRepository.softDeleteByExerciseIds(List.of());
-
-        verify(exerciseStudentGradeJPARepository, never()).softDeleteByExerciseIds(any());
-    }
-
-    @Test
-    void softDeleteByExerciseIds_shouldNotCallJPARepository_whenListNull() {
-        exerciseStudentGradeRepository.softDeleteByExerciseIds(null);
-
-        verify(exerciseStudentGradeJPARepository, never()).softDeleteByExerciseIds(any());
-    }
-
-    @Test
-    void softDeleteByStudentIdAndClassId_shouldCallJPARepositoryAndEvictCache() {
-        exerciseStudentGradeRepository.softDeleteByStudentIdAndClassId(5, 10);
-
-        verify(exerciseStudentGradeJPARepository).softDeleteByStudentIdAndClassId(5, 10);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
-    }
-
-    @Test
-    void softDeleteByStudentId_shouldCallJPARepositoryAndEvictCache() {
-        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByStudentId(5))
-                .thenReturn(List.of(10, 20));
-
-        exerciseStudentGradeRepository.softDeleteByStudentId(5);
-
-        verify(exerciseStudentGradeJPARepository).softDeleteByStudentId(5);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 20);
+            verify(ExerciseStudentGradeRepositoryImplTest.this.exerciseStudentGradeJPARepository).softDeleteByStudentId(5);
+            verify(ExerciseStudentGradeRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
+            verify(ExerciseStudentGradeRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 20);
+        }
     }
 }
-

@@ -1,8 +1,9 @@
 package org.web.codefm.infrastructure.users;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.User;
@@ -12,51 +13,60 @@ import org.web.codefm.infrastructure.mapper.UserMapper;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserRepositoryImplTest {
 
-    @Mock
-    UserJPARepository userJPARepository;
+    private UserRepositoryImpl userRepository;
 
     @Mock
-    UserMapper userMapper;
+    private UserJPARepository userJPARepository;
 
-    @InjectMocks
-    UserRepositoryImpl userRepositoryImpl;
+    @Mock
+    private UserMapper userMapper;
 
-    @Test
-    void returnsUserWhenUserExists() {
-        String nombre = "Manuel";
-        UserEntity entity = new UserEntity();
-        User user = new User();
-        when(userJPARepository.findByLogin(nombre)).thenReturn(Optional.of(entity));
-        when(userMapper.toModel(entity)).thenReturn(user);
-
-        User result = userRepositoryImpl.findByLogin(nombre);
-
-        assertEquals(user, result);
+    @BeforeEach
+    void beforeEach() {
+        this.userRepository = new UserRepositoryImpl(this.userJPARepository, this.userMapper);
     }
 
-    @Test
-    void returnsNullWhenUserDoesNotExist() {
-        String nombre = "Desconocido";
-        when(userJPARepository.findByLogin(nombre)).thenReturn(Optional.empty());
+    @Nested
+    class FindByLogin {
 
-        User result = userRepositoryImpl.findByLogin(nombre);
+        @Test
+        void when_user_exists_expect_user_returned() {
+            final String nombre = "Manuel";
+            final UserEntity entity = new UserEntity();
+            final User user = new User();
 
-        assertNull(result);
-    }
+            when(UserRepositoryImplTest.this.userJPARepository.findByLogin(nombre)).thenReturn(Optional.of(entity));
+            when(UserRepositoryImplTest.this.userMapper.toModel(entity)).thenReturn(user);
 
-    @Test
-    void returnsNullWhenUserLoginIsNull() {
-        when(userJPARepository.findByLogin(null)).thenReturn(Optional.empty());
+            final User result = UserRepositoryImplTest.this.userRepository.findByLogin(nombre);
 
-        User result = userRepositoryImpl.findByLogin(null);
+            assertThat(result).isEqualTo(user);
+        }
 
-        assertNull(result);
+        @Test
+        void when_user_does_not_exist_expect_null_returned() {
+            final String nombre = "Desconocido";
+
+            when(UserRepositoryImplTest.this.userJPARepository.findByLogin(nombre)).thenReturn(Optional.empty());
+
+            final User result = UserRepositoryImplTest.this.userRepository.findByLogin(nombre);
+
+            assertThat(result).isNull();
+        }
+
+        @Test
+        void when_login_is_null_expect_null_returned() {
+            when(UserRepositoryImplTest.this.userJPARepository.findByLogin(null)).thenReturn(Optional.empty());
+
+            final User result = UserRepositoryImplTest.this.userRepository.findByLogin(null);
+
+            assertThat(result).isNull();
+        }
     }
 }

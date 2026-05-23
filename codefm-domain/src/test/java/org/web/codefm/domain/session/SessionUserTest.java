@@ -1,267 +1,245 @@
 package org.web.codefm.domain.session;
 
-import org.junit.jupiter.api.Assertions;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 
 class SessionUserTest {
 
-  private SessionUser sessionUser;
+    private SessionUser sessionUser;
 
-  @BeforeEach
-  void setUp() {
-    sessionUser = new SessionUser();
-    sessionUser.setId("user123");
-    sessionUser.setUsername("tester");
-    sessionUser.setEmail("test@example.com");
-    sessionUser.setLocale(Locale.ENGLISH);
-  }
-
-  @Test
-  void getParameter_shouldReturnNull_whenParameterDoesNotExist() {
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
-    assertNull(result);
-  }
-
-  @Test
-  void getParameter_shouldReturnInteger_whenValueIsValid() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "42");
-
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
-
-    assertEquals(42, result);
-  }
-
-  @Test
-  void getParameter_shouldThrowIllegalArgumentException_whenValueIsInvalid() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "notANumber");
-
-    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> sessionUser.getParameter(SessionParameter.TEACHER_ID));
-
-    assertTrue(exception.getMessage().contains("Cannot convert parameter"));
-    assertTrue(exception.getMessage().contains("teacher_id"));
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"0", "-5", "999999", "1"})
-  void getParameter_shouldConvertMultipleIntegerValues(String intValue) {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), intValue);
-
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
-
-    assertEquals(Integer.parseInt(intValue), result);
-  }
-
-  @Test
-  void getParameter_shouldHandleNegativeNumbers() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "-42");
-
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
-
-    assertEquals(-42, result);
-  }
-
-  @Test
-  void getParameter_shouldHandleZero() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "0");
-
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
-
-    assertEquals(0, result);
-  }
-
-  @Test
-  void getParameter_shouldMaintainSessionUserState() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "123");
-    sessionUser.setLocale(Locale.FRENCH);
-
-    Integer result = sessionUser.getParameter(SessionParameter.TEACHER_ID);
-
-    assertEquals(123, result);
-    assertEquals(Locale.FRENCH, sessionUser.getLocale());
-    assertEquals("tester", sessionUser.getUsername());
-  }
-
-  @Test
-  void getParameterAsList_shouldReturnEmptyList_whenParameterDoesNotExist() {
-    List<String> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, String.class);
-
-    assertTrue(result.isEmpty());
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {
-      "STRINGS:role1,role2,role3:String",
-      "INTEGERS:1,2,3,4,5:Integer",
-      "LONGS:1000000,2000000,3000000:Long"
-  })
-  void getParameterAsList_shouldReturnListWithCorrectElementType(String testCase) {
-    String[] parts = testCase.split(":");
-    String value = parts[1];
-    String typeName = parts[2];
-
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), value);
-
-    if ("String".equals(typeName)) {
-      List<String> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, String.class);
-      assertNotNull(result);
-      assertEquals(3, result.size());
-      assertEquals("role1", result.get(0));
-      assertEquals("role2", result.get(1));
-      assertEquals("role3", result.get(2));
-    } else if ("Integer".equals(typeName)) {
-      List<Integer> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, Integer.class);
-      assertNotNull(result);
-      assertEquals(5, result.size());
-      assertEquals(1, result.get(0));
-      assertEquals(3, result.get(2));
-      assertEquals(5, result.get(4));
-    } else if ("Long".equals(typeName)) {
-      List<Long> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, Long.class);
-      assertNotNull(result);
-      assertEquals(3, result.size());
-      assertEquals(1000000L, result.get(0));
-      assertEquals(3000000L, result.get(2));
+    @BeforeEach
+    void beforeEach() {
+        this.sessionUser = new SessionUser();
+        this.sessionUser.setId("user123");
+        this.sessionUser.setUsername("tester");
+        this.sessionUser.setEmail("test@example.com");
+        this.sessionUser.setLocale(Locale.ENGLISH);
     }
-  }
 
-  @Test
-  void getParameterAsList_shouldReturnListOfBooleans_whenElementTypeIsBoolean() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "true,false,true");
+    @Nested
+    class GetParameter {
 
-    List<Boolean> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, Boolean.class);
+        @Test
+        void when_parameter_does_not_exist_expect_null() {
+            final Integer result = SessionUserTest.this.sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
-    assertNotNull(result);
-    assertEquals(3, result.size());
-    assertTrue(result.get(0));
-    assertFalse(result.get(1));
-    assertTrue(result.get(2));
-  }
+            assertThat(result).isNull();
+        }
 
-  @Test
-  void getParameterAsList_shouldReturnListOfDoubles_whenElementTypeIsDouble() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "1.5,2.7,3.14");
+        @Test
+        void when_value_is_valid_expect_integer() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "42");
 
-    List<Double> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, Double.class);
+            final Integer result = SessionUserTest.this.sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
-    assertNotNull(result);
-    assertEquals(3, result.size());
-    assertEquals(1.5, result.get(0));
-    assertEquals(2.7, result.get(1));
-    assertEquals(3.14, result.get(2));
-  }
+            assertThat(result).isEqualTo(42);
+        }
 
-  @Test
-  void getParameterAsList_shouldReturnListOfFloats_whenElementTypeIsFloat() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "1.5,2.5,3.5");
+        @Test
+        void when_value_is_invalid_expect_illegal_argument_exception() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "notANumber");
+            final ThrowingCallable action = () -> SessionUserTest.this.sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
-    List<Float> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, Float.class);
+            assertThatThrownBy(action)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Cannot convert parameter")
+                    .hasMessageContaining("teacher_id");
+        }
 
-    assertNotNull(result);
-    assertEquals(3, result.size());
-    assertEquals(1.5f, result.get(0), 0.001f);
-    assertEquals(2.5f, result.get(1), 0.001f);
-    assertEquals(3.5f, result.get(2), 0.001f);
-  }
+        @ParameterizedTest
+        @ValueSource(strings = {"0", "-5", "999999", "1"})
+        void when_integer_values_are_valid_expect_converted_value(final String intValue) {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), intValue);
 
-  @Test
-  void getParameterAsList_shouldTrimWhitespace_fromListElements() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "role1 , role2 , role3");
+            final Integer result = SessionUserTest.this.sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
-    List<String> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, String.class);
+            assertThat(result).isEqualTo(Integer.parseInt(intValue));
+        }
 
-    assertNotNull(result);
-    assertEquals(3, result.size());
-    assertEquals("role1", result.get(0));
-    assertEquals("role2", result.get(1));
-    assertEquals("role3", result.get(2));
-  }
+        @Test
+        void when_value_is_negative_expect_negative_number() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "-42");
 
-  @Test
-  void getParameterAsList_shouldHandleNegativeNumbers_inIntegerList() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "-1,-2,-3");
+            final Integer result = SessionUserTest.this.sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
-    List<Integer> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, Integer.class);
+            assertThat(result).isEqualTo(-42);
+        }
 
-    assertNotNull(result);
-    assertEquals(3, result.size());
-    assertEquals(-1, result.get(0));
-    assertEquals(-2, result.get(1));
-    assertEquals(-3, result.get(2));
-  }
+        @Test
+        void when_parameter_is_read_expect_session_state_preserved() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "123");
+            SessionUserTest.this.sessionUser.setLocale(Locale.FRENCH);
 
-  @Test
-  void getParameterAsList_shouldReturnSingleElementList_whenValueHasNoCommas() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "42");
+            final Integer result = SessionUserTest.this.sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
-    List<Integer> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, Integer.class);
+            assertThat(result).isEqualTo(123);
+            assertThat(SessionUserTest.this.sessionUser.getLocale()).isEqualTo(Locale.FRENCH);
+            assertThat(SessionUserTest.this.sessionUser.getUsername()).isEqualTo("tester");
+        }
+    }
 
-    assertNotNull(result);
-    assertEquals(1, result.size());
-    assertEquals(42, result.get(0));
-  }
+    @Nested
+    class GetParameterAsList {
 
-  @Test
-  void getParameterAsList_shouldThrowIllegalArgumentException_whenIntegerConversionFails() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "1,abc,3");
+        @Test
+        void when_parameter_does_not_exist_expect_empty_list() {
+            final List<String> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                    String.class);
 
-    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-        () -> sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, Integer.class));
+            assertThat(result).isEmpty();
+        }
 
-    assertTrue(exception.getMessage().contains("Cannot convert list elements"));
-  }
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "STRINGS:role1,role2,role3:String",
+                "INTEGERS:1,2,3,4,5:Integer",
+                "LONGS:1000000,2000000,3000000:Long"
+        })
+        void when_element_type_is_supported_expect_list_with_correct_values(final String testCase) {
+            final String[] parts = testCase.split(":");
+            final String value = parts[1];
+            final String typeName = parts[2];
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), value);
 
-  @Test
-  void getParameterAsList_shouldThrowIllegalArgumentException_whenDoubleConversionFails() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "1.5,notADouble,3.5");
+            if ("String".equals(typeName)) {
+                final List<String> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                        String.class);
+                assertThat(result).containsExactly("role1", "role2", "role3");
+            } else if ("Integer".equals(typeName)) {
+                final List<Integer> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                        Integer.class);
+                assertThat(result).containsExactly(1, 2, 3, 4, 5);
+            } else if ("Long".equals(typeName)) {
+                final List<Long> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                        Long.class);
+                assertThat(result).containsExactly(1000000L, 2000000L, 3000000L);
+            } else {
+                fail("Unexpected typeName: " + typeName);
+            }
+        }
 
-    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-        () -> sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, Double.class));
+        @Test
+        void when_element_type_is_boolean_expect_boolean_list() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "true,false,true");
 
-    assertTrue(exception.getMessage().contains("Cannot convert list elements"));
-  }
+            final List<Boolean> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                    Boolean.class);
 
-  @Test
-  void getParameterAsList_shouldThrowIllegalArgumentException_whenElementTypeIsUnsupported() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "value1,value2");
+            assertThat(result).containsExactly(true, false, true);
+        }
 
-    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-        () -> sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, java.time.LocalDate.class));
+        @Test
+        void when_element_type_is_double_expect_double_list() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "1.5,2.7,3.14");
 
-    assertTrue(exception.getMessage().contains("Cannot convert list elements"));
-  }
+            final List<Double> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                    Double.class);
 
-  @Test
-  void getParameterAsList_shouldHandleEmptyStringElement() {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "role1,,role3");
+            assertThat(result).containsExactly(1.5, 2.7, 3.14);
+        }
 
-    List<String> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, String.class);
+        @Test
+        void when_element_type_is_float_expect_float_list() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "1.5,2.5,3.5");
 
-    assertNotNull(result);
-    assertEquals(3, result.size());
-    assertEquals("role1", result.get(0));
-    assertEquals("", result.get(1));
-    assertEquals("role3", result.get(2));
-  }
+            final List<Float> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                    Float.class);
 
-  @ParameterizedTest
-  @ValueSource(strings = {"1,2,3", "10,20", "100"})
-  void getParameterAsList_shouldHandleMultipleIntegerListFormats(String listValue) {
-    sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), listValue);
+            assertThat(result).containsExactly(1.5f, 2.5f, 3.5f);
+        }
 
-    List<Integer> result = sessionUser.getParameterAsList(SessionParameter.TEACHER_ID, Integer.class);
+        @Test
+        void when_list_contains_whitespace_expect_trimmed_values() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "role1 , role2 , role3");
 
-    assertNotNull(result);
-    assertFalse(result.isEmpty());
-    result.forEach(Assertions::assertNotNull);
-  }
+            final List<String> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                    String.class);
+
+            assertThat(result).containsExactly("role1", "role2", "role3");
+        }
+
+        @Test
+        void when_integer_list_contains_negative_numbers_expect_negative_values() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "-1,-2,-3");
+
+            final List<Integer> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                    Integer.class);
+
+            assertThat(result).containsExactly(-1, -2, -3);
+        }
+
+        @Test
+        void when_value_has_no_commas_expect_single_element_list() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "42");
+
+            final List<Integer> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                    Integer.class);
+
+            assertThat(result).containsExactly(42);
+        }
+
+        @Test
+        void when_integer_conversion_fails_expect_illegal_argument_exception() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "1,abc,3");
+            final ThrowingCallable action = () -> SessionUserTest.this.sessionUser.getParameterAsList(
+                    SessionParameter.TEACHER_ID, Integer.class);
+
+            assertThatThrownBy(action)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Cannot convert list elements");
+        }
+
+        @Test
+        void when_double_conversion_fails_expect_illegal_argument_exception() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "1.5,notADouble,3.5");
+            final ThrowingCallable action = () -> SessionUserTest.this.sessionUser.getParameterAsList(
+                    SessionParameter.TEACHER_ID, Double.class);
+
+            assertThatThrownBy(action)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Cannot convert list elements");
+        }
+
+        @Test
+        void when_element_type_is_unsupported_expect_illegal_argument_exception() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "value1,value2");
+            final ThrowingCallable action = () -> SessionUserTest.this.sessionUser.getParameterAsList(
+                    SessionParameter.TEACHER_ID, LocalDate.class);
+
+            assertThatThrownBy(action)
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Cannot convert list elements");
+        }
+
+        @Test
+        void when_list_contains_empty_string_element_expect_empty_value_preserved() {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), "role1,,role3");
+
+            final List<String> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                    String.class);
+
+            assertThat(result).containsExactly("role1", "", "role3");
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"1,2,3", "10,20", "100"})
+        void when_integer_list_has_multiple_formats_expect_non_null_elements(final String listValue) {
+            SessionUserTest.this.sessionUser.getParameters().put(SessionParameter.TEACHER_ID.getClaimName(), listValue);
+
+            final List<Integer> result = SessionUserTest.this.sessionUser.getParameterAsList(SessionParameter.TEACHER_ID,
+                    Integer.class);
+
+            assertThat(result).isNotEmpty().doesNotContainNull();
+        }
+    }
 }
-

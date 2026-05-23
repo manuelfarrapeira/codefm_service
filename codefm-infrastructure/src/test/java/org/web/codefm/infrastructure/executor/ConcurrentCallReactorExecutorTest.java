@@ -1,7 +1,9 @@
 package org.web.codefm.infrastructure.executor;
 
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,7 +21,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
@@ -34,170 +37,148 @@ class ConcurrentCallReactorExecutorTest {
     @Mock
     ListPartitioningStrategy listPartitioningStrategy;
 
-    @Test
-    void whenReactorExecutorPropertyProviderIsNull_ThrowException() {
+    @Nested
+    class Build {
 
-        final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
-                ConcurrentCallReactorExecutor.builder().scheduler(this.scheduler).listPartitioningStrategy(this.listPartitioningStrategy);
+        @Test
+        void when_property_provider_is_null_expect_exception() {
+            final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
+                    ConcurrentCallReactorExecutor.builder().scheduler(scheduler).listPartitioningStrategy(listPartitioningStrategy);
+            final ThrowingCallable callable = concurrentCallReactorExecutorBuilder::build;
 
-        assertThrows(IllegalArgumentException.class,
-                () -> concurrentCallReactorExecutorBuilder.build());
+            assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
+        }
 
+        @Test
+        void when_list_partitioning_strategy_is_null_expect_exception() {
+            final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
+                    ConcurrentCallReactorExecutor.builder().scheduler(scheduler)
+                            .reactorExecutorPropertyProvider(reactorExecutorPropertyProvider);
+            final ThrowingCallable callable = concurrentCallReactorExecutorBuilder::build;
+
+            assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void when_scheduler_is_null_expect_exception() {
+            final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
+                    ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(listPartitioningStrategy)
+                            .reactorExecutorPropertyProvider(reactorExecutorPropertyProvider);
+            final ThrowingCallable callable = concurrentCallReactorExecutorBuilder::build;
+
+            assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.infrastructure.executor.ConcurrentCallReactorExecutorTest#provideFlatMapConcurrency")
+        void when_concurrency_is_not_higher_than_zero_expect_exception(final Integer flatMapConcurrency) {
+            final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
+                    ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(listPartitioningStrategy)
+                            .reactorExecutorPropertyProvider(reactorExecutorPropertyProvider).scheduler(scheduler);
+            when(reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(flatMapConcurrency);
+            final ThrowingCallable callable = concurrentCallReactorExecutorBuilder::build;
+
+            assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.infrastructure.executor.ConcurrentCallReactorExecutorTest#provideBlockTimeout")
+        void when_block_timeout_is_not_higher_than_zero_expect_exception(final Long blockTimeout) {
+            final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
+                    ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(listPartitioningStrategy)
+                            .reactorExecutorPropertyProvider(reactorExecutorPropertyProvider).scheduler(scheduler);
+            when(reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(2);
+            when(reactorExecutorPropertyProvider.getBlockTimeout()).thenReturn(blockTimeout);
+            final ThrowingCallable callable = concurrentCallReactorExecutorBuilder::build;
+
+            assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void when_retries_is_null_expect_exception() {
+            final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
+                    ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(listPartitioningStrategy)
+                            .reactorExecutorPropertyProvider(reactorExecutorPropertyProvider).scheduler(scheduler);
+            when(reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(2);
+            when(reactorExecutorPropertyProvider.getBlockTimeout()).thenReturn(3000L);
+            when(reactorExecutorPropertyProvider.getRetries()).thenReturn(null);
+            final ThrowingCallable callable = concurrentCallReactorExecutorBuilder::build;
+
+            assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
+        }
     }
 
-    @Test
-    void whenListPartitioningStrategyIsNull_ThrowException() {
+    @Nested
+    class Execute {
 
-        final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
-                ConcurrentCallReactorExecutor.builder().scheduler(this.scheduler).reactorExecutorPropertyProvider(
-                        this.reactorExecutorPropertyProvider);
+        @Test
+        void when_retry_is_zero_and_no_exception_expect_result() {
+            final FunctionClassTest functionClassTestSpy = spy(new FunctionClassTest());
+            final List<Integer> listToPartition1 = List.of(1, 2);
+            final List<Integer> listToPartition2 = List.of(3, 4);
+            final List<Integer> listToPartition = Stream.concat(listToPartition1.stream(), listToPartition2.stream())
+                    .collect(Collectors.toList());
+            final List<List<Integer>> splitList = new ArrayList<>();
+            splitList.add(listToPartition1);
+            splitList.add(listToPartition2);
+            when(reactorExecutorPropertyProvider.getRetries()).thenReturn(0);
+            when(reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(2);
+            when(reactorExecutorPropertyProvider.getBlockTimeout()).thenReturn(3000L);
+            when(listPartitioningStrategy.split(listToPartition)).thenReturn(splitList);
+            final ConcurrentCallReactorExecutor concurrentCallReactorExecutor =
+                    ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(listPartitioningStrategy)
+                            .reactorExecutorPropertyProvider(reactorExecutorPropertyProvider).scheduler(scheduler)
+                            .build();
 
-        assertThrows(IllegalArgumentException.class,
-                () -> concurrentCallReactorExecutorBuilder.build());
+            final List<Integer> totalResult = concurrentCallReactorExecutor.execute(listToPartition, functionClassTestSpy::run);
 
-    }
+            assertThat(totalResult).isNotNull().hasSize(listToPartition.size());
+            Collections.sort(listToPartition);
+            Collections.sort(totalResult);
+            assertThat(totalResult).isEqualTo(listToPartition);
+            verify(functionClassTestSpy, times(2)).run(anyList());
+        }
 
-    @Test
-    void whenSchedulerIsNull_ThrowException() {
+        @Test
+        void when_retry_is_two_and_exception_expect_three_calls_and_exception() {
+            final FunctionClassExceptionTest functionClassExceptionTestSpy = spy(new FunctionClassExceptionTest());
+            final List<Integer> listToPartition = List.of(1, 2);
+            final List<List<Integer>> splitList = new ArrayList<>();
+            splitList.add(listToPartition);
+            when(reactorExecutorPropertyProvider.getRetries()).thenReturn(2);
+            when(reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(2);
+            when(reactorExecutorPropertyProvider.getBlockTimeout()).thenReturn(3000L);
+            when(listPartitioningStrategy.split(listToPartition)).thenReturn(splitList);
+            final ConcurrentCallReactorExecutor concurrentCallReactorExecutor =
+                    ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(listPartitioningStrategy)
+                            .reactorExecutorPropertyProvider(reactorExecutorPropertyProvider).scheduler(scheduler)
+                            .build();
+            final ThrowingCallable callable = () -> concurrentCallReactorExecutor.execute(listToPartition, functionClassExceptionTestSpy::run);
 
-        final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
-                ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(this.listPartitioningStrategy)
-                        .reactorExecutorPropertyProvider(this.reactorExecutorPropertyProvider);
+            assertThatThrownBy(callable).isInstanceOf(NumberFormatException.class);
+            verify(functionClassExceptionTestSpy, times(3)).run(anyList());
+        }
 
-        assertThrows(IllegalArgumentException.class,
-                () -> concurrentCallReactorExecutorBuilder.build());
+        @Test
+        void when_block_timeout_is_reached_expect_timeout_exception_thrown() {
+            final FunctionClassSleepTest functionClassSleepTestSpy = spy(new FunctionClassSleepTest());
+            final List<Integer> listToPartition = List.of(1, 2);
+            final List<List<Integer>> splitList = new ArrayList<>();
+            splitList.add(listToPartition);
+            when(reactorExecutorPropertyProvider.getRetries()).thenReturn(0);
+            when(reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(2);
+            when(reactorExecutorPropertyProvider.getBlockTimeout()).thenReturn(1000L);
+            when(listPartitioningStrategy.split(listToPartition)).thenReturn(splitList);
+            final ConcurrentCallReactorExecutor concurrentCallReactorExecutor =
+                    ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(listPartitioningStrategy)
+                            .reactorExecutorPropertyProvider(reactorExecutorPropertyProvider).scheduler(scheduler)
+                            .build();
+            final ThrowingCallable callable = () -> concurrentCallReactorExecutor.execute(listToPartition, functionClassSleepTestSpy::run);
 
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideFlatMapConcurrency")
-    void whenConcurrencyIsNotHigherThanZero_ThrowException(final Integer flatMapConcurrency) {
-
-        final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
-                ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(this.listPartitioningStrategy)
-                        .reactorExecutorPropertyProvider(this.reactorExecutorPropertyProvider).scheduler(this.scheduler);
-        when(this.reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(flatMapConcurrency);
-
-        assertThrows(IllegalArgumentException.class,
-                () -> concurrentCallReactorExecutorBuilder.build());
-
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideBlockTimeout")
-    void whenBlockTimeoutIsNotHigherThanZero_ThrowException(final Long blockTimeout) {
-
-        final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
-                ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(this.listPartitioningStrategy)
-                        .reactorExecutorPropertyProvider(this.reactorExecutorPropertyProvider).scheduler(this.scheduler);
-        when(this.reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(2);
-        when(this.reactorExecutorPropertyProvider.getBlockTimeout()).thenReturn(blockTimeout);
-
-        assertThrows(IllegalArgumentException.class,
-                () -> concurrentCallReactorExecutorBuilder.build());
-
-    }
-
-    @Test
-    void whenRetriesIsNull_ThrowException() {
-
-        final ConcurrentCallReactorExecutorBuilder concurrentCallReactorExecutorBuilder =
-                ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(this.listPartitioningStrategy)
-                        .reactorExecutorPropertyProvider(this.reactorExecutorPropertyProvider).scheduler(this.scheduler);
-
-        when(this.reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(2);
-        when(this.reactorExecutorPropertyProvider.getBlockTimeout()).thenReturn(3000L);
-        when(this.reactorExecutorPropertyProvider.getRetries()).thenReturn(null);
-
-        assertThrows(IllegalArgumentException.class,
-                () -> concurrentCallReactorExecutorBuilder
-                        .build());
-
-    }
-
-    @Test
-    void whenRetryIsZeroAndNoException_ResultIsOk() {
-
-        final FunctionClassTest functionClassTestSpy = spy(new FunctionClassTest());
-        final List<Integer> listToPartition1 = List.of(1, 2);
-        final List<Integer> listToPartition2 = List.of(3, 4);
-        final List<Integer> listToPartition = Stream.concat(listToPartition1.stream(), listToPartition2.stream())
-                .collect(Collectors.toList());
-        final List<List<Integer>> splitList = new ArrayList<>();
-        splitList.add(listToPartition1);
-        splitList.add(listToPartition2);
-
-        when(this.reactorExecutorPropertyProvider.getRetries()).thenReturn(0);
-        when(this.reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(2);
-        when(this.reactorExecutorPropertyProvider.getBlockTimeout()).thenReturn(3000L);
-
-        when(this.listPartitioningStrategy.split(listToPartition)).thenReturn(splitList);
-
-        final ConcurrentCallReactorExecutor concurrentCallReactorExecutor =
-                ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(this.listPartitioningStrategy)
-                        .reactorExecutorPropertyProvider(this.reactorExecutorPropertyProvider).scheduler(this.scheduler)
-                        .build();
-
-        final List<Integer> totalResult = concurrentCallReactorExecutor.execute(listToPartition, l -> functionClassTestSpy.run(l));
-
-        assertNotNull(totalResult);
-        assertEquals(listToPartition.size(), totalResult.size());
-
-        Collections.sort(listToPartition);
-        Collections.sort(totalResult);
-        assertEquals(listToPartition, totalResult);
-
-        verify(functionClassTestSpy, times(2)).run(anyList());
-    }
-
-    @Test
-    void whenRetryIsTwoAndException_ThreeCalls() {
-
-        final FunctionClassExceptionTest functionClassExceptionTestSpy = spy(new FunctionClassExceptionTest());
-        final List<Integer> listToPartition = List.of(1, 2);
-        final List<List<Integer>> splitList = new ArrayList<>();
-        splitList.add(listToPartition);
-
-        when(this.reactorExecutorPropertyProvider.getRetries()).thenReturn(2);
-        when(this.reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(2);
-        when(this.reactorExecutorPropertyProvider.getBlockTimeout()).thenReturn(3000L);
-
-        when(this.listPartitioningStrategy.split(listToPartition)).thenReturn(splitList);
-
-        final ConcurrentCallReactorExecutor concurrentCallReactorExecutor =
-                ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(this.listPartitioningStrategy)
-                        .reactorExecutorPropertyProvider(this.reactorExecutorPropertyProvider).scheduler(this.scheduler)
-                        .build();
-
-        assertThrows(NumberFormatException.class,
-                () -> concurrentCallReactorExecutor.execute(listToPartition, l -> functionClassExceptionTestSpy.run(l)));
-
-        verify(functionClassExceptionTestSpy, times(3)).run(anyList());
-    }
-
-    @Test
-    void whenBlockTimeoutIsReached_TimeoutExceptionThrown() {
-
-        final FunctionClassSleepTest functionClassSleepTestSpy = spy(new FunctionClassSleepTest());
-        final List<Integer> listToPartition = List.of(1, 2);
-        final List<List<Integer>> splitList = new ArrayList<>();
-        splitList.add(listToPartition);
-
-        when(this.reactorExecutorPropertyProvider.getRetries()).thenReturn(0);
-        when(this.reactorExecutorPropertyProvider.getFlatMapConcurrency()).thenReturn(2);
-        when(this.reactorExecutorPropertyProvider.getBlockTimeout()).thenReturn(1000L);
-
-        when(this.listPartitioningStrategy.split(listToPartition)).thenReturn(splitList);
-
-        final ConcurrentCallReactorExecutor concurrentCallReactorExecutor =
-                ConcurrentCallReactorExecutor.builder().listPartitioningStrategy(this.listPartitioningStrategy)
-                        .reactorExecutorPropertyProvider(this.reactorExecutorPropertyProvider).scheduler(this.scheduler)
-                        .build();
-
-        final IllegalStateException illegalStateException = assertThrows(IllegalStateException.class,
-                () -> concurrentCallReactorExecutor.execute(listToPartition, l -> functionClassSleepTestSpy.run(l)));
-
-        assertTrue(illegalStateException.getMessage().contains("Timeout on blocking read"));
+            assertThatThrownBy(callable)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("Timeout on blocking read");
+        }
     }
 
     static Stream<Arguments> provideFlatMapConcurrency() {

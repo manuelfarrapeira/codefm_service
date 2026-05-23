@@ -1,8 +1,10 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Subject;
@@ -19,11 +21,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SubjectRepositoryImplTest {
+
+    private SubjectRepositoryImpl subjectRepository;
 
     @Mock
     private SubjectJPARepository subjectJPARepository;
@@ -37,186 +43,227 @@ class SubjectRepositoryImplTest {
     @Mock
     private CacheEvictionService cacheEvictionService;
 
-    @InjectMocks
-    private SubjectRepositoryImpl subjectRepository;
-
-    @Test
-    void findByTeacherId_shouldReturnSubjectsWhenTeacherHasSubjects() {
-        Integer teacherId = 1;
-        SubjectEntity entity1 = new SubjectEntity(1, "Math", teacherId, null);
-        SubjectEntity entity2 = new SubjectEntity(2, "Science", teacherId, null);
-        List<SubjectEntity> entities = Arrays.asList(entity1, entity2);
-
-        Subject subject1 = Subject.builder().id(1).name("Math").teacherId(teacherId).build();
-        Subject subject2 = Subject.builder().id(2).name("Science").teacherId(teacherId).build();
-        List<Subject> expectedSubjects = Arrays.asList(subject1, subject2);
-
-        when(subjectJPARepository.findByTeacherId(teacherId)).thenReturn(entities);
-        when(subjectMapper.toModelList(entities)).thenReturn(expectedSubjects);
-
-        List<Subject> result = subjectRepository.findByTeacherId(teacherId);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        verify(subjectJPARepository, times(1)).findByTeacherId(teacherId);
-        verify(subjectMapper, times(1)).toModelList(entities);
+    @BeforeEach
+    void beforeEach() {
+        this.subjectRepository = new SubjectRepositoryImpl(this.subjectJPARepository, this.subjectMapper,
+                this.subjectClassJPARepository, this.cacheEvictionService);
     }
 
-    @Test
-    void findByTeacherId_shouldReturnEmptyListWhenTeacherHasNoSubjects() {
-        Integer teacherId = 1;
+    @Nested
+    class FindByTeacherId {
 
-        when(subjectJPARepository.findByTeacherId(teacherId)).thenReturn(Collections.emptyList());
-        when(subjectMapper.toModelList(Collections.emptyList())).thenReturn(Collections.emptyList());
+        @Test
+        void when_teacher_has_subjects_expect_subjects_returned() {
+            final Integer teacherId = 1;
+            final SubjectEntity entity1 = new SubjectEntity(1, "Math", teacherId, null);
+            final SubjectEntity entity2 = new SubjectEntity(2, "Science", teacherId, null);
+            final List<SubjectEntity> entities = Arrays.asList(entity1, entity2);
+            final Subject subject1 = Subject.builder().id(1).name("Math").teacherId(teacherId).build();
+            final Subject subject2 = Subject.builder().id(2).name("Science").teacherId(teacherId).build();
+            final List<Subject> expectedSubjects = Arrays.asList(subject1, subject2);
+            when(SubjectRepositoryImplTest.this.subjectJPARepository.findByTeacherId(teacherId)).thenReturn(entities);
+            when(SubjectRepositoryImplTest.this.subjectMapper.toModelList(entities)).thenReturn(expectedSubjects);
 
-        List<Subject> result = subjectRepository.findByTeacherId(teacherId);
+            final List<Subject> result = SubjectRepositoryImplTest.this.subjectRepository.findByTeacherId(teacherId);
 
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(subjectJPARepository, times(1)).findByTeacherId(teacherId);
-        verify(subjectMapper, times(1)).toModelList(Collections.emptyList());
+            assertThat(result).isNotNull().hasSize(2);
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, times(1)).findByTeacherId(teacherId);
+            verify(SubjectRepositoryImplTest.this.subjectMapper, times(1)).toModelList(entities);
+        }
+
+        @Test
+        void when_teacher_has_no_subjects_expect_empty_list_returned() {
+            final Integer teacherId = 1;
+            when(SubjectRepositoryImplTest.this.subjectJPARepository.findByTeacherId(teacherId))
+                    .thenReturn(Collections.emptyList());
+            when(SubjectRepositoryImplTest.this.subjectMapper.toModelList(Collections.emptyList()))
+                    .thenReturn(Collections.emptyList());
+
+            final List<Subject> result = SubjectRepositoryImplTest.this.subjectRepository.findByTeacherId(teacherId);
+
+            assertThat(result).isNotNull().isEmpty();
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, times(1)).findByTeacherId(teacherId);
+            verify(SubjectRepositoryImplTest.this.subjectMapper, times(1)).toModelList(Collections.emptyList());
+        }
     }
 
-    @Test
-    void save_shouldMapToEntityAndSaveAndMapBackToModel() {
-        Subject subjectToSave = Subject.builder().name("History").teacherId(1).build();
-        SubjectEntity subjectEntity = new SubjectEntity();
-        SubjectEntity savedSubjectEntity = new SubjectEntity(1, "History", 1, null);
-        Subject savedSubject = Subject.builder().id(1).name("History").teacherId(1).build();
+    @Nested
+    class Save {
 
-        when(subjectMapper.toEntity(subjectToSave)).thenReturn(subjectEntity);
-        when(subjectJPARepository.save(subjectEntity)).thenReturn(savedSubjectEntity);
-        when(subjectMapper.toModel(savedSubjectEntity)).thenReturn(savedSubject);
-        when(subjectClassJPARepository.findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(1))
-                .thenReturn(Arrays.asList(10, 20));
+        @Test
+        void when_subject_is_saved_expect_model_returned() {
+            final Subject subjectToSave = Subject.builder().name("History").teacherId(1).build();
+            final SubjectEntity subjectEntity = new SubjectEntity();
+            final SubjectEntity savedSubjectEntity = new SubjectEntity(1, "History", 1, null);
+            final Subject savedSubject = Subject.builder().id(1).name("History").teacherId(1).build();
+            when(SubjectRepositoryImplTest.this.subjectMapper.toEntity(subjectToSave)).thenReturn(subjectEntity);
+            when(SubjectRepositoryImplTest.this.subjectJPARepository.save(subjectEntity)).thenReturn(savedSubjectEntity);
+            when(SubjectRepositoryImplTest.this.subjectMapper.toModel(savedSubjectEntity)).thenReturn(savedSubject);
+            when(SubjectRepositoryImplTest.this.subjectClassJPARepository
+                    .findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(1)).thenReturn(Arrays.asList(10, 20));
 
-        Subject result = subjectRepository.save(subjectToSave);
+            final Subject result = SubjectRepositoryImplTest.this.subjectRepository.save(subjectToSave);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals("History", result.getName());
-        verify(subjectMapper, times(1)).toEntity(subjectToSave);
-        verify(subjectJPARepository, times(1)).save(subjectEntity);
-        verify(subjectMapper, times(1)).toModel(savedSubjectEntity);
-        verify(cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, 10);
-        verify(cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, 20);
-        verify(cacheEvictionService).evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            assertThat(result.getName()).isEqualTo("History");
+            verify(SubjectRepositoryImplTest.this.subjectMapper, times(1)).toEntity(subjectToSave);
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, times(1)).save(subjectEntity);
+            verify(SubjectRepositoryImplTest.this.subjectMapper, times(1)).toModel(savedSubjectEntity);
+            verify(SubjectRepositoryImplTest.this.cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, 10);
+            verify(SubjectRepositoryImplTest.this.cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, 20);
+            verify(SubjectRepositoryImplTest.this.cacheEvictionService)
+                    .evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
+        }
     }
 
-    @Test
-    void findById_shouldReturnSubjectWhenFoundAndNotDeleted() {
-        Integer subjectId = 1;
-        SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Math", 1, null);
-        Subject expectedSubject = Subject.builder().id(subjectId).name("Math").teacherId(1).build();
+    @Nested
+    class FindById {
 
-        when(subjectJPARepository.findByIdAndDeletionDateIsNull(subjectId)).thenReturn(Optional.of(subjectEntity));
-        when(subjectMapper.toModel(subjectEntity)).thenReturn(expectedSubject);
+        @Test
+        void when_subject_exists_expect_subject_returned() {
+            final Integer subjectId = 1;
+            final SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Math", 1, null);
+            final Subject expectedSubject = Subject.builder().id(subjectId).name("Math").teacherId(1).build();
+            when(SubjectRepositoryImplTest.this.subjectJPARepository.findByIdAndDeletionDateIsNull(subjectId))
+                    .thenReturn(Optional.of(subjectEntity));
+            when(SubjectRepositoryImplTest.this.subjectMapper.toModel(subjectEntity)).thenReturn(expectedSubject);
 
-        Optional<Subject> result = subjectRepository.findById(subjectId);
+            final Optional<Subject> result = SubjectRepositoryImplTest.this.subjectRepository.findById(subjectId);
 
-        assertTrue(result.isPresent());
-        assertEquals(expectedSubject, result.get());
-        verify(subjectJPARepository, times(1)).findByIdAndDeletionDateIsNull(subjectId);
-        verify(subjectMapper, times(1)).toModel(subjectEntity);
+            assertThat(result).isPresent();
+            assertThat(result.get()).isEqualTo(expectedSubject);
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, times(1))
+                    .findByIdAndDeletionDateIsNull(subjectId);
+            verify(SubjectRepositoryImplTest.this.subjectMapper, times(1)).toModel(subjectEntity);
+        }
+
+        @Test
+        void when_subject_does_not_exist_expect_empty_optional_returned() {
+            final Integer subjectId = 1;
+            when(SubjectRepositoryImplTest.this.subjectJPARepository.findByIdAndDeletionDateIsNull(subjectId))
+                    .thenReturn(Optional.empty());
+
+            final Optional<Subject> result = SubjectRepositoryImplTest.this.subjectRepository.findById(subjectId);
+
+            assertThat(result).isNotPresent();
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, times(1))
+                    .findByIdAndDeletionDateIsNull(subjectId);
+            verify(SubjectRepositoryImplTest.this.subjectMapper, never()).toModel(any(SubjectEntity.class));
+        }
     }
 
-    @Test
-    void findById_shouldReturnEmptyWhenNotFound() {
-        Integer subjectId = 1;
+    @Nested
+    class FindByIdAndTeacherId {
 
-        when(subjectJPARepository.findByIdAndDeletionDateIsNull(subjectId)).thenReturn(Optional.empty());
+        @Test
+        void when_subject_exists_and_is_owned_expect_subject_returned() {
+            final Integer subjectId = 1;
+            final Integer teacherId = 101;
+            final SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Physics", teacherId, null);
+            final Subject expectedSubject = Subject.builder().id(subjectId).name("Physics").teacherId(teacherId)
+                    .build();
+            when(SubjectRepositoryImplTest.this.subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(
+                    subjectId, teacherId)).thenReturn(Optional.of(subjectEntity));
+            when(SubjectRepositoryImplTest.this.subjectMapper.toModel(subjectEntity)).thenReturn(expectedSubject);
 
-        Optional<Subject> result = subjectRepository.findById(subjectId);
+            final Optional<Subject> result = SubjectRepositoryImplTest.this.subjectRepository.findByIdAndTeacherId(
+                    subjectId, teacherId);
 
-        assertFalse(result.isPresent());
-        verify(subjectJPARepository, times(1)).findByIdAndDeletionDateIsNull(subjectId);
-        verify(subjectMapper, never()).toModel(any(SubjectEntity.class));
+            assertThat(result).isPresent();
+            assertThat(result.get()).isEqualTo(expectedSubject);
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, times(1))
+                    .findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId);
+            verify(SubjectRepositoryImplTest.this.subjectMapper, times(1)).toModel(subjectEntity);
+        }
+
+        @Test
+        void when_subject_does_not_exist_or_is_not_owned_expect_empty_optional_returned() {
+            final Integer subjectId = 1;
+            final Integer teacherId = 101;
+            when(SubjectRepositoryImplTest.this.subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(
+                    subjectId, teacherId)).thenReturn(Optional.empty());
+
+            final Optional<Subject> result = SubjectRepositoryImplTest.this.subjectRepository.findByIdAndTeacherId(
+                    subjectId, teacherId);
+
+            assertThat(result).isNotPresent();
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, times(1))
+                    .findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId);
+            verify(SubjectRepositoryImplTest.this.subjectMapper, never()).toModel(any(SubjectEntity.class));
+        }
     }
 
-    @Test
-    void findByIdAndTeacherId_shouldReturnSubjectWhenFoundAndOwnedByTeacher() {
-        Integer subjectId = 1;
-        Integer teacherId = 101;
-        SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Physics", teacherId, null);
-        Subject expectedSubject = Subject.builder().id(subjectId).name("Physics").teacherId(teacherId).build();
+    @Nested
+    class SoftDeleteSubject {
 
-        when(subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId)).thenReturn(Optional.of(subjectEntity));
-        when(subjectMapper.toModel(subjectEntity)).thenReturn(expectedSubject);
+        @Test
+        void when_subject_exists_expect_deletion_date_set_and_subject_returned() {
+            final Integer subjectId = 1;
+            final Integer teacherId = 101;
+            final SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Chemistry", teacherId, null);
+            final Subject updatedSubject = Subject.builder().id(subjectId).name("Chemistry").teacherId(teacherId)
+                    .deletionDate(LocalDate.now()).build();
+            when(SubjectRepositoryImplTest.this.subjectClassJPARepository
+                    .findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(subjectId)).thenReturn(Arrays.asList(10));
+            when(SubjectRepositoryImplTest.this.subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(
+                    subjectId, teacherId)).thenReturn(Optional.of(subjectEntity));
+            when(SubjectRepositoryImplTest.this.subjectJPARepository.save(any(SubjectEntity.class)))
+                    .thenReturn(subjectEntity);
+            when(SubjectRepositoryImplTest.this.subjectMapper.toModel(any(SubjectEntity.class)))
+                    .thenReturn(updatedSubject);
 
-        Optional<Subject> result = subjectRepository.findByIdAndTeacherId(subjectId, teacherId);
+            final Subject result = SubjectRepositoryImplTest.this.subjectRepository.softDeleteSubject(subjectId,
+                    teacherId);
 
-        assertTrue(result.isPresent());
-        assertEquals(expectedSubject, result.get());
-        verify(subjectJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId);
-        verify(subjectMapper, times(1)).toModel(subjectEntity);
-    }
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(subjectId);
+            assertThat(result.getTeacherId()).isEqualTo(teacherId);
+            assertThat(result.getDeletionDate()).isNotNull();
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, times(1))
+                    .findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId);
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, times(1)).save(subjectEntity);
+            verify(SubjectRepositoryImplTest.this.subjectMapper, times(1)).toModel(subjectEntity);
+            verify(SubjectRepositoryImplTest.this.cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, 10);
+            verify(SubjectRepositoryImplTest.this.cacheEvictionService)
+                    .evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
+        }
 
-    @Test
-    void findByIdAndTeacherId_shouldReturnEmptyWhenNotFoundOrNotOwnedByTeacher() {
-        Integer subjectId = 1;
-        Integer teacherId = 101;
+        @Test
+        void when_subject_is_not_found_or_not_owned_expect_exception_thrown() {
+            final Integer subjectId = 1;
+            final Integer teacherId = 101;
+            when(SubjectRepositoryImplTest.this.subjectClassJPARepository
+                    .findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(subjectId))
+                    .thenReturn(Collections.emptyList());
+            when(SubjectRepositoryImplTest.this.subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(
+                    subjectId, teacherId)).thenReturn(Optional.empty());
+            final ThrowingCallable callable = () -> SubjectRepositoryImplTest.this.subjectRepository
+                    .softDeleteSubject(subjectId, teacherId);
 
-        when(subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId)).thenReturn(Optional.empty());
+            assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, times(1))
+                    .findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId);
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, never()).save(any(SubjectEntity.class));
+            verify(SubjectRepositoryImplTest.this.subjectMapper, never()).toModel(any(SubjectEntity.class));
+        }
 
-        Optional<Subject> result = subjectRepository.findByIdAndTeacherId(subjectId, teacherId);
+        @Test
+        void when_subject_is_already_deleted_expect_exception_thrown() {
+            final Integer subjectId = 1;
+            final Integer teacherId = 101;
+            when(SubjectRepositoryImplTest.this.subjectClassJPARepository
+                    .findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(subjectId))
+                    .thenReturn(Collections.emptyList());
+            when(SubjectRepositoryImplTest.this.subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(
+                    subjectId, teacherId)).thenReturn(Optional.empty());
+            final ThrowingCallable callable = () -> SubjectRepositoryImplTest.this.subjectRepository
+                    .softDeleteSubject(subjectId, teacherId);
 
-        assertFalse(result.isPresent());
-        verify(subjectJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId);
-        verify(subjectMapper, never()).toModel(any(SubjectEntity.class));
-    }
-
-    @Test
-    void softDeleteSubject_shouldSetDeletionDateAndReturnUpdatedSubject() {
-        Integer subjectId = 1;
-        Integer teacherId = 101;
-        SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Chemistry", teacherId, null);
-        Subject updatedSubject = Subject.builder().id(subjectId).name("Chemistry").teacherId(teacherId).deletionDate(LocalDate.now()).build();
-
-        when(subjectClassJPARepository.findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(subjectId))
-                .thenReturn(Arrays.asList(10));
-        when(subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId)).thenReturn(Optional.of(subjectEntity));
-        when(subjectJPARepository.save(any(SubjectEntity.class))).thenReturn(subjectEntity);
-        when(subjectMapper.toModel(any(SubjectEntity.class))).thenReturn(updatedSubject);
-
-        Subject result = subjectRepository.softDeleteSubject(subjectId, teacherId);
-
-        assertNotNull(result);
-        assertEquals(subjectId, result.getId());
-        assertEquals(teacherId, result.getTeacherId());
-        assertNotNull(result.getDeletionDate());
-        verify(subjectJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId);
-        verify(subjectJPARepository, times(1)).save(subjectEntity);
-        verify(subjectMapper, times(1)).toModel(subjectEntity);
-        verify(cacheEvictionService).evict(CacheName.SUBJECT_CLASSES_BY_CLASS, 10);
-        verify(cacheEvictionService).evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
-    }
-
-    @Test
-    void softDeleteSubject_shouldThrowExceptionWhenSubjectNotFoundOrNotOwned() {
-        Integer subjectId = 1;
-        Integer teacherId = 101;
-
-        when(subjectClassJPARepository.findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(subjectId))
-                .thenReturn(Collections.emptyList());
-        when(subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId)).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () -> subjectRepository.softDeleteSubject(subjectId, teacherId));
-        verify(subjectJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId);
-        verify(subjectJPARepository, never()).save(any(SubjectEntity.class));
-        verify(subjectMapper, never()).toModel(any(SubjectEntity.class));
-    }
-
-    @Test
-    void softDeleteSubject_shouldThrowExceptionWhenSubjectAlreadyDeleted() {
-        Integer subjectId = 1;
-        Integer teacherId = 101;
-
-        when(subjectClassJPARepository.findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(subjectId))
-                .thenReturn(Collections.emptyList());
-        when(subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId)).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () -> subjectRepository.softDeleteSubject(subjectId, teacherId));
-        verify(subjectJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId);
-        verify(subjectJPARepository, never()).save(any(SubjectEntity.class));
+            assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, times(1))
+                    .findByIdAndTeacherIdAndDeletionDateIsNull(subjectId, teacherId);
+            verify(SubjectRepositoryImplTest.this.subjectJPARepository, never()).save(any(SubjectEntity.class));
+        }
     }
 }

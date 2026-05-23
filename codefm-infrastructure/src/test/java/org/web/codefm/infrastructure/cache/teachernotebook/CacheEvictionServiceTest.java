@@ -1,8 +1,9 @@
 package org.web.codefm.infrastructure.cache.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
@@ -15,6 +16,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CacheEvictionServiceTest {
 
+    private CacheEvictionService cacheEvictionService;
+
     @Mock
     private CacheManager cacheManager;
 
@@ -24,88 +27,100 @@ class CacheEvictionServiceTest {
     @Mock
     private Cache cache;
 
-    @InjectMocks
-    private CacheEvictionService cacheEvictionService;
-
-    @Test
-    void evict_shouldEvictKey_whenCacheExists() {
-        String cacheName = "schools";
-        Object key = 1;
-
-        when(this.cacheManager.getCache(cacheName)).thenReturn(this.cache);
-
-        this.cacheEvictionService.evict(cacheName, key);
-
-        verify(this.cacheManager).getCache(cacheName);
-        verify(this.cache).evict(key);
+    @BeforeEach
+    void beforeEach() {
+        this.cacheEvictionService = new CacheEvictionService(this.cacheManager, this.sessionUser);
     }
 
-    @Test
-    void evict_shouldDoNothing_whenCacheDoesNotExist() {
-        String cacheName = "nonExistentCache";
-        Object key = 1;
+    @Nested
+    class Evict {
 
-        when(this.cacheManager.getCache(cacheName)).thenReturn(null);
+        @Test
+        void when_cache_exists_expect_key_evicted() {
+            final String cacheName = "schools";
+            final Object key = 1;
 
-        this.cacheEvictionService.evict(cacheName, key);
+            when(CacheEvictionServiceTest.this.cacheManager.getCache(cacheName)).thenReturn(CacheEvictionServiceTest.this.cache);
 
-        verify(this.cacheManager).getCache(cacheName);
-        verifyNoInteractions(this.cache);
+            CacheEvictionServiceTest.this.cacheEvictionService.evict(cacheName, key);
+
+            verify(CacheEvictionServiceTest.this.cacheManager).getCache(cacheName);
+            verify(CacheEvictionServiceTest.this.cache).evict(key);
+        }
+
+        @Test
+        void when_cache_does_not_exist_expect_no_cache_interaction() {
+            final String cacheName = "nonExistentCache";
+            final Object key = 1;
+
+            when(CacheEvictionServiceTest.this.cacheManager.getCache(cacheName)).thenReturn(null);
+
+            CacheEvictionServiceTest.this.cacheEvictionService.evict(cacheName, key);
+
+            verify(CacheEvictionServiceTest.this.cacheManager).getCache(cacheName);
+            verifyNoInteractions(CacheEvictionServiceTest.this.cache);
+        }
     }
 
-    @Test
-    void evictByTeacher_shouldEvictUsingTeacherIdFromSession() {
-        String cacheName = "schools";
-        Integer teacherId = 42;
+    @Nested
+    class EvictByTeacher {
 
-        when(this.sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(teacherId);
-        when(this.cacheManager.getCache(cacheName)).thenReturn(this.cache);
+        @Test
+        void when_cache_exists_expect_teacher_key_evicted() {
+            final String cacheName = "schools";
+            final Integer teacherId = 42;
 
-        this.cacheEvictionService.evictByTeacher(cacheName);
+            when(CacheEvictionServiceTest.this.sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(teacherId);
+            when(CacheEvictionServiceTest.this.cacheManager.getCache(cacheName)).thenReturn(CacheEvictionServiceTest.this.cache);
 
-        verify(this.sessionUser).getParameter(SessionParameter.TEACHER_ID);
-        verify(this.cacheManager).getCache(cacheName);
-        verify(this.cache).evict(teacherId);
+            CacheEvictionServiceTest.this.cacheEvictionService.evictByTeacher(cacheName);
+
+            verify(CacheEvictionServiceTest.this.sessionUser).getParameter(SessionParameter.TEACHER_ID);
+            verify(CacheEvictionServiceTest.this.cacheManager).getCache(cacheName);
+            verify(CacheEvictionServiceTest.this.cache).evict(teacherId);
+        }
+
+        @Test
+        void when_cache_does_not_exist_expect_no_cache_interaction() {
+            final String cacheName = "nonExistentCache";
+            final Integer teacherId = 42;
+
+            when(CacheEvictionServiceTest.this.sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(teacherId);
+            when(CacheEvictionServiceTest.this.cacheManager.getCache(cacheName)).thenReturn(null);
+
+            CacheEvictionServiceTest.this.cacheEvictionService.evictByTeacher(cacheName);
+
+            verify(CacheEvictionServiceTest.this.sessionUser).getParameter(SessionParameter.TEACHER_ID);
+            verify(CacheEvictionServiceTest.this.cacheManager).getCache(cacheName);
+            verifyNoInteractions(CacheEvictionServiceTest.this.cache);
+        }
     }
 
-    @Test
-    void evictByTeacher_shouldDoNothing_whenCacheDoesNotExist() {
-        String cacheName = "nonExistentCache";
-        Integer teacherId = 42;
+    @Nested
+    class EvictAll {
 
-        when(this.sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(teacherId);
-        when(this.cacheManager.getCache(cacheName)).thenReturn(null);
+        @Test
+        void when_cache_exists_expect_cache_cleared() {
+            final String cacheName = "schools";
 
-        this.cacheEvictionService.evictByTeacher(cacheName);
+            when(CacheEvictionServiceTest.this.cacheManager.getCache(cacheName)).thenReturn(CacheEvictionServiceTest.this.cache);
 
-        verify(this.sessionUser).getParameter(SessionParameter.TEACHER_ID);
-        verify(this.cacheManager).getCache(cacheName);
-        verifyNoInteractions(this.cache);
+            CacheEvictionServiceTest.this.cacheEvictionService.evictAll(cacheName);
+
+            verify(CacheEvictionServiceTest.this.cacheManager).getCache(cacheName);
+            verify(CacheEvictionServiceTest.this.cache).clear();
+        }
+
+        @Test
+        void when_cache_does_not_exist_expect_no_cache_interaction() {
+            final String cacheName = "nonExistentCache";
+
+            when(CacheEvictionServiceTest.this.cacheManager.getCache(cacheName)).thenReturn(null);
+
+            CacheEvictionServiceTest.this.cacheEvictionService.evictAll(cacheName);
+
+            verify(CacheEvictionServiceTest.this.cacheManager).getCache(cacheName);
+            verifyNoInteractions(CacheEvictionServiceTest.this.cache);
+        }
     }
-
-    @Test
-    void evictAll_shouldClearCache_whenCacheExists() {
-        String cacheName = "schools";
-
-        when(this.cacheManager.getCache(cacheName)).thenReturn(this.cache);
-
-        this.cacheEvictionService.evictAll(cacheName);
-
-        verify(this.cacheManager).getCache(cacheName);
-        verify(this.cache).clear();
-    }
-
-    @Test
-    void evictAll_shouldDoNothing_whenCacheDoesNotExist() {
-        String cacheName = "nonExistentCache";
-
-        when(this.cacheManager.getCache(cacheName)).thenReturn(null);
-
-        this.cacheEvictionService.evictAll(cacheName);
-
-        verify(this.cacheManager).getCache(cacheName);
-        verifyNoInteractions(this.cache);
-    }
-
 }
-

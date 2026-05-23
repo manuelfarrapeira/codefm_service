@@ -1,9 +1,12 @@
 package org.web.codefm.api.mapper;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -22,7 +25,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Locale;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -42,162 +46,119 @@ class CalendarAlertRequestMapperTest {
     private SessionUser sessionUser;
 
     @BeforeEach
-    void setUp() {
-        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
-        when(messageSource.getMessage(eq(MessageKeys.CALENDAR_ALERT_VALIDATION_DATE_REQUIRED), eq(null), any(Locale.class)))
+    void beforeEach() {
+        when(this.sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(this.messageSource.getMessage(eq(MessageKeys.CALENDAR_ALERT_VALIDATION_DATE_REQUIRED), eq(null), any(Locale.class)))
                 .thenReturn("Alert date is required.");
     }
 
-    @Test
-    void toDomain_shouldMapAllFields_whenAllFieldsAreValid() {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate("15/03/2026");
-        dto.setTitle("Parent meeting");
-        dto.setDescription("Quarterly parent meeting");
-        dto.setStartTime("09:00");
-        dto.setEndTime("10:30");
+    @Nested
+    class ToDomain {
 
-        // When
-        CalendarAlert result = mapper.toDomain(dto);
+        @Test
+        void when_all_fields_are_valid_expect_mapped_alert() {
+            final CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
+            dto.setDate("15/03/2026");
+            dto.setTitle("Parent meeting");
+            dto.setDescription("Quarterly parent meeting");
+            dto.setStartTime("09:00");
+            dto.setEndTime("10:30");
 
-        // Then
-        assertNotNull(result);
-        assertEquals(LocalDate.of(2026, 3, 15), result.getDate());
-        assertEquals("Parent meeting", result.getTitle());
-        assertEquals("Quarterly parent meeting", result.getDescription());
-        assertEquals(LocalTime.of(9, 0), result.getStartTime());
-        assertEquals(LocalTime.of(10, 30), result.getEndTime());
-        assertNull(result.getId());
-        assertNull(result.getTeacherId());
-    }
+            final CalendarAlert result = CalendarAlertRequestMapperTest.this.mapper.toDomain(dto);
 
-    @Test
-    void toDomain_shouldMapCorrectly_whenOptionalFieldsAreNull() {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate("15/03/2026");
-        dto.setTitle("Parent meeting");
-        dto.setDescription(null);
-        dto.setStartTime(null);
-        dto.setEndTime(null);
+            assertThat(result).isNotNull();
+            assertThat(result.getDate()).isEqualTo(LocalDate.of(2026, 3, 15));
+            assertThat(result.getTitle()).isEqualTo("Parent meeting");
+            assertThat(result.getDescription()).isEqualTo("Quarterly parent meeting");
+            assertThat(result.getStartTime()).isEqualTo(LocalTime.of(9, 0));
+            assertThat(result.getEndTime()).isEqualTo(LocalTime.of(10, 30));
+            assertThat(result.getId()).isNull();
+            assertThat(result.getTeacherId()).isNull();
+        }
 
-        // When
-        CalendarAlert result = mapper.toDomain(dto);
+        @Test
+        void when_optional_fields_are_null_expect_null_optional_values() {
+            final CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
+            dto.setDate("15/03/2026");
+            dto.setTitle("Parent meeting");
+            dto.setDescription(null);
+            dto.setStartTime(null);
+            dto.setEndTime(null);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(LocalDate.of(2026, 3, 15), result.getDate());
-        assertEquals("Parent meeting", result.getTitle());
-        assertNull(result.getDescription());
-        assertNull(result.getStartTime());
-        assertNull(result.getEndTime());
-    }
+            final CalendarAlert result = CalendarAlertRequestMapperTest.this.mapper.toDomain(dto);
 
-    @Test
-    void toDomain_shouldReturnNullDate_whenDateIsNull() {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate(null);
-        dto.setTitle("Parent meeting");
+            assertThat(result).isNotNull();
+            assertThat(result.getDate()).isEqualTo(LocalDate.of(2026, 3, 15));
+            assertThat(result.getTitle()).isEqualTo("Parent meeting");
+            assertThat(result.getDescription()).isNull();
+            assertThat(result.getStartTime()).isNull();
+            assertThat(result.getEndTime()).isNull();
+        }
 
-        // When
-        CalendarAlert result = mapper.toDomain(dto);
+        @ParameterizedTest
+        @NullAndEmptySource
+        void when_date_is_null_or_empty_expect_null_date(final String date) {
+            final CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
+            dto.setDate(date);
+            dto.setTitle("Parent meeting");
 
-        // Then
-        assertNotNull(result);
-        assertNull(result.getDate());
-    }
+            final CalendarAlert result = CalendarAlertRequestMapperTest.this.mapper.toDomain(dto);
 
-    @Test
-    void toDomain_shouldReturnNullDate_whenDateIsEmpty() {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate("");
-        dto.setTitle("Parent meeting");
+            assertThat(result).isNotNull();
+            assertThat(result.getDate()).isNull();
+        }
 
-        // When
-        CalendarAlert result = mapper.toDomain(dto);
+        @ParameterizedTest
+        @ValueSource(strings = {"2026-03-15", "32/03/2026", "15/13/2026", "not-a-date"})
+        void when_date_is_invalid_expect_validation_exception(final String invalidDate) {
+            final CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
+            dto.setDate(invalidDate);
+            dto.setTitle("Parent meeting");
+            final ThrowingCallable action = () -> CalendarAlertRequestMapperTest.this.mapper.toDomain(dto);
 
-        // Then
-        assertNotNull(result);
-        assertNull(result.getDate());
-    }
+            assertThatThrownBy(action)
+                    .isInstanceOf(CalendarAlertValidationException.class)
+                    .satisfies(throwable -> assertThat(((CalendarAlertValidationException) throwable).getErrors())
+                            .isNotEmpty()
+                            .first()
+                            .satisfies(error -> assertThat(error.getParam()).isEqualTo("date")));
+        }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"2026-03-15", "32/03/2026", "15/13/2026", "not-a-date"})
-    void toDomain_shouldThrowValidationException_whenDateIsInvalid(String invalidDate) {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate(invalidDate);
-        dto.setTitle("Parent meeting");
+        @ParameterizedTest
+        @NullAndEmptySource
+        void when_start_time_is_null_or_empty_expect_null_start_time(final String startTime) {
+            final CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
+            dto.setDate("15/03/2026");
+            dto.setTitle("Parent meeting");
+            dto.setStartTime(startTime);
 
-        // When & Then
-        CalendarAlertValidationException exception = assertThrows(CalendarAlertValidationException.class, () ->
-                mapper.toDomain(dto));
+            final CalendarAlert result = CalendarAlertRequestMapperTest.this.mapper.toDomain(dto);
 
-        assertNotNull(exception);
-        assertFalse(exception.getErrors().isEmpty());
-        assertEquals("date", exception.getErrors().get(0).getParam());
-    }
+            assertThat(result.getStartTime()).isNull();
+        }
 
-    @Test
-    void toDomain_shouldReturnNullStartTime_whenStartTimeIsNull() {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate("15/03/2026");
-        dto.setTitle("Parent meeting");
-        dto.setStartTime(null);
+        @Test
+        void when_start_time_is_midnight_expect_midnight_time() {
+            final CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
+            dto.setDate("15/03/2026");
+            dto.setTitle("Parent meeting");
+            dto.setStartTime("00:00");
 
-        // When
-        CalendarAlert result = mapper.toDomain(dto);
+            final CalendarAlert result = CalendarAlertRequestMapperTest.this.mapper.toDomain(dto);
 
-        // Then
-        assertNull(result.getStartTime());
-    }
+            assertThat(result.getStartTime()).isEqualTo(LocalTime.of(0, 0));
+        }
 
-    @Test
-    void toDomain_shouldReturnNullStartTime_whenStartTimeIsEmpty() {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate("15/03/2026");
-        dto.setTitle("Parent meeting");
-        dto.setStartTime("");
+        @Test
+        void when_alert_is_mapped_expect_id_and_teacher_id_ignored() {
+            final CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
+            dto.setDate("15/03/2026");
+            dto.setTitle("Parent meeting");
 
-        // When
-        CalendarAlert result = mapper.toDomain(dto);
+            final CalendarAlert result = CalendarAlertRequestMapperTest.this.mapper.toDomain(dto);
 
-        // Then
-        assertNull(result.getStartTime());
-    }
-
-    @Test
-    void toDomain_shouldMapMidnightTime_whenStartTimeIsMidnight() {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate("15/03/2026");
-        dto.setTitle("Parent meeting");
-        dto.setStartTime("00:00");
-
-        // When
-        CalendarAlert result = mapper.toDomain(dto);
-
-        // Then
-        assertEquals(LocalTime.of(0, 0), result.getStartTime());
-    }
-
-    @Test
-    void toDomain_shouldIgnoreIdAndTeacherId() {
-        // Given
-        CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
-        dto.setDate("15/03/2026");
-        dto.setTitle("Parent meeting");
-
-        // When
-        CalendarAlert result = mapper.toDomain(dto);
-
-        // Then
-        assertNull(result.getId());
-        assertNull(result.getTeacherId());
+            assertThat(result.getId()).isNull();
+            assertThat(result.getTeacherId()).isNull();
+        }
     }
 }

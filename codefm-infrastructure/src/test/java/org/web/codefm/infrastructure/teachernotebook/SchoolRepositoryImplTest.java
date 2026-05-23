@@ -1,8 +1,10 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Class;
@@ -20,11 +22,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SchoolRepositoryImplTest {
+
+    private SchoolRepositoryImpl schoolRepository;
 
     @Mock
     private SchoolJPARepository schoolJPARepository;
@@ -38,148 +43,158 @@ class SchoolRepositoryImplTest {
     @Mock
     private ClassMapper classMapper;
 
-    @InjectMocks
-    private SchoolRepositoryImpl schoolRepository;
-
-    @Test
-    void findByTeacherId_shouldReturnSchoolsWithClasses() {
-        Integer teacherId = 101;
-        SchoolEntity schoolEntity1 = new SchoolEntity(1, teacherId, "School A", "Town A", 123456789, null);
-        SchoolEntity schoolEntity2 = new SchoolEntity(2, teacherId, "School B", "Town B", 987654321, null);
-        School school1 = School.builder().id(1).teacherId(teacherId).name("School A").build();
-        School school2 = School.builder().id(2).teacherId(teacherId).name("School B").build();
-
-        ClassEntity classEntity = new ClassEntity(10, 1, "1A", "24/25", null);
-        Class clazz = Class.builder().id(10).schoolId(1).name("1A").schoolYear("24/25").build();
-
-        when(schoolJPARepository.findByTeacherId(teacherId)).thenReturn(Arrays.asList(schoolEntity1, schoolEntity2));
-        when(schoolMapper.toModelList(Arrays.asList(schoolEntity1, schoolEntity2))).thenReturn(Arrays.asList(school1, school2));
-        when(classJPARepository.findActiveClassesBySchoolIdAndTeacherId(1, teacherId)).thenReturn(List.of(classEntity));
-        when(classJPARepository.findActiveClassesBySchoolIdAndTeacherId(2, teacherId)).thenReturn(Collections.emptyList());
-        when(classMapper.toModelList(List.of(classEntity))).thenReturn(List.of(clazz));
-        when(classMapper.toModelList(Collections.emptyList())).thenReturn(Collections.emptyList());
-
-        List<School> result = schoolRepository.findByTeacherId(teacherId);
-
-        assertEquals(2, result.size());
-        assertEquals(1, result.get(0).getClasses().size());
-        assertEquals("1A", result.get(0).getClasses().get(0).getName());
-        assertTrue(result.get(1).getClasses().isEmpty());
-        verify(classJPARepository).findActiveClassesBySchoolIdAndTeacherId(1, teacherId);
-        verify(classJPARepository).findActiveClassesBySchoolIdAndTeacherId(2, teacherId);
+    @BeforeEach
+    void beforeEach() {
+        this.schoolRepository = new SchoolRepositoryImpl(this.schoolJPARepository, this.classJPARepository, this.schoolMapper,
+                this.classMapper);
     }
 
-    @Test
-    void findByTeacherId_shouldReturnEmptyList_whenNoSchoolsExist() {
-        Integer teacherId = 101;
+    @Nested
+    class FindByTeacherId {
 
-        when(schoolJPARepository.findByTeacherId(teacherId)).thenReturn(Collections.emptyList());
-        when(schoolMapper.toModelList(Collections.emptyList())).thenReturn(Collections.emptyList());
+        @Test
+        void when_teacher_has_schools_expect_schools_returned() {
+            final Integer teacherId = 101;
+            final SchoolEntity schoolEntity1 = new SchoolEntity(1, teacherId, "School A", "Town A", 123456789, null);
+            final SchoolEntity schoolEntity2 = new SchoolEntity(2, teacherId, "School B", "Town B", 987654321, null);
+            final School school1 = School.builder().id(1).teacherId(teacherId).name("School A").build();
+            final School school2 = School.builder().id(2).teacherId(teacherId).name("School B").build();
+            final ClassEntity classEntity = new ClassEntity(10, 1, "1A", "24/25", null);
+            final Class clazz = Class.builder().id(10).schoolId(1).name("1A").schoolYear("24/25").build();
 
-        List<School> result = schoolRepository.findByTeacherId(teacherId);
+            when(SchoolRepositoryImplTest.this.schoolJPARepository.findByTeacherId(teacherId)).thenReturn(Arrays.asList(schoolEntity1, schoolEntity2));
+            when(SchoolRepositoryImplTest.this.schoolMapper.toModelList(Arrays.asList(schoolEntity1, schoolEntity2))).thenReturn(
+                    Arrays.asList(school1, school2));
+            when(SchoolRepositoryImplTest.this.classJPARepository.findActiveClassesBySchoolIdAndTeacherId(1, teacherId)).thenReturn(
+                    List.of(classEntity));
+            when(SchoolRepositoryImplTest.this.classJPARepository.findActiveClassesBySchoolIdAndTeacherId(2, teacherId)).thenReturn(
+                    Collections.emptyList());
+            when(SchoolRepositoryImplTest.this.classMapper.toModelList(List.of(classEntity))).thenReturn(List.of(clazz));
+            when(SchoolRepositoryImplTest.this.classMapper.toModelList(Collections.emptyList())).thenReturn(Collections.emptyList());
 
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(classJPARepository, never()).findActiveClassesBySchoolIdAndTeacherId(any(), any());
+            final List<School> result = SchoolRepositoryImplTest.this.schoolRepository.findByTeacherId(teacherId);
+
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0).getClasses()).hasSize(1);
+            assertThat(result.get(0).getClasses().get(0).getName()).isEqualTo("1A");
+            assertThat(result.get(1).getClasses()).isEmpty();
+            verify(SchoolRepositoryImplTest.this.classJPARepository).findActiveClassesBySchoolIdAndTeacherId(1, teacherId);
+            verify(SchoolRepositoryImplTest.this.classJPARepository).findActiveClassesBySchoolIdAndTeacherId(2, teacherId);
+        }
+
+        @Test
+        void when_teacher_has_no_schools_expect_empty_list_returned() {
+            final Integer teacherId = 101;
+
+            when(SchoolRepositoryImplTest.this.schoolJPARepository.findByTeacherId(teacherId)).thenReturn(Collections.emptyList());
+            when(SchoolRepositoryImplTest.this.schoolMapper.toModelList(Collections.emptyList())).thenReturn(Collections.emptyList());
+
+            final List<School> result = SchoolRepositoryImplTest.this.schoolRepository.findByTeacherId(teacherId);
+
+            assertThat(result).isNotNull().isEmpty();
+            verify(SchoolRepositoryImplTest.this.classJPARepository, never()).findActiveClassesBySchoolIdAndTeacherId(any(), any());
+        }
     }
 
-    @Test
-    void save_shouldMapToEntityAndSaveAndMapBackToModel() {
-        // Given
-        School schoolToSave = School.builder().name("New School").build();
-        SchoolEntity schoolEntity = new SchoolEntity();
-        SchoolEntity savedSchoolEntity = new SchoolEntity();
-        School savedSchool = School.builder().id(1).name("New School").build();
+    @Nested
+    class Save {
 
-        when(schoolMapper.toEntity(schoolToSave)).thenReturn(schoolEntity);
-        when(schoolJPARepository.save(schoolEntity)).thenReturn(savedSchoolEntity);
-        when(schoolMapper.toModel(savedSchoolEntity)).thenReturn(savedSchool);
+        @Test
+        void when_valid_data_expect_entity_saved() {
+            final School schoolToSave = School.builder().name("New School").build();
+            final SchoolEntity schoolEntity = new SchoolEntity();
+            final SchoolEntity savedSchoolEntity = new SchoolEntity();
+            final School savedSchool = School.builder().id(1).name("New School").build();
 
-        // When
-        School result = schoolRepository.save(schoolToSave);
+            when(SchoolRepositoryImplTest.this.schoolMapper.toEntity(schoolToSave)).thenReturn(schoolEntity);
+            when(SchoolRepositoryImplTest.this.schoolJPARepository.save(schoolEntity)).thenReturn(savedSchoolEntity);
+            when(SchoolRepositoryImplTest.this.schoolMapper.toModel(savedSchoolEntity)).thenReturn(savedSchool);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals("New School", result.getName());
+            final School result = SchoolRepositoryImplTest.this.schoolRepository.save(schoolToSave);
 
-        verify(schoolMapper, times(1)).toEntity(schoolToSave);
-        verify(schoolJPARepository, times(1)).save(schoolEntity);
-        verify(schoolMapper, times(1)).toModel(savedSchoolEntity);
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            assertThat(result.getName()).isEqualTo("New School");
+            verify(SchoolRepositoryImplTest.this.schoolMapper, times(1)).toEntity(schoolToSave);
+            verify(SchoolRepositoryImplTest.this.schoolJPARepository, times(1)).save(schoolEntity);
+            verify(SchoolRepositoryImplTest.this.schoolMapper, times(1)).toModel(savedSchoolEntity);
+        }
     }
 
-    @Test
-    void findById_shouldReturnSchoolWhenFoundAndNotDeleted() {
-        // Given
-        Integer schoolId = 1;
-        SchoolEntity schoolEntity = new SchoolEntity(schoolId, 101, "School A", "Town A", 123456789, null);
-        School expectedSchool = School.builder().id(schoolId).name("School A").build();
+    @Nested
+    class FindById {
 
-        when(schoolJPARepository.findByIdAndDeletionDateIsNull(schoolId)).thenReturn(Optional.of(schoolEntity));
-        when(schoolMapper.toModel(schoolEntity)).thenReturn(expectedSchool);
+        @Test
+        void when_school_exists_expect_school_returned() {
+            final Integer schoolId = 1;
+            final SchoolEntity schoolEntity = new SchoolEntity(schoolId, 101, "School A", "Town A", 123456789, null);
+            final School expectedSchool = School.builder().id(schoolId).name("School A").build();
 
-        // When
-        Optional<School> result = schoolRepository.findById(schoolId);
+            when(SchoolRepositoryImplTest.this.schoolJPARepository.findByIdAndDeletionDateIsNull(schoolId)).thenReturn(Optional.of(schoolEntity));
+            when(SchoolRepositoryImplTest.this.schoolMapper.toModel(schoolEntity)).thenReturn(expectedSchool);
 
-        // Then
-        assertTrue(result.isPresent());
-        assertEquals(expectedSchool, result.get());
-        verify(schoolJPARepository, times(1)).findByIdAndDeletionDateIsNull(schoolId);
-        verify(schoolMapper, times(1)).toModel(schoolEntity);
+            final Optional<School> result = SchoolRepositoryImplTest.this.schoolRepository.findById(schoolId);
+
+            assertThat(result).isPresent();
+            assertThat(result.get()).isEqualTo(expectedSchool);
+            verify(SchoolRepositoryImplTest.this.schoolJPARepository, times(1)).findByIdAndDeletionDateIsNull(schoolId);
+            verify(SchoolRepositoryImplTest.this.schoolMapper, times(1)).toModel(schoolEntity);
+        }
+
+        @Test
+        void when_school_does_not_exist_expect_empty_optional_returned() {
+            final Integer schoolId = 1;
+
+            when(SchoolRepositoryImplTest.this.schoolJPARepository.findByIdAndDeletionDateIsNull(schoolId)).thenReturn(Optional.empty());
+
+            final Optional<School> result = SchoolRepositoryImplTest.this.schoolRepository.findById(schoolId);
+
+            assertThat(result).isNotPresent();
+            verify(SchoolRepositoryImplTest.this.schoolJPARepository, times(1)).findByIdAndDeletionDateIsNull(schoolId);
+            verify(SchoolRepositoryImplTest.this.schoolMapper, never()).toModel(any(SchoolEntity.class));
+        }
     }
 
-    @Test
-    void findById_shouldReturnEmptyWhenNotFound() {
-        // Given
-        Integer schoolId = 1;
-        when(schoolJPARepository.findByIdAndDeletionDateIsNull(schoolId)).thenReturn(Optional.empty());
+    @Nested
+    class SoftDeleteSchool {
 
-        // When
-        Optional<School> result = schoolRepository.findById(schoolId);
+        @Test
+        void when_school_exists_expect_deletion_date_set() {
+            final Integer schoolId = 1;
+            final Integer teacherId = 101;
+            final SchoolEntity schoolEntity = new SchoolEntity(schoolId, teacherId, "School A", "Town A", 123456789, null);
+            final School updatedSchool = School.builder().id(schoolId).teacherId(teacherId).name("School A")
+                    .deletionDate(LocalDate.now()).build();
 
-        // Then
-        assertFalse(result.isPresent());
-        verify(schoolJPARepository, times(1)).findByIdAndDeletionDateIsNull(schoolId);
-        verify(schoolMapper, never()).toModel(any(SchoolEntity.class));
-    }
+            when(SchoolRepositoryImplTest.this.schoolJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)).thenReturn(
+                    Optional.of(schoolEntity));
+            when(SchoolRepositoryImplTest.this.schoolJPARepository.save(any(SchoolEntity.class))).thenReturn(schoolEntity);
+            when(SchoolRepositoryImplTest.this.schoolMapper.toModel(any(SchoolEntity.class))).thenReturn(updatedSchool);
 
-    @Test
-    void softDeleteSchool_shouldSetDeletionDateAndReturnUpdatedSchool() {
-        // Given
-        Integer schoolId = 1;
-        Integer teacherId = 101;
-        SchoolEntity schoolEntity = new SchoolEntity(schoolId, teacherId, "School A", "Town A", 123456789, null);
-        School updatedSchool = School.builder().id(schoolId).teacherId(teacherId).name("School A").deletionDate(LocalDate.now()).build();
+            final School result = SchoolRepositoryImplTest.this.schoolRepository.softDeleteSchool(schoolId, teacherId);
 
-        when(schoolJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)).thenReturn(Optional.of(schoolEntity));
-        when(schoolJPARepository.save(any(SchoolEntity.class))).thenReturn(schoolEntity); // Return the same entity, deletionDate will be set
-        when(schoolMapper.toModel(any(SchoolEntity.class))).thenReturn(updatedSchool);
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(schoolId);
+            assertThat(result.getTeacherId()).isEqualTo(teacherId);
+            assertThat(result.getDeletionDate()).isNotNull();
+            verify(SchoolRepositoryImplTest.this.schoolJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId);
+            verify(SchoolRepositoryImplTest.this.schoolJPARepository, times(1)).save(schoolEntity);
+            verify(SchoolRepositoryImplTest.this.schoolMapper, times(1)).toModel(schoolEntity);
+        }
 
-        // When
-        School result = schoolRepository.softDeleteSchool(schoolId, teacherId);
+        @Test
+        void when_school_not_found_expect_exception() {
+            final Integer schoolId = 1;
+            final Integer teacherId = 101;
+            final ThrowingCallable callable = () -> SchoolRepositoryImplTest.this.schoolRepository.softDeleteSchool(schoolId, teacherId);
 
-        // Then
-        assertNotNull(result);
-        assertEquals(schoolId, result.getId());
-        assertEquals(teacherId, result.getTeacherId());
-        assertNotNull(result.getDeletionDate());
-        verify(schoolJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId);
-        verify(schoolJPARepository, times(1)).save(schoolEntity);
-        verify(schoolMapper, times(1)).toModel(schoolEntity);
-    }
+            when(SchoolRepositoryImplTest.this.schoolJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)).thenReturn(
+                    Optional.empty());
 
-    @Test
-    void softDeleteSchool_shouldThrowExceptionWhenSchoolNotFoundOrNotOwned() {
-        // Given
-        Integer schoolId = 1;
-        Integer teacherId = 101;
-
-        when(schoolJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)).thenReturn(Optional.empty());
-
-        // When / Then
-        assertThrows(IllegalArgumentException.class, () -> schoolRepository.softDeleteSchool(schoolId, teacherId));
-        verify(schoolJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId);
-        verify(schoolJPARepository, never()).save(any(SchoolEntity.class));
-        verify(schoolMapper, never()).toModel(any(SchoolEntity.class));
+            assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
+            verify(SchoolRepositoryImplTest.this.schoolJPARepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId);
+            verify(SchoolRepositoryImplTest.this.schoolJPARepository, never()).save(any(SchoolEntity.class));
+            verify(SchoolRepositoryImplTest.this.schoolMapper, never()).toModel(any(SchoolEntity.class));
+        }
     }
 }
