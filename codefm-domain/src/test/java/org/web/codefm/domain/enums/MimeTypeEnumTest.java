@@ -1,98 +1,111 @@
 package org.web.codefm.domain.enums;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class MimeTypeEnumTest {
 
-    @ParameterizedTest
-    @CsvSource({
-            "pdf, application/pdf",
-            "doc, application/msword",
-            "docx, application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "xls, application/vnd.ms-excel",
-            "xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "jpeg, image/jpeg",
-            "jpg, image/jpeg",
-            "png, image/png"
-    })
-    void findMimeType_shouldReturnCorrectMimeType_whenExtensionIsValid(String extension, String expectedMimeType) {
-        assertEquals(expectedMimeType, MimeTypeEnum.findMimeType(extension));
+    @Nested
+    class FindMimeType {
+
+        @ParameterizedTest
+        @CsvSource({
+                "pdf, application/pdf",
+                "doc, application/msword",
+                "docx, application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "xls, application/vnd.ms-excel",
+                "xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "jpeg, image/jpeg",
+                "jpg, image/jpeg",
+                "png, image/png"
+        })
+        void when_extension_is_valid_expect_mime_type(final String extension, final String expectedMimeType) {
+            assertThat(MimeTypeEnum.findMimeType(extension)).isEqualTo(expectedMimeType);
+        }
+
+        @ParameterizedTest
+        @CsvSource({"PDF", "Pdf", "DOCX", "Png"})
+        void when_extension_has_different_case_expect_non_default_mime_type(final String extension) {
+            assertThat(MimeTypeEnum.findMimeType(extension)).isNotEqualTo("application/octet-stream");
+        }
+
+        @ParameterizedTest
+        @CsvSource({"exe", "bat", "sh", "zip", "rar", "mp4", "avi"})
+        void when_extension_is_not_allowed_expect_octet_stream(final String extension) {
+            assertThat(MimeTypeEnum.findMimeType(extension)).isEqualTo("application/octet-stream");
+        }
+
+        @ParameterizedTest
+        @CsvSource({", application/octet-stream", "'', application/octet-stream"})
+        void when_extension_is_null_or_empty_expect_octet_stream(final String extension,
+                                                                 final String expectedMimeType) {
+            assertThat(MimeTypeEnum.findMimeType(extension)).isEqualTo(expectedMimeType);
+        }
     }
 
-    @ParameterizedTest
-    @CsvSource({"PDF", "Pdf", "DOCX", "Png"})
-    void findMimeType_shouldReturnCorrectMimeType_whenExtensionHasDifferentCase(String extension) {
-        assertNotEquals("application/octet-stream", MimeTypeEnum.findMimeType(extension));
+    @Nested
+    class IsAllowedExtension {
+
+        @ParameterizedTest
+        @CsvSource({"pdf", "doc", "docx", "xls", "xlsx", "jpeg", "jpg", "png"})
+        void when_extension_is_valid_expect_true(final String extension) {
+            assertThat(MimeTypeEnum.isAllowedExtension(extension)).isTrue();
+        }
+
+        @ParameterizedTest
+        @CsvSource({"PDF", "Pdf", "DOCX", "Png"})
+        void when_extension_has_different_case_expect_true(final String extension) {
+            assertThat(MimeTypeEnum.isAllowedExtension(extension)).isTrue();
+        }
+
+        @ParameterizedTest
+        @CsvSource({"exe", "bat", "sh", "zip", "rar", "mp4", "avi"})
+        void when_extension_is_not_allowed_expect_false(final String extension) {
+            assertThat(MimeTypeEnum.isAllowedExtension(extension)).isFalse();
+        }
+
+        @ParameterizedTest
+        @CsvSource({", false", "'', false"})
+        void when_extension_is_null_or_empty_expect_false(final String extension, final boolean expected) {
+            assertThat(MimeTypeEnum.isAllowedExtension(extension)).isEqualTo(expected);
+        }
     }
 
-    @ParameterizedTest
-    @CsvSource({"exe", "bat", "sh", "zip", "rar", "mp4", "avi"})
-    void findMimeType_shouldReturnOctetStream_whenExtensionIsNotAllowed(String extension) {
-        assertEquals("application/octet-stream", MimeTypeEnum.findMimeType(extension));
+    @Nested
+    class Values {
+
+        @Test
+        void when_enum_values_are_requested_expect_eight_values() {
+            assertThat(MimeTypeEnum.values()).hasSize(8);
+        }
     }
 
-    @Test
-    void findMimeType_shouldReturnOctetStream_whenExtensionIsEmpty() {
-        assertEquals("application/octet-stream", MimeTypeEnum.findMimeType(""));
+    @Nested
+    class GetExtension {
+
+        @Test
+        void when_extension_is_requested_expect_value() {
+            assertThat(MimeTypeEnum.PDF.getExtension()).isEqualTo("pdf");
+            assertThat(MimeTypeEnum.DOCX.getExtension()).isEqualTo("docx");
+        }
     }
 
-    @Test
-    void findMimeType_shouldReturnOctetStream_whenExtensionIsNull() {
-        assertEquals("application/octet-stream", MimeTypeEnum.findMimeType(null));
-    }
+    @Nested
+    class GetMimeType {
 
-    @ParameterizedTest
-    @CsvSource({"pdf", "doc", "docx", "xls", "xlsx", "jpeg", "jpg", "png"})
-    void isAllowedExtension_shouldReturnTrue_whenExtensionIsValid(String extension) {
-        assertTrue(MimeTypeEnum.isAllowedExtension(extension));
-    }
+        @Test
+        void when_mime_type_is_requested_expect_value() {
+            assertThat(MimeTypeEnum.PDF.getMimeType()).isEqualTo("application/pdf");
+            assertThat(MimeTypeEnum.JPEG.getMimeType()).isEqualTo("image/jpeg");
+        }
 
-    @ParameterizedTest
-    @CsvSource({"PDF", "Pdf", "DOCX", "Png"})
-    void isAllowedExtension_shouldReturnTrue_whenExtensionHasDifferentCase(String extension) {
-        assertTrue(MimeTypeEnum.isAllowedExtension(extension));
-    }
-
-    @ParameterizedTest
-    @CsvSource({"exe", "bat", "sh", "zip", "rar", "mp4", "avi"})
-    void isAllowedExtension_shouldReturnFalse_whenExtensionIsNotAllowed(String extension) {
-        assertFalse(MimeTypeEnum.isAllowedExtension(extension));
-    }
-
-    @Test
-    void isAllowedExtension_shouldReturnFalse_whenExtensionIsEmpty() {
-        assertFalse(MimeTypeEnum.isAllowedExtension(""));
-    }
-
-    @Test
-    void isAllowedExtension_shouldReturnFalse_whenExtensionIsNull() {
-        assertFalse(MimeTypeEnum.isAllowedExtension(null));
-    }
-
-    @Test
-    void enumValues_shouldHaveCorrectCount() {
-        assertEquals(8, MimeTypeEnum.values().length);
-    }
-
-    @Test
-    void getExtension_shouldReturnCorrectExtension() {
-        assertEquals("pdf", MimeTypeEnum.PDF.getExtension());
-        assertEquals("docx", MimeTypeEnum.DOCX.getExtension());
-    }
-
-    @Test
-    void getMimeType_shouldReturnCorrectMimeType() {
-        assertEquals("application/pdf", MimeTypeEnum.PDF.getMimeType());
-        assertEquals("image/jpeg", MimeTypeEnum.JPEG.getMimeType());
-    }
-
-    @Test
-    void jpegAndJpg_shouldHaveSameMimeType() {
-        assertEquals(MimeTypeEnum.JPEG.getMimeType(), MimeTypeEnum.JPG.getMimeType());
+        @Test
+        void when_jpeg_and_jpg_are_compared_expect_same_mime_type() {
+            assertThat(MimeTypeEnum.JPEG.getMimeType()).isEqualTo(MimeTypeEnum.JPG.getMimeType());
+        }
     }
 }
-

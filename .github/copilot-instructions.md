@@ -1028,6 +1028,8 @@ class CascadeSoftDeleteServiceImplTest {
 
 ## Testing
 
+> **IMPORTANTE**: Para crear tests unitarios, usar **siempre** el skill `probatio-java-unit`. Invocar con `/probatio-java-unit` antes de escribir cualquier test unitario nuevo.
+
 ### Estructura
 
 - Tests unitarios de Service: `codefm-application/src/test/java/org.web.codefm.service/`

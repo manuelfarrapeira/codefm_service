@@ -1,8 +1,9 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseStudentDocument;
@@ -16,11 +17,16 @@ import org.web.codefm.infrastructure.mapper.ExerciseStudentDocumentMapper;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ExerciseStudentDocumentRepositoryImplTest {
+
+    private ExerciseStudentDocumentRepositoryImpl exerciseStudentDocumentRepository;
+
+    private static final Integer GRADE_ID = 10;
+    private static final Integer DOCUMENT_ID = 200;
 
     @Mock
     private ExerciseStudentDocumentJPARepository exerciseStudentDocumentJPARepository;
@@ -37,261 +43,325 @@ class ExerciseStudentDocumentRepositoryImplTest {
     @Mock
     private CacheEvictionService cacheEvictionService;
 
-    @InjectMocks
-    private ExerciseStudentDocumentRepositoryImpl exerciseStudentDocumentRepository;
-
-    private static final Integer GRADE_ID = 10;
-    private static final Integer DOCUMENT_ID = 200;
-
-    @Test
-    void save_shouldPersistAndReturnMappedEntityAndEvictCache() {
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder().gradeId(GRADE_ID).build();
-        final ExerciseStudentDocumentEntity entity = new ExerciseStudentDocumentEntity();
-        final ExerciseStudentDocumentEntity saved = new ExerciseStudentDocumentEntity();
-        final ExerciseStudentDocument expected = ExerciseStudentDocument.builder().id(DOCUMENT_ID).gradeId(GRADE_ID).build();
-
-        when(exerciseStudentDocumentMapper.toEntity(document)).thenReturn(entity);
-        when(exerciseStudentDocumentJPARepository.save(entity)).thenReturn(saved);
-        when(exerciseStudentDocumentMapper.toModel(saved)).thenReturn(expected);
-        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
-
-        final ExerciseStudentDocument result = exerciseStudentDocumentRepository.save(document);
-
-        assertEquals(expected, result);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+    @BeforeEach
+    void beforeEach() {
+        this.exerciseStudentDocumentRepository = new ExerciseStudentDocumentRepositoryImpl(
+                this.exerciseStudentDocumentJPARepository,
+                this.exerciseStudentDocumentMapper,
+                this.exerciseStudentGradeJPARepository,
+                this.exerciseJPARepository,
+                this.cacheEvictionService
+        );
     }
 
-    @Test
-    void update_shouldPersistAndReturnMappedEntityAndEvictCache() {
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder().id(DOCUMENT_ID).gradeId(GRADE_ID).build();
-        final ExerciseStudentDocumentEntity entity = new ExerciseStudentDocumentEntity();
-        final ExerciseStudentDocumentEntity saved = new ExerciseStudentDocumentEntity();
-        final ExerciseStudentDocument expected = ExerciseStudentDocument.builder().id(DOCUMENT_ID).gradeId(GRADE_ID).description("updated").build();
+    @Nested
+    class Save {
 
-        when(exerciseStudentDocumentMapper.toEntity(document)).thenReturn(entity);
-        when(exerciseStudentDocumentJPARepository.save(entity)).thenReturn(saved);
-        when(exerciseStudentDocumentMapper.toModel(saved)).thenReturn(expected);
-        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
+        @Test
+        void when_valid_document_expect_document_saved_and_cache_evicted() {
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder().gradeId(GRADE_ID).build();
+            final ExerciseStudentDocumentEntity entity = new ExerciseStudentDocumentEntity();
+            final ExerciseStudentDocumentEntity saved = new ExerciseStudentDocumentEntity();
+            final ExerciseStudentDocument expected = ExerciseStudentDocument.builder().id(DOCUMENT_ID).gradeId(GRADE_ID).build();
 
-        final ExerciseStudentDocument result = exerciseStudentDocumentRepository.update(document);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentMapper.toEntity(document)).thenReturn(entity);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository.save(entity)).thenReturn(saved);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentMapper.toModel(saved)).thenReturn(expected);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
 
-        assertEquals(expected, result);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+            final ExerciseStudentDocument result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.save(document);
+
+            assertThat(result).isEqualTo(expected);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+        }
     }
 
-    @Test
-    void findByGradeId_shouldReturnMappedList() {
-        final List<ExerciseStudentDocumentEntity> entities = List.of(new ExerciseStudentDocumentEntity());
-        final List<ExerciseStudentDocument> expected = List.of(ExerciseStudentDocument.builder().id(DOCUMENT_ID).build());
+    @Nested
+    class Update {
 
-        when(exerciseStudentDocumentJPARepository.findByGradeId(GRADE_ID)).thenReturn(entities);
-        when(exerciseStudentDocumentMapper.toModelList(entities)).thenReturn(expected);
+        @Test
+        void when_valid_document_expect_document_updated_and_cache_evicted() {
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder().id(DOCUMENT_ID).gradeId(GRADE_ID).build();
+            final ExerciseStudentDocumentEntity entity = new ExerciseStudentDocumentEntity();
+            final ExerciseStudentDocumentEntity saved = new ExerciseStudentDocumentEntity();
+            final ExerciseStudentDocument expected = ExerciseStudentDocument.builder().id(DOCUMENT_ID).gradeId(GRADE_ID).description("updated").build();
 
-        final List<ExerciseStudentDocument> result = exerciseStudentDocumentRepository.findByGradeId(GRADE_ID);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentMapper.toEntity(document)).thenReturn(entity);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository.save(entity)).thenReturn(saved);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentMapper.toModel(saved)).thenReturn(expected);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
 
-        assertEquals(expected, result);
+            final ExerciseStudentDocument result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.update(document);
+
+            assertThat(result).isEqualTo(expected);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+        }
     }
 
-    @Test
-    void findById_shouldReturnMappedEntity_whenExists() {
-        final ExerciseStudentDocumentEntity entity = new ExerciseStudentDocumentEntity();
-        final ExerciseStudentDocument expected = ExerciseStudentDocument.builder().id(DOCUMENT_ID).build();
+    @Nested
+    class FindByGradeId {
 
-        when(exerciseStudentDocumentJPARepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(entity));
-        when(exerciseStudentDocumentMapper.toModel(entity)).thenReturn(expected);
+        @Test
+        void when_grade_exists_expect_mapped_documents_returned() {
+            final List<ExerciseStudentDocumentEntity> entities = List.of(new ExerciseStudentDocumentEntity());
+            final List<ExerciseStudentDocument> expected = List.of(ExerciseStudentDocument.builder().id(DOCUMENT_ID).build());
 
-        final Optional<ExerciseStudentDocument> result = exerciseStudentDocumentRepository.findById(DOCUMENT_ID);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findByGradeId(GRADE_ID)).thenReturn(entities);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentMapper.toModelList(entities)).thenReturn(expected);
 
-        assertTrue(result.isPresent());
-        assertEquals(expected, result.get());
+            final List<ExerciseStudentDocument> result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.findByGradeId(GRADE_ID);
+
+            assertThat(result).isEqualTo(expected);
+        }
     }
 
-    @Test
-    void findById_shouldReturnEmpty_whenNotExists() {
-        when(exerciseStudentDocumentJPARepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
+    @Nested
+    class FindById {
 
-        final Optional<ExerciseStudentDocument> result = exerciseStudentDocumentRepository.findById(DOCUMENT_ID);
+        @Test
+        void when_document_exists_expect_document_returned() {
+            final ExerciseStudentDocumentEntity entity = new ExerciseStudentDocumentEntity();
+            final ExerciseStudentDocument expected = ExerciseStudentDocument.builder().id(DOCUMENT_ID).build();
 
-        assertFalse(result.isPresent());
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(entity));
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentMapper.toModel(entity)).thenReturn(expected);
+
+            final Optional<ExerciseStudentDocument> result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.findById(DOCUMENT_ID);
+
+            assertThat(result).contains(expected);
+        }
+
+        @Test
+        void when_document_does_not_exist_expect_empty_optional_returned() {
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
+
+            final Optional<ExerciseStudentDocument> result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.findById(DOCUMENT_ID);
+
+            assertThat(result).isNotPresent();
+        }
     }
 
-    @Test
-    void deleteById_shouldCallJpaDeleteByIdAndEvictCache() {
-        final ExerciseStudentDocumentEntity entity = new ExerciseStudentDocumentEntity(DOCUMENT_ID, GRADE_ID, "doc.pdf", null);
-        when(exerciseStudentDocumentJPARepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(entity));
-        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
+    @Nested
+    class DeleteById {
 
-        exerciseStudentDocumentRepository.deleteById(DOCUMENT_ID);
+        @Test
+        void when_document_exists_expect_jpa_delegated_and_cache_evicted() {
+            final ExerciseStudentDocumentEntity entity = new ExerciseStudentDocumentEntity(DOCUMENT_ID, GRADE_ID, "doc.pdf", null);
 
-        verify(exerciseStudentDocumentJPARepository).deleteById(DOCUMENT_ID);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(entity));
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
+
+            ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.deleteById(DOCUMENT_ID);
+
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository).deleteById(DOCUMENT_ID);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+        }
     }
 
-    @Test
-    void deleteByGradeId_shouldCallJpaDeleteByGradeIdAndEvictCache() {
-        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
+    @Nested
+    class DeleteByGradeId {
 
-        exerciseStudentDocumentRepository.deleteByGradeId(GRADE_ID);
+        @Test
+        void when_called_expect_jpa_delegated_and_cache_evicted() {
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(List.of(GRADE_ID))).thenReturn(List.of(1));
 
-        verify(exerciseStudentDocumentJPARepository).deleteByGradeId(GRADE_ID);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+            ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.deleteByGradeId(GRADE_ID);
+
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository).deleteByGradeId(GRADE_ID);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+        }
     }
 
-    @Test
-    void deleteByGradeIds_shouldCallJpaDeleteByGradeIdInAndEvictCache_whenNotEmpty() {
-        final List<Integer> gradeIds = List.of(1, 2, 3);
-        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(gradeIds)).thenReturn(List.of(10));
+    @Nested
+    class DeleteByGradeIds {
 
-        exerciseStudentDocumentRepository.deleteByGradeIds(gradeIds);
+        @Test
+        void when_list_is_not_empty_expect_jpa_delegated_and_cache_evicted() {
+            final List<Integer> gradeIds = List.of(1, 2, 3);
 
-        verify(exerciseStudentDocumentJPARepository).deleteByGradeIdIn(gradeIds);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentGradeJPARepository.findDistinctClassIdsByGradeIds(gradeIds)).thenReturn(List.of(10));
+
+            ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.deleteByGradeIds(gradeIds);
+
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository).deleteByGradeIdIn(gradeIds);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
+        }
+
+        @Test
+        void when_list_is_empty_expect_no_jpa_interaction() {
+            ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.deleteByGradeIds(List.of());
+
+            verifyNoInteractions(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository);
+        }
     }
 
-    @Test
-    void deleteByGradeIds_shouldNotCallJpa_whenListIsEmpty() {
-        exerciseStudentDocumentRepository.deleteByGradeIds(List.of());
+    @Nested
+    class FindByGradeIds {
 
-        verifyNoInteractions(exerciseStudentDocumentJPARepository);
+        @Test
+        void when_list_is_not_empty_expect_mapped_documents_returned() {
+            final List<Integer> gradeIds = List.of(1, 2, 3);
+            final List<ExerciseStudentDocumentEntity> entities = List.of(new ExerciseStudentDocumentEntity());
+            final List<ExerciseStudentDocument> expected = List.of(ExerciseStudentDocument.builder().id(DOCUMENT_ID).build());
+
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findByGradeIdIn(gradeIds)).thenReturn(entities);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentMapper.toModelList(entities)).thenReturn(expected);
+
+            final List<ExerciseStudentDocument> result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.findByGradeIds(gradeIds);
+
+            assertThat(result).isEqualTo(expected);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository).findByGradeIdIn(gradeIds);
+        }
+
+        @Test
+        void when_list_is_empty_expect_empty_list_returned() {
+            final List<ExerciseStudentDocument> result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.findByGradeIds(List.of());
+
+            assertThat(result).isEmpty();
+            verifyNoInteractions(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository);
+        }
+
+        @Test
+        void when_list_is_null_expect_empty_list_returned() {
+            final List<ExerciseStudentDocument> result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.findByGradeIds(null);
+
+            assertThat(result).isEmpty();
+            verifyNoInteractions(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository);
+        }
     }
 
-    @Test
-    void findByGradeIds_shouldReturnMappedList_whenNotEmpty() {
-        final List<Integer> gradeIds = List.of(1, 2, 3);
-        final List<ExerciseStudentDocumentEntity> entities = List.of(new ExerciseStudentDocumentEntity());
-        final List<ExerciseStudentDocument> expected = List.of(ExerciseStudentDocument.builder().id(DOCUMENT_ID).build());
+    @Nested
+    class FindByExerciseId {
 
-        when(exerciseStudentDocumentJPARepository.findByGradeIdIn(gradeIds)).thenReturn(entities);
-        when(exerciseStudentDocumentMapper.toModelList(entities)).thenReturn(expected);
+        @Test
+        void when_exercise_exists_expect_mapped_documents_returned() {
+            final Integer exerciseId = 50;
+            final List<ExerciseStudentDocumentEntity> entities = List.of(new ExerciseStudentDocumentEntity());
+            final List<ExerciseStudentDocument> expected = List.of(ExerciseStudentDocument.builder().id(DOCUMENT_ID).build());
 
-        final List<ExerciseStudentDocument> result = exerciseStudentDocumentRepository.findByGradeIds(gradeIds);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findByExerciseId(exerciseId)).thenReturn(entities);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentMapper.toModelList(entities)).thenReturn(expected);
 
-        assertEquals(expected, result);
-        verify(exerciseStudentDocumentJPARepository).findByGradeIdIn(gradeIds);
+            final List<ExerciseStudentDocument> result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.findByExerciseId(exerciseId);
+
+            assertThat(result).isEqualTo(expected);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository).findByExerciseId(exerciseId);
+        }
     }
 
-    @Test
-    void findByGradeIds_shouldReturnEmptyList_whenListIsEmpty() {
-        final List<ExerciseStudentDocument> result = exerciseStudentDocumentRepository.findByGradeIds(List.of());
+    @Nested
+    class FindByExerciseIds {
 
-        assertTrue(result.isEmpty());
-        verifyNoInteractions(exerciseStudentDocumentJPARepository);
+        @Test
+        void when_list_is_not_empty_expect_mapped_documents_returned() {
+            final List<Integer> exerciseIds = List.of(50, 51);
+            final List<ExerciseStudentDocumentEntity> entities = List.of(new ExerciseStudentDocumentEntity());
+            final List<ExerciseStudentDocument> expected = List.of(ExerciseStudentDocument.builder().id(DOCUMENT_ID).build());
+
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findByExerciseIdIn(exerciseIds)).thenReturn(entities);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentMapper.toModelList(entities)).thenReturn(expected);
+
+            final List<ExerciseStudentDocument> result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.findByExerciseIds(exerciseIds);
+
+            assertThat(result).isEqualTo(expected);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository).findByExerciseIdIn(exerciseIds);
+        }
+
+        @Test
+        void when_list_is_empty_expect_empty_list_returned() {
+            final List<ExerciseStudentDocument> result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.findByExerciseIds(List.of());
+
+            assertThat(result).isEmpty();
+            verifyNoInteractions(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository);
+        }
+
+        @Test
+        void when_list_is_null_expect_empty_list_returned() {
+            final List<ExerciseStudentDocument> result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.findByExerciseIds(null);
+
+            assertThat(result).isEmpty();
+            verifyNoInteractions(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository);
+        }
     }
 
-    @Test
-    void findByGradeIds_shouldReturnEmptyList_whenListIsNull() {
-        final List<ExerciseStudentDocument> result = exerciseStudentDocumentRepository.findByGradeIds(null);
+    @Nested
+    class DeleteByExerciseId {
 
-        assertTrue(result.isEmpty());
-        verifyNoInteractions(exerciseStudentDocumentJPARepository);
+        @Test
+        void when_called_expect_jpa_delegated_and_cache_evicted() {
+            final Integer exerciseId = 50;
+
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(exerciseId))).thenReturn(List.of(1));
+
+            ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.deleteByExerciseId(exerciseId);
+
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository).deleteByExerciseId(exerciseId);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+        }
     }
 
-    @Test
-    void findByExerciseId_shouldReturnMappedList() {
-        final Integer exerciseId = 50;
-        final List<ExerciseStudentDocumentEntity> entities = List.of(new ExerciseStudentDocumentEntity());
-        final List<ExerciseStudentDocument> expected = List.of(ExerciseStudentDocument.builder().id(DOCUMENT_ID).build());
+    @Nested
+    class DeleteByExerciseIds {
 
-        when(exerciseStudentDocumentJPARepository.findByExerciseId(exerciseId)).thenReturn(entities);
-        when(exerciseStudentDocumentMapper.toModelList(entities)).thenReturn(expected);
+        @Test
+        void when_list_is_not_empty_expect_jpa_delegated_and_cache_evicted() {
+            final List<Integer> exerciseIds = List.of(50, 51);
 
-        final List<ExerciseStudentDocument> result = exerciseStudentDocumentRepository.findByExerciseId(exerciseId);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(exerciseIds)).thenReturn(List.of(1));
 
-        assertEquals(expected, result);
-        verify(exerciseStudentDocumentJPARepository).findByExerciseId(exerciseId);
+            ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.deleteByExerciseIds(exerciseIds);
+
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository).deleteByExerciseIdIn(exerciseIds);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
+        }
+
+        @Test
+        void when_list_is_empty_expect_no_jpa_interaction() {
+            ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.deleteByExerciseIds(List.of());
+
+            verifyNoInteractions(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository);
+        }
+
+        @Test
+        void when_list_is_null_expect_no_jpa_interaction() {
+            ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.deleteByExerciseIds(null);
+
+            verifyNoInteractions(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository);
+        }
     }
 
-    @Test
-    void findByExerciseIds_shouldReturnMappedList_whenNotEmpty() {
-        final List<Integer> exerciseIds = List.of(50, 51);
-        final List<ExerciseStudentDocumentEntity> entities = List.of(new ExerciseStudentDocumentEntity());
-        final List<ExerciseStudentDocument> expected = List.of(ExerciseStudentDocument.builder().id(DOCUMENT_ID).build());
+    @Nested
+    class FindByStudentId {
 
-        when(exerciseStudentDocumentJPARepository.findByExerciseIdIn(exerciseIds)).thenReturn(entities);
-        when(exerciseStudentDocumentMapper.toModelList(entities)).thenReturn(expected);
+        @Test
+        void when_student_exists_expect_mapped_documents_returned() {
+            final Integer studentId = 7;
+            final List<ExerciseStudentDocumentEntity> entities = List.of(new ExerciseStudentDocumentEntity());
+            final List<ExerciseStudentDocument> expected = List.of(ExerciseStudentDocument.builder().id(DOCUMENT_ID).build());
 
-        final List<ExerciseStudentDocument> result = exerciseStudentDocumentRepository.findByExerciseIds(exerciseIds);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository.findByStudentId(studentId)).thenReturn(entities);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentMapper.toModelList(entities)).thenReturn(expected);
 
-        assertEquals(expected, result);
-        verify(exerciseStudentDocumentJPARepository).findByExerciseIdIn(exerciseIds);
+            final List<ExerciseStudentDocument> result = ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.findByStudentId(studentId);
+
+            assertThat(result).isEqualTo(expected);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository).findByStudentId(studentId);
+        }
     }
 
-    @Test
-    void findByExerciseIds_shouldReturnEmptyList_whenListIsEmpty() {
-        final List<ExerciseStudentDocument> result = exerciseStudentDocumentRepository.findByExerciseIds(List.of());
+    @Nested
+    class DeleteByStudentId {
 
-        assertTrue(result.isEmpty());
-        verifyNoInteractions(exerciseStudentDocumentJPARepository);
-    }
+        @Test
+        void when_called_expect_jpa_delegated_and_cache_evicted() {
+            final Integer studentId = 7;
 
-    @Test
-    void findByExerciseIds_shouldReturnEmptyList_whenListIsNull() {
-        final List<ExerciseStudentDocument> result = exerciseStudentDocumentRepository.findByExerciseIds(null);
+            when(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentGradeJPARepository.findDistinctClassIdsByStudentId(studentId)).thenReturn(List.of(10));
 
-        assertTrue(result.isEmpty());
-        verifyNoInteractions(exerciseStudentDocumentJPARepository);
-    }
+            ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentRepository.deleteByStudentId(studentId);
 
-    @Test
-    void deleteByExerciseId_shouldCallJpaDeleteByExerciseIdAndEvictCache() {
-        final Integer exerciseId = 50;
-        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(exerciseId))).thenReturn(List.of(1));
-
-        exerciseStudentDocumentRepository.deleteByExerciseId(exerciseId);
-
-        verify(exerciseStudentDocumentJPARepository).deleteByExerciseId(exerciseId);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
-    }
-
-    @Test
-    void deleteByExerciseIds_shouldCallJpaDeleteByExerciseIdInAndEvictCache_whenNotEmpty() {
-        final List<Integer> exerciseIds = List.of(50, 51);
-        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(exerciseIds)).thenReturn(List.of(1));
-
-        exerciseStudentDocumentRepository.deleteByExerciseIds(exerciseIds);
-
-        verify(exerciseStudentDocumentJPARepository).deleteByExerciseIdIn(exerciseIds);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 1);
-    }
-
-    @Test
-    void deleteByExerciseIds_shouldNotCallJpa_whenListIsEmpty() {
-        exerciseStudentDocumentRepository.deleteByExerciseIds(List.of());
-
-        verifyNoInteractions(exerciseStudentDocumentJPARepository);
-    }
-
-    @Test
-    void deleteByExerciseIds_shouldNotCallJpa_whenListIsNull() {
-        exerciseStudentDocumentRepository.deleteByExerciseIds(null);
-
-        verifyNoInteractions(exerciseStudentDocumentJPARepository);
-    }
-
-    @Test
-    void findByStudentId_shouldReturnMappedList() {
-        final Integer studentId = 7;
-        final List<ExerciseStudentDocumentEntity> entities = List.of(new ExerciseStudentDocumentEntity());
-        final List<ExerciseStudentDocument> expected = List.of(ExerciseStudentDocument.builder().id(DOCUMENT_ID).build());
-
-        when(exerciseStudentDocumentJPARepository.findByStudentId(studentId)).thenReturn(entities);
-        when(exerciseStudentDocumentMapper.toModelList(entities)).thenReturn(expected);
-
-        final List<ExerciseStudentDocument> result = exerciseStudentDocumentRepository.findByStudentId(studentId);
-
-        assertEquals(expected, result);
-        verify(exerciseStudentDocumentJPARepository).findByStudentId(studentId);
-    }
-
-    @Test
-    void deleteByStudentId_shouldCallJpaDeleteByStudentIdAndEvictCache() {
-        final Integer studentId = 7;
-        when(exerciseStudentGradeJPARepository.findDistinctClassIdsByStudentId(studentId)).thenReturn(List.of(10));
-
-        exerciseStudentDocumentRepository.deleteByStudentId(studentId);
-
-        verify(exerciseStudentDocumentJPARepository).deleteByStudentId(studentId);
-        verify(cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.exerciseStudentDocumentJPARepository).deleteByStudentId(studentId);
+            verify(ExerciseStudentDocumentRepositoryImplTest.this.cacheEvictionService).evict("exerciseStudentGradesByClass", 10);
+        }
     }
 }
-

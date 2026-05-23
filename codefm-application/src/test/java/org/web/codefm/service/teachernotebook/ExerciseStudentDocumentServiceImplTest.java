@@ -1,10 +1,11 @@
 package org.web.codefm.service.teachernotebook;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -29,7 +30,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -50,7 +52,6 @@ class ExerciseStudentDocumentServiceImplTest {
     @Mock
     private SessionUser sessionUser;
 
-    @InjectMocks
     private ExerciseStudentDocumentServiceImpl exerciseStudentDocumentService;
 
     @TempDir
@@ -61,435 +62,496 @@ class ExerciseStudentDocumentServiceImplTest {
     private static final Integer DOCUMENT_ID = 200;
 
     @BeforeEach
-    void setUp() {
+    void beforeEach() {
+        exerciseStudentDocumentService = new ExerciseStudentDocumentServiceImpl(
+                exerciseStudentDocumentRepository, exerciseStudentGradeRepository, messageSource, sessionUser);
         ReflectionTestUtils.setField(exerciseStudentDocumentService, "documentsDirectory", tempDir.toString());
         when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
         when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
         when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("Error message");
     }
 
-    @Test
-    void uploadDocument_shouldSaveDocumentAndReturnIt_whenGradeExistsAndFileIsValid() throws IOException {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class UploadDocument {
 
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getBytes()).thenReturn("file content".getBytes());
-        when(file.getOriginalFilename()).thenReturn("document.pdf");
-        when(exerciseStudentDocumentRepository.save(any(ExerciseStudentDocument.class))).thenAnswer(inv -> {
-            final ExerciseStudentDocument doc = inv.getArgument(0);
-            return ExerciseStudentDocument.builder()
-                    .id(DOCUMENT_ID).gradeId(doc.getGradeId())
-                    .document(doc.getDocument()).description(doc.getDescription())
-                    .build();
-        });
+        @Test
+        void when_grade_exists_and_file_is_valid_expect_save_document_and_return_it() throws IOException {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
 
-        final ExerciseStudentDocument result = exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "Test description");
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getBytes()).thenReturn("file content".getBytes());
+            when(file.getOriginalFilename()).thenReturn("document.pdf");
+            when(exerciseStudentDocumentRepository.save(any(ExerciseStudentDocument.class))).thenAnswer(inv -> {
+                final ExerciseStudentDocument doc = inv.getArgument(0);
+                return ExerciseStudentDocument.builder()
+                        .id(DOCUMENT_ID).gradeId(doc.getGradeId())
+                        .document(doc.getDocument()).description(doc.getDescription())
+                        .build();
+            });
 
-        assertNotNull(result);
-        assertEquals(DOCUMENT_ID, result.getId());
-        assertEquals(GRADE_ID, result.getGradeId());
-        assertTrue(result.getDocument().startsWith(GRADE_ID + "_document_"));
-        assertTrue(result.getDocument().endsWith(".pdf"));
-        verify(exerciseStudentDocumentRepository).save(any(ExerciseStudentDocument.class));
+            final ExerciseStudentDocument result = exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "Test description");
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(DOCUMENT_ID);
+            assertThat(result.getGradeId()).isEqualTo(GRADE_ID);
+            assertThat(result.getDocument()).startsWith(GRADE_ID + "_document_");
+            assertThat(result.getDocument()).endsWith(".pdf");
+            verify(exerciseStudentDocumentRepository).save(any(ExerciseStudentDocument.class));
+        }
+
+        @Test
+        void when_grade_not_found_expect_throw_not_found_exception() {
+            final MultipartFile file = mock(MultipartFile.class);
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentGradeNotFoundException.class);
+        }
+
+        @Test
+        void when_file_is_empty_expect_throw_upload_exception() throws IOException {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(file.isEmpty()).thenReturn(true);
+            when(file.getBytes()).thenReturn(new byte[0]);
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentUploadException.class);
+        }
+
+        @Test
+        void when_file_is_null_expect_throw_upload_exception() {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, null, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentUploadException.class);
+        }
+
+        @Test
+        void when_file_size_exceeded_expect_throw_upload_exception() throws IOException {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getBytes()).thenReturn(new byte[3 * 1024 * 1024]);
+            when(file.getOriginalFilename()).thenReturn("large.pdf");
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentUploadException.class);
+        }
+
+        @Test
+        void when_extension_is_invalid_expect_throw_upload_exception() throws IOException {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getBytes()).thenReturn("content".getBytes());
+            when(file.getOriginalFilename()).thenReturn("virus.exe");
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentUploadException.class);
+        }
+
+        @Test
+        void when_get_bytes_throws_io_exception_expect_throw_upload_exception() throws IOException {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getBytes()).thenThrow(new IOException("Read error"));
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentUploadException.class);
+        }
+
+        @Test
+        void when_writing_file_to_disk_fails_expect_throw_upload_exception() throws IOException {
+            ReflectionTestUtils.setField(exerciseStudentDocumentService, "documentsDirectory", "/non_existent_path_xyz");
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final MultipartFile file = mock(MultipartFile.class);
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getBytes()).thenReturn("content".getBytes());
+            when(file.getOriginalFilename()).thenReturn("document.pdf");
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentUploadException.class);
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowNotFoundException_whenGradeNotFound() {
-        final MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class DownloadDocument {
 
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+        @Test
+        void when_document_exists_expect_return_file_bytes() throws IOException {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final byte[] expectedBytes = "file content".getBytes();
+            final Path file = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), expectedBytes);
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document(file.getFileName().toString()).build();
 
-        assertThrows(ExerciseStudentGradeNotFoundException.class,
-                () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc"));
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            final byte[] result = exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID);
+
+            assertThat(result).isEqualTo(expectedBytes);
+        }
+
+        @Test
+        void when_grade_not_found_expect_throw_not_found_exception() {
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentGradeNotFoundException.class);
+        }
+
+        @Test
+        void when_document_not_found_expect_throw_not_found_exception() {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentNotFoundException.class);
+        }
+
+        @Test
+        void when_file_does_not_exist_on_disk_expect_throw_not_found_exception() {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document("nonexistent_file.pdf").build();
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentNotFoundException.class);
+        }
+
+        @Test
+        void when_reading_file_throws_io_exception_expect_throw_not_found_exception() throws IOException {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final Path subDir = Files.createDirectory(tempDir.resolve("fakefile.pdf"));
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document(subDir.getFileName().toString()).build();
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentNotFoundException.class);
+        }
+
+        @Test
+        void when_document_belongs_to_different_grade_expect_throw_not_found_exception() {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(999).document("file.pdf").build();
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentNotFoundException.class);
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenFileIsEmpty() throws IOException {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class UpdateDescription {
 
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(file.isEmpty()).thenReturn(true);
-        when(file.getBytes()).thenReturn(new byte[0]);
+        @Test
+        void when_document_exists_expect_update_and_return_document() {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document("file.pdf").description("old").build();
+            final ExerciseStudentDocument updated = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document("file.pdf").description("new desc").build();
 
-        assertThrows(ExerciseStudentDocumentUploadException.class,
-                () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc"));
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+            when(exerciseStudentDocumentRepository.update(any())).thenReturn(updated);
+
+            final ExerciseStudentDocument result = exerciseStudentDocumentService.updateDescription(GRADE_ID, DOCUMENT_ID, "new desc");
+
+            assertThat(result.getDescription()).isEqualTo("new desc");
+            verify(exerciseStudentDocumentRepository).update(any());
+        }
+
+        @Test
+        void when_document_not_found_expect_throw_not_found_exception() {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.updateDescription(GRADE_ID, DOCUMENT_ID, "new");
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentNotFoundException.class);
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenFileIsNull() {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+    @Nested
+    class DeleteDocument {
 
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+        @Test
+        void when_document_exists_expect_delete_document_and_file() throws IOException {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
 
-        assertThrows(ExerciseStudentDocumentUploadException.class,
-                () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, null, "desc"));
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            exerciseStudentDocumentService.deleteDocument(GRADE_ID, DOCUMENT_ID);
+
+            verify(exerciseStudentDocumentRepository).deleteById(DOCUMENT_ID);
+            assertThat(diskFile).doesNotExist();
+        }
+
+        @Test
+        void when_document_not_found_expect_throw_not_found_exception() {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.deleteDocument(GRADE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentNotFoundException.class);
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenFileSizeExceeded() throws IOException {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class DeleteDocumentsByGradeId {
 
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getBytes()).thenReturn(new byte[3 * 1024 * 1024]);
-        when(file.getOriginalFilename()).thenReturn("large.pdf");
+        @Test
+        void when_documents_exist_expect_delete_all_documents_and_files() throws IOException {
+            final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
 
-        assertThrows(ExerciseStudentDocumentUploadException.class,
-                () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc"));
+            when(exerciseStudentDocumentRepository.findByGradeId(GRADE_ID)).thenReturn(List.of(document));
+
+            exerciseStudentDocumentService.deleteDocumentsByGradeId(GRADE_ID);
+
+            verify(exerciseStudentDocumentRepository).deleteByGradeId(GRADE_ID);
+            assertThat(diskFile).doesNotExist();
+        }
+
+        @Test
+        void when_delete_file_from_disk_fails_expect_throw_upload_exception() throws IOException {
+            final Path nonEmptyDir = Files.createDirectory(tempDir.resolve("undeletable_dir"));
+            Files.write(nonEmptyDir.resolve("child.txt"), "block".getBytes());
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document(nonEmptyDir.getFileName().toString()).build();
+
+            when(exerciseStudentDocumentRepository.findByGradeId(GRADE_ID)).thenReturn(List.of(document));
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.deleteDocumentsByGradeId(GRADE_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentUploadException.class);
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenExtensionIsInvalid() throws IOException {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class DeleteDocumentsByExerciseId {
 
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getBytes()).thenReturn("content".getBytes());
-        when(file.getOriginalFilename()).thenReturn("virus.exe");
+        @Test
+        void when_documents_exist_expect_delete_all_documents_and_files() throws IOException {
+            final Integer exerciseId = 30;
+            final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
 
-        assertThrows(ExerciseStudentDocumentUploadException.class,
-                () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc"));
+            when(exerciseStudentDocumentRepository.findByExerciseId(exerciseId)).thenReturn(List.of(document));
+
+            exerciseStudentDocumentService.deleteDocumentsByExerciseId(exerciseId);
+
+            verify(exerciseStudentDocumentRepository).deleteByExerciseId(exerciseId);
+            assertThat(diskFile).doesNotExist();
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenGetBytesThrowsIOException() throws IOException {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class DeleteDocumentsByExerciseIds {
 
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getBytes()).thenThrow(new IOException("Read error"));
+        @Test
+        void when_documents_exist_expect_delete_all_documents_and_files() throws IOException {
+            final List<Integer> exerciseIds = List.of(30, 31);
+            final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
 
-        assertThrows(ExerciseStudentDocumentUploadException.class,
-                () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc"));
+            when(exerciseStudentDocumentRepository.findByExerciseIds(exerciseIds)).thenReturn(List.of(document));
+
+            exerciseStudentDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
+
+            verify(exerciseStudentDocumentRepository).deleteByExerciseIds(exerciseIds);
+            assertThat(diskFile).doesNotExist();
+        }
+
+        @Test
+        void when_list_is_null_expect_do_nothing() {
+            exerciseStudentDocumentService.deleteDocumentsByExerciseIds(null);
+
+            verifyNoInteractions(exerciseStudentDocumentRepository);
+        }
+
+        @Test
+        void when_list_is_empty_expect_do_nothing() {
+            exerciseStudentDocumentService.deleteDocumentsByExerciseIds(List.of());
+
+            verifyNoInteractions(exerciseStudentDocumentRepository);
+        }
     }
 
-    @Test
-    void uploadDocument_shouldThrowUploadException_whenWritingFileToDiskFails() throws IOException {
-        ReflectionTestUtils.setField(exerciseStudentDocumentService, "documentsDirectory", "/non_existent_path_xyz");
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class DeleteDocumentsByStudentIdAndClassId {
 
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getBytes()).thenReturn("content".getBytes());
-        when(file.getOriginalFilename()).thenReturn("document.pdf");
+        @Test
+        void when_documents_exist_expect_delete_all_documents_and_files() throws IOException {
+            final Integer studentId = 5;
+            final Integer classId = 2;
+            final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
 
-        assertThrows(ExerciseStudentDocumentUploadException.class,
-                () -> exerciseStudentDocumentService.uploadDocument(GRADE_ID, file, "desc"));
+            when(exerciseStudentDocumentRepository.findByStudentIdAndClassId(studentId, classId)).thenReturn(List.of(document));
+
+            exerciseStudentDocumentService.deleteDocumentsByStudentIdAndClassId(studentId, classId);
+
+            verify(exerciseStudentDocumentRepository).deleteByStudentIdAndClassId(studentId, classId);
+            assertThat(diskFile).doesNotExist();
+        }
     }
 
-    @Test
-    void downloadDocument_shouldReturnFileBytes_whenDocumentExists() throws IOException {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final byte[] expectedBytes = "file content".getBytes();
-        final Path file = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), expectedBytes);
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document(file.getFileName().toString()).build();
+    @Nested
+    class GetDocumentFilename {
 
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+        @Test
+        void when_document_exists_expect_return_filename() {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document("10_doc_abc12345.pdf").build();
 
-        final byte[] result = exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID);
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
 
-        assertArrayEquals(expectedBytes, result);
+            final String result = exerciseStudentDocumentService.getDocumentFilename(GRADE_ID, DOCUMENT_ID);
+
+            assertThat(result).isEqualTo("10_doc_abc12345.pdf");
+        }
+
+        @Test
+        void when_grade_not_found_expect_throw_grade_not_found_exception() {
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.getDocumentFilename(GRADE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentGradeNotFoundException.class);
+        }
+
+        @Test
+        void when_document_not_found_expect_throw_document_not_found_exception() {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.getDocumentFilename(GRADE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentNotFoundException.class);
+        }
+
+        @Test
+        void when_document_belongs_to_different_grade_expect_throw_document_not_found_exception() {
+            final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(999).document("file.pdf").build();
+
+            when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
+            when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
+
+            final ThrowingCallable call = () -> exerciseStudentDocumentService.getDocumentFilename(GRADE_ID, DOCUMENT_ID);
+
+            assertThatThrownBy(call).isInstanceOf(ExerciseStudentDocumentNotFoundException.class);
+        }
     }
 
-    @Test
-    void downloadDocument_shouldThrowNotFoundException_whenGradeNotFound() {
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+    @Nested
+    class DeleteDocumentsByGradeIds {
 
-        assertThrows(ExerciseStudentGradeNotFoundException.class,
-                () -> exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID));
+        @Test
+        void when_documents_exist_expect_delete_all_documents_and_files() throws IOException {
+            final List<Integer> gradeIds = List.of(GRADE_ID, 11);
+            final Path diskFile = Files.write(tempDir.resolve("10_doc_gradeids.pdf"), "content".getBytes());
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
+
+            when(exerciseStudentDocumentRepository.findByGradeIds(gradeIds)).thenReturn(List.of(document));
+
+            exerciseStudentDocumentService.deleteDocumentsByGradeIds(gradeIds);
+
+            verify(exerciseStudentDocumentRepository).deleteByGradeIds(gradeIds);
+            assertThat(diskFile).doesNotExist();
+        }
+
+        @Test
+        void when_list_is_empty_expect_do_nothing() {
+            exerciseStudentDocumentService.deleteDocumentsByGradeIds(List.of());
+
+            verifyNoInteractions(exerciseStudentDocumentRepository);
+        }
+
+        @Test
+        void when_list_is_null_expect_do_nothing() {
+            exerciseStudentDocumentService.deleteDocumentsByGradeIds(null);
+
+            verifyNoInteractions(exerciseStudentDocumentRepository);
+        }
     }
 
-    @Test
-    void downloadDocument_shouldThrowNotFoundException_whenDocumentNotFound() {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseStudentDocumentNotFoundException.class,
-                () -> exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void downloadDocument_shouldThrowNotFoundException_whenFileDoesNotExistOnDisk() {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document("nonexistent_file.pdf").build();
-
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        assertThrows(ExerciseStudentDocumentNotFoundException.class,
-                () -> exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void downloadDocument_shouldThrowNotFoundException_whenReadingFileThrowsIOException() throws IOException {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final Path subDir = Files.createDirectory(tempDir.resolve("fakefile.pdf"));
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document(subDir.getFileName().toString()).build();
-
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        assertThrows(ExerciseStudentDocumentNotFoundException.class,
-                () -> exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void downloadDocument_shouldThrowNotFoundException_whenDocumentBelongsToDifferentGrade() {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(999).document("file.pdf").build();
-
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        assertThrows(ExerciseStudentDocumentNotFoundException.class,
-                () -> exerciseStudentDocumentService.downloadDocument(GRADE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void updateDescription_shouldUpdateAndReturnDocument_whenDocumentExists() {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document("file.pdf").description("old").build();
-        final ExerciseStudentDocument updated = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document("file.pdf").description("new desc").build();
-
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-        when(exerciseStudentDocumentRepository.update(any())).thenReturn(updated);
-
-        final ExerciseStudentDocument result = exerciseStudentDocumentService.updateDescription(GRADE_ID, DOCUMENT_ID, "new desc");
-
-        assertEquals("new desc", result.getDescription());
-        verify(exerciseStudentDocumentRepository).update(any());
-    }
-
-    @Test
-    void updateDescription_shouldThrowNotFoundException_whenDocumentNotFound() {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseStudentDocumentNotFoundException.class,
-                () -> exerciseStudentDocumentService.updateDescription(GRADE_ID, DOCUMENT_ID, "new"));
-    }
-
-    @Test
-    void deleteDocument_shouldDeleteDocumentAndFile_whenDocumentExists() throws IOException {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
-
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        exerciseStudentDocumentService.deleteDocument(GRADE_ID, DOCUMENT_ID);
-
-        verify(exerciseStudentDocumentRepository).deleteById(DOCUMENT_ID);
-        assertFalse(Files.exists(diskFile));
-    }
-
-    @Test
-    void deleteDocument_shouldThrowNotFoundException_whenDocumentNotFound() {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseStudentDocumentNotFoundException.class,
-                () -> exerciseStudentDocumentService.deleteDocument(GRADE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void deleteDocumentsByGradeId_shouldDeleteAllDocumentsAndFiles() throws IOException {
-        final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
-
-        when(exerciseStudentDocumentRepository.findByGradeId(GRADE_ID)).thenReturn(List.of(document));
-
-        exerciseStudentDocumentService.deleteDocumentsByGradeId(GRADE_ID);
-
-        verify(exerciseStudentDocumentRepository).deleteByGradeId(GRADE_ID);
-        assertFalse(Files.exists(diskFile));
-    }
-
-    @Test
-    void deleteDocumentsByExerciseId_shouldDeleteAllDocumentsAndFiles() throws IOException {
-        final Integer exerciseId = 30;
-        final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
-
-        when(exerciseStudentDocumentRepository.findByExerciseId(exerciseId)).thenReturn(List.of(document));
-
-        exerciseStudentDocumentService.deleteDocumentsByExerciseId(exerciseId);
-
-        verify(exerciseStudentDocumentRepository).deleteByExerciseId(exerciseId);
-        assertFalse(Files.exists(diskFile));
-    }
-
-    @Test
-    void deleteDocumentsByExerciseIds_shouldDeleteAllDocumentsAndFiles() throws IOException {
-        final List<Integer> exerciseIds = List.of(30, 31);
-        final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
-
-        when(exerciseStudentDocumentRepository.findByExerciseIds(exerciseIds)).thenReturn(List.of(document));
-
-        exerciseStudentDocumentService.deleteDocumentsByExerciseIds(exerciseIds);
-
-        verify(exerciseStudentDocumentRepository).deleteByExerciseIds(exerciseIds);
-        assertFalse(Files.exists(diskFile));
-    }
-
-    @Test
-    void deleteDocumentsByStudentIdAndClassId_shouldDeleteAllDocumentsAndFiles() throws IOException {
-        final Integer studentId = 5;
-        final Integer classId = 2;
-        final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
-
-        when(exerciseStudentDocumentRepository.findByStudentIdAndClassId(studentId, classId)).thenReturn(List.of(document));
-
-        exerciseStudentDocumentService.deleteDocumentsByStudentIdAndClassId(studentId, classId);
-
-        verify(exerciseStudentDocumentRepository).deleteByStudentIdAndClassId(studentId, classId);
-        assertFalse(Files.exists(diskFile));
-    }
-
-    @Test
-    void getDocumentFilename_shouldReturnFilename_whenDocumentExists() {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document("10_doc_abc12345.pdf").build();
-
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        final String result = exerciseStudentDocumentService.getDocumentFilename(GRADE_ID, DOCUMENT_ID);
-
-        assertEquals("10_doc_abc12345.pdf", result);
-    }
-
-    @Test
-    void getDocumentFilename_shouldThrowGradeNotFoundException_whenGradeNotFound() {
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseStudentGradeNotFoundException.class,
-                () -> exerciseStudentDocumentService.getDocumentFilename(GRADE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void getDocumentFilename_shouldThrowDocumentNotFoundException_whenDocumentNotFound() {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.empty());
-
-        assertThrows(ExerciseStudentDocumentNotFoundException.class,
-                () -> exerciseStudentDocumentService.getDocumentFilename(GRADE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void getDocumentFilename_shouldThrowDocumentNotFoundException_whenDocumentBelongsToDifferentGrade() {
-        final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(GRADE_ID).build();
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(999).document("file.pdf").build();
-
-        when(exerciseStudentGradeRepository.findByIdAndTeacherId(GRADE_ID, TEACHER_ID)).thenReturn(Optional.of(grade));
-        when(exerciseStudentDocumentRepository.findById(DOCUMENT_ID)).thenReturn(Optional.of(document));
-
-        assertThrows(ExerciseStudentDocumentNotFoundException.class,
-                () -> exerciseStudentDocumentService.getDocumentFilename(GRADE_ID, DOCUMENT_ID));
-    }
-
-    @Test
-    void deleteDocumentsByGradeIds_shouldDeleteAllDocumentsAndFiles() throws IOException {
-        final List<Integer> gradeIds = List.of(GRADE_ID, 11);
-        final Path diskFile = Files.write(tempDir.resolve("10_doc_gradeids.pdf"), "content".getBytes());
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
-
-        when(exerciseStudentDocumentRepository.findByGradeIds(gradeIds)).thenReturn(List.of(document));
-
-        exerciseStudentDocumentService.deleteDocumentsByGradeIds(gradeIds);
-
-        verify(exerciseStudentDocumentRepository).deleteByGradeIds(gradeIds);
-        assertFalse(Files.exists(diskFile));
-    }
-
-    @Test
-    void deleteDocumentsByGradeIds_shouldDoNothing_whenListIsEmpty() {
-        exerciseStudentDocumentService.deleteDocumentsByGradeIds(List.of());
-
-        verifyNoInteractions(exerciseStudentDocumentRepository);
-    }
-
-    @Test
-    void deleteDocumentsByGradeIds_shouldDoNothing_whenListIsNull() {
-        exerciseStudentDocumentService.deleteDocumentsByGradeIds(null);
-
-        verifyNoInteractions(exerciseStudentDocumentRepository);
-    }
-
-    @Test
-    void deleteDocumentsByExerciseIds_shouldDoNothing_whenListIsNull() {
-        exerciseStudentDocumentService.deleteDocumentsByExerciseIds(null);
-
-        verifyNoInteractions(exerciseStudentDocumentRepository);
-    }
-
-    @Test
-    void deleteDocumentsByExerciseIds_shouldDoNothing_whenListIsEmpty() {
-        exerciseStudentDocumentService.deleteDocumentsByExerciseIds(List.of());
-
-        verifyNoInteractions(exerciseStudentDocumentRepository);
-    }
-
-    @Test
-    void deleteDocumentsByStudentId_shouldDeleteAllDocumentsAndFiles() throws IOException {
-        final Integer studentId = 5;
-        final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
-
-        when(exerciseStudentDocumentRepository.findByStudentId(studentId)).thenReturn(List.of(document));
-
-        exerciseStudentDocumentService.deleteDocumentsByStudentId(studentId);
-
-        verify(exerciseStudentDocumentRepository).deleteByStudentId(studentId);
-        assertFalse(Files.exists(diskFile));
-    }
-
-    @Test
-    void deleteDocumentsByGradeId_shouldThrowUploadException_whenDeleteFileFromDiskFails() throws IOException {
-        final Path nonEmptyDir = Files.createDirectory(tempDir.resolve("undeletable_dir"));
-        Files.write(nonEmptyDir.resolve("child.txt"), "block".getBytes());
-        final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
-                .id(DOCUMENT_ID).gradeId(GRADE_ID).document(nonEmptyDir.getFileName().toString()).build();
-
-        when(exerciseStudentDocumentRepository.findByGradeId(GRADE_ID)).thenReturn(List.of(document));
-
-        assertThrows(ExerciseStudentDocumentUploadException.class,
-                () -> exerciseStudentDocumentService.deleteDocumentsByGradeId(GRADE_ID));
+    @Nested
+    class DeleteDocumentsByStudentId {
+
+        @Test
+        void when_documents_exist_expect_delete_all_documents_and_files() throws IOException {
+            final Integer studentId = 5;
+            final Path diskFile = Files.write(tempDir.resolve("10_doc_abc12345.pdf"), "content".getBytes());
+            final ExerciseStudentDocument document = ExerciseStudentDocument.builder()
+                    .id(DOCUMENT_ID).gradeId(GRADE_ID).document(diskFile.getFileName().toString()).build();
+
+            when(exerciseStudentDocumentRepository.findByStudentId(studentId)).thenReturn(List.of(document));
+
+            exerciseStudentDocumentService.deleteDocumentsByStudentId(studentId);
+
+            verify(exerciseStudentDocumentRepository).deleteByStudentId(studentId);
+            assertThat(diskFile).doesNotExist();
+        }
     }
 }
-

@@ -1,10 +1,11 @@
 package org.web.codefm.service.teachernotebook;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -26,7 +27,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -53,11 +54,11 @@ class StudentServiceImplTest {
     @Mock
     private SessionUser sessionUser;
 
-    @InjectMocks
     private StudentServiceImpl studentService;
 
     @BeforeEach
-    void setUp() {
+    void beforeEach() {
+        studentService = new StudentServiceImpl(studentRepository, studentClassRepository, messageSource, sessionUser);
         ReflectionTestUtils.setField(studentService, "photosDirectory", tempDir.toString());
 
         when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(1);
@@ -99,969 +100,766 @@ class StudentServiceImplTest {
                 .thenReturn("Error deleting student photo.");
     }
 
-    @Test
-    void createStudent_shouldSaveStudent_whenDataIsValid() {
-        Student studentToCreate = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .dateOfBirth(LocalDate.of(2010, 3, 15))
-                .additionalInfo("Good student")
-                .build();
+    @Nested
+    class CreateStudent {
 
-        Student expectedStudent = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .teacherId(1)
-                .dateOfBirth(LocalDate.of(2010, 3, 15))
-                .additionalInfo("Good student")
-                .build();
+        @Test
+        void when_data_is_valid_expect_save_student() {
+            final Student studentToCreate = Student.builder()
+                    .name("Juan").surnames("García López").gender("M")
+                    .dateOfBirth(LocalDate.of(2010, 3, 15)).additionalInfo("Good student").build();
+            final Student expectedStudent = Student.builder()
+                    .name("Juan").surnames("García López").gender("M").teacherId(1)
+                    .dateOfBirth(LocalDate.of(2010, 3, 15)).additionalInfo("Good student").build();
+            when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
 
-        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
+            final Student createdStudent = studentService.createStudent(studentToCreate);
 
-        Student createdStudent = studentService.createStudent(studentToCreate);
+            assertThat(createdStudent).isNotNull();
+            assertThat(createdStudent.getName()).isEqualTo("Juan");
+            assertThat(createdStudent.getSurnames()).isEqualTo("García López");
+            assertThat(createdStudent.getTeacherId()).isEqualTo(1);
+            verify(studentRepository, times(1)).save(any(Student.class));
+        }
 
-        assertNotNull(createdStudent);
-        assertEquals("Juan", createdStudent.getName());
-        assertEquals("García López", createdStudent.getSurnames());
-        assertEquals(1, createdStudent.getTeacherId());
-        verify(studentRepository, times(1)).save(any(Student.class));
+        @Test
+        void when_gender_is_m_expect_save_student() {
+            final Student studentToCreate = Student.builder()
+                    .name("Juan").surnames("García López").gender("M").build();
+            final Student expectedStudent = Student.builder()
+                    .name("Juan").surnames("García López").gender("M").teacherId(1).build();
+            when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
+
+            final Student createdStudent = studentService.createStudent(studentToCreate);
+
+            assertThat(createdStudent).isNotNull();
+            assertThat(createdStudent.getGender()).isEqualTo("M");
+            verify(studentRepository, times(1)).save(any(Student.class));
+        }
+
+        @Test
+        void when_gender_is_f_expect_save_student() {
+            final Student studentToCreate = Student.builder()
+                    .name("María").surnames("López García").gender("F").build();
+            final Student expectedStudent = Student.builder()
+                    .name("María").surnames("López García").gender("F").teacherId(1).build();
+            when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
+
+            final Student createdStudent = studentService.createStudent(studentToCreate);
+
+            assertThat(createdStudent).isNotNull();
+            assertThat(createdStudent.getGender()).isEqualTo("F");
+            verify(studentRepository, times(1)).save(any(Student.class));
+        }
+
+        @Test
+        void when_shape_is_square_expect_save_student() {
+            final Student studentToCreate = Student.builder()
+                    .name("Juan").surnames("García López").gender("M").shape("SQUARE").build();
+            final Student expectedStudent = Student.builder()
+                    .name("Juan").surnames("García López").gender("M").shape("SQUARE").teacherId(1).build();
+            when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
+
+            final Student createdStudent = studentService.createStudent(studentToCreate);
+
+            assertThat(createdStudent).isNotNull();
+            assertThat(createdStudent.getShape()).isEqualTo("SQUARE");
+            verify(studentRepository, times(1)).save(any(Student.class));
+        }
+
+        @Test
+        void when_shape_is_null_expect_save_student() {
+            final Student studentToCreate = Student.builder()
+                    .name("Juan").surnames("García López").gender("M").shape(null).build();
+            final Student expectedStudent = Student.builder()
+                    .name("Juan").surnames("García López").gender("M").teacherId(1).build();
+            when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
+
+            final Student createdStudent = studentService.createStudent(studentToCreate);
+
+            assertThat(createdStudent).isNotNull();
+            assertThat(createdStudent.getShape()).isNull();
+            verify(studentRepository, times(1)).save(any(Student.class));
+        }
+
+        @Test
+        void when_shape_is_lowercase_expect_normalize_to_upper_case() {
+            final Student studentToCreate = Student.builder()
+                    .name("Juan").surnames("García López").gender("M").shape("circle").build();
+            final Student expectedStudent = Student.builder()
+                    .name("Juan").surnames("García López").gender("M").shape("CIRCLE").teacherId(1).build();
+            when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
+
+            final Student createdStudent = studentService.createStudent(studentToCreate);
+
+            assertThat(createdStudent).isNotNull();
+            assertThat(createdStudent.getShape()).isEqualTo("CIRCLE");
+            verify(studentRepository, times(1)).save(any(Student.class));
+        }
+
+        @Test
+        void when_name_is_null_expect_throw_validation_exception() {
+            final Student studentWithoutName = Student.builder()
+                    .name(null).surnames("García López").build();
+
+            final ThrowingCallable call = () -> studentService.createStudent(studentWithoutName);
+            final StudentValidationException exception = catchThrowableOfType(call, StudentValidationException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getErrors()).anyMatch(e -> e.getParam().equals("name"));
+            verify(studentRepository, never()).save(any());
+        }
+
+        @Test
+        void when_name_is_empty_expect_throw_validation_exception() {
+            final Student studentWithEmptyName = Student.builder()
+                    .name("").surnames("García López").build();
+
+            final ThrowingCallable call = () -> studentService.createStudent(studentWithEmptyName);
+            final StudentValidationException exception = catchThrowableOfType(call, StudentValidationException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getErrors()).anyMatch(e -> e.getParam().equals("name"));
+            verify(studentRepository, never()).save(any());
+        }
+
+        @Test
+        void when_name_is_too_short_expect_throw_validation_exception() {
+            final Student studentWithShortName = Student.builder()
+                    .name("Ab").surnames("García López").build();
+
+            final ThrowingCallable call = () -> studentService.createStudent(studentWithShortName);
+            final StudentValidationException exception = catchThrowableOfType(call, StudentValidationException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getErrors()).anyMatch(e -> e.getParam().equals("name"));
+            verify(studentRepository, never()).save(any());
+        }
+
+        @Test
+        void when_surnames_is_null_expect_throw_validation_exception() {
+            final Student studentWithoutSurnames = Student.builder()
+                    .name("Juan").surnames(null).build();
+
+            final ThrowingCallable call = () -> studentService.createStudent(studentWithoutSurnames);
+            final StudentValidationException exception = catchThrowableOfType(call, StudentValidationException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getErrors()).anyMatch(e -> e.getParam().equals("surnames"));
+            verify(studentRepository, never()).save(any());
+        }
+
+        @Test
+        void when_surnames_are_too_short_expect_throw_validation_exception() {
+            final Student studentWithShortSurnames = Student.builder()
+                    .name("Juan").surnames("Ab").build();
+
+            final ThrowingCallable call = () -> studentService.createStudent(studentWithShortSurnames);
+            final StudentValidationException exception = catchThrowableOfType(call, StudentValidationException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getErrors()).anyMatch(e -> e.getParam().equals("surnames"));
+            verify(studentRepository, never()).save(any());
+        }
+
+        @Test
+        void when_gender_is_null_expect_throw_validation_exception() {
+            final Student studentWithoutGender = Student.builder()
+                    .name("Juan").surnames("García López").gender(null).build();
+
+            final ThrowingCallable call = () -> studentService.createStudent(studentWithoutGender);
+            final StudentValidationException exception = catchThrowableOfType(call, StudentValidationException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getErrors()).anyMatch(e -> e.getParam().equals("gender"));
+            verify(studentRepository, never()).save(any());
+        }
+
+        @Test
+        void when_gender_is_empty_expect_throw_validation_exception() {
+            final Student studentWithEmptyGender = Student.builder()
+                    .name("Juan").surnames("García López").gender("").build();
+
+            final ThrowingCallable call = () -> studentService.createStudent(studentWithEmptyGender);
+            final StudentValidationException exception = catchThrowableOfType(call, StudentValidationException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getErrors()).anyMatch(e -> e.getParam().equals("gender"));
+            verify(studentRepository, never()).save(any());
+        }
+
+        @Test
+        void when_gender_is_invalid_expect_throw_validation_exception() {
+            final Student studentWithInvalidGender = Student.builder()
+                    .name("Juan").surnames("García López").gender("X").build();
+
+            final ThrowingCallable call = () -> studentService.createStudent(studentWithInvalidGender);
+            final StudentValidationException exception = catchThrowableOfType(call, StudentValidationException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getErrors()).anyMatch(e -> e.getParam().equals("gender"));
+            verify(studentRepository, never()).save(any());
+        }
+
+        @Test
+        void when_shape_is_invalid_expect_throw_validation_exception() {
+            final Student studentWithInvalidShape = Student.builder()
+                    .name("Juan").surnames("García López").gender("M").shape("HEXAGON").build();
+
+            final ThrowingCallable call = () -> studentService.createStudent(studentWithInvalidShape);
+            final StudentValidationException exception = catchThrowableOfType(call, StudentValidationException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getErrors()).anyMatch(e -> e.getParam().equals("shape"));
+            verify(studentRepository, never()).save(any());
+        }
     }
 
-    @Test
-    void getStudentPhoto_shouldReturnPhotoBytes_whenPhotoExists() throws Exception {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        String photoFileName = "1.jpg";
-        byte[] expectedPhotoBytes = new byte[]{1, 2, 3, 4, 5};
+    @Nested
+    class UpdateStudent {
 
-        Student student = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García López")
-                .photo(photoFileName)
-                .build();
+        @Test
+        void when_data_is_valid_expect_update_student() {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final Student existingStudent = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").gender("F").surnames("García").build();
+            final Student updatedData = Student.builder()
+                    .name("Juan Carlos").surnames("García López").gender("F").dateOfBirth(LocalDate.of(2010, 3, 15)).build();
 
-        java.nio.file.Files.write(tempDir.resolve(photoFileName), expectedPhotoBytes);
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(existingStudent));
+            when(studentRepository.update(any(Student.class))).thenReturn(existingStudent);
 
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(student));
+            final Student result = studentService.updateStudent(studentId, updatedData);
 
-        byte[] result = studentService.getStudentPhoto(studentId);
+            assertThat(result).isNotNull();
+            assertThat(result.getName()).isEqualTo("Juan Carlos");
+            assertThat(result.getSurnames()).isEqualTo("García López");
+            verify(studentRepository, times(1)).update(any(Student.class));
+        }
 
-        assertNotNull(result);
-        assertArrayEquals(expectedPhotoBytes, result);
-        verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
+        @Test
+        void when_student_does_not_exist_expect_throw_not_found_exception() {
+            final Integer studentId = 999;
+            final Student updatedData = Student.builder()
+                    .name("Juan").surnames("García López").gender("M").build();
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, 1))
+                    .thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> studentService.updateStudent(studentId, updatedData);
+
+            assertThatThrownBy(call).isInstanceOf(StudentNotFoundException.class);
+            verify(studentRepository, never()).update(any());
+        }
+
+        @Test
+        void when_name_is_invalid_expect_throw_validation_exception() {
+            final Student invalidData = Student.builder()
+                    .name("A").surnames("García López").gender("M").build();
+
+            final ThrowingCallable call = () -> studentService.updateStudent(1, invalidData);
+
+            assertThatThrownBy(call).isInstanceOf(StudentValidationException.class);
+            verify(studentRepository, never()).update(any());
+        }
     }
 
-    @Test
-    void getStudentPhoto_shouldThrowNotFoundException_whenStudentNotFound() {
-        Integer studentId = 99;
-        Integer teacherId = 1;
+    @Nested
+    class SoftDeleteStudent {
 
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.empty());
+        @Test
+        void when_student_exists_expect_delete_student() {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final Student existingStudent = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García").build();
 
-        assertThrows(StudentNotFoundException.class, () -> studentService.getStudentPhoto(studentId));
-        verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
-    }
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(existingStudent));
 
-    @Test
-    void getStudentPhoto_shouldThrowNotFoundException_whenPhotoIsEmpty() {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-
-        Student student = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García López")
-                .build();
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(student));
-
-        assertThrows(StudentPhotoNotFoundException.class, () -> studentService.getStudentPhoto(studentId));
-        verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
-    }
-
-    @Test
-    void deleteStudentPhoto_shouldDeletePhotoAndUpdateStudent_whenPhotoExists() throws Exception {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        String photoFileName = "1.jpg";
-        byte[] photoBytes = new byte[]{1, 2, 3, 4, 5};
-
-        Student student = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García López")
-                .photo(photoFileName)
-                .build();
-
-        java.nio.file.Files.write(tempDir.resolve(photoFileName), photoBytes);
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(student));
-        when(studentRepository.update(any(Student.class))).thenReturn(student);
-
-        studentService.deleteStudentPhoto(studentId);
-
-        assertFalse(java.nio.file.Files.exists(tempDir.resolve(photoFileName)));
-        assertNull(student.getPhoto());
-        verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
-        verify(studentRepository, times(1)).update(any(Student.class));
-    }
-
-    @Test
-    void deleteStudentPhoto_shouldThrowNotFoundException_whenStudentNotFound() {
-        Integer studentId = 99;
-        Integer teacherId = 1;
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.empty());
-
-        assertThrows(StudentNotFoundException.class, () -> studentService.deleteStudentPhoto(studentId));
-        verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
-    }
-
-    @Test
-    void deleteStudentPhoto_shouldThrowNotFoundException_whenPhotoIsEmpty() {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-
-        Student student = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García López")
-                .build();
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(student));
-
-        assertThrows(StudentPhotoNotFoundException.class, () -> studentService.deleteStudentPhoto(studentId));
-        verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
-    }
-
-    @Test
-    void createStudent_shouldThrowValidationException_whenNameIsNull() {
-        Student studentWithoutName = Student.builder()
-                .name(null)
-                .surnames("García López")
-                .build();
-
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            studentService.createStudent(studentWithoutName);
-        });
-
-        assertNotNull(exception);
-        assertTrue(exception.getErrors().stream()
-                .anyMatch(e -> e.getParam().equals("name")));
-        verify(studentRepository, never()).save(any());
-    }
-
-    @Test
-    void createStudent_shouldThrowValidationException_whenNameIsEmpty() {
-        Student studentWithEmptyName = Student.builder()
-                .name("")
-                .surnames("García López")
-                .build();
-
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            studentService.createStudent(studentWithEmptyName);
-        });
-
-        assertNotNull(exception);
-        assertTrue(exception.getErrors().stream()
-                .anyMatch(e -> e.getParam().equals("name")));
-        verify(studentRepository, never()).save(any());
-    }
-
-    @Test
-    void createStudent_shouldThrowValidationException_whenNameIsTooShort() {
-        Student studentWithShortName = Student.builder()
-                .name("Ab")
-                .surnames("García López")
-                .build();
-
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            studentService.createStudent(studentWithShortName);
-        });
-
-        assertNotNull(exception);
-        assertTrue(exception.getErrors().stream()
-                .anyMatch(e -> e.getParam().equals("name")));
-        verify(studentRepository, never()).save(any());
-    }
-
-    @Test
-    void createStudent_shouldThrowValidationException_whenSurnamesIsNull() {
-        Student studentWithoutSurnames = Student.builder()
-                .name("Juan")
-                .surnames(null)
-                .build();
-
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            studentService.createStudent(studentWithoutSurnames);
-        });
-
-        assertNotNull(exception);
-        assertTrue(exception.getErrors().stream()
-                .anyMatch(e -> e.getParam().equals("surnames")));
-        verify(studentRepository, never()).save(any());
-    }
-
-    @Test
-    void createStudent_shouldThrowValidationException_whenSurnamesAreTooShort() {
-        Student studentWithShortSurnames = Student.builder()
-                .name("Juan")
-                .surnames("Ab")
-                .build();
-
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            studentService.createStudent(studentWithShortSurnames);
-        });
-
-        assertNotNull(exception);
-        assertTrue(exception.getErrors().stream()
-                .anyMatch(e -> e.getParam().equals("surnames")));
-        verify(studentRepository, never()).save(any());
-    }
-
-    @Test
-    void updateStudent_shouldUpdateStudent_whenDataIsValid() {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        Student existingStudent = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .gender("F")
-                .surnames("García")
-                .build();
-
-        Student updatedData = Student.builder()
-                .name("Juan Carlos")
-                .surnames("García López")
-                .gender("F")
-                .dateOfBirth(LocalDate.of(2010, 3, 15))
-                .build();
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(existingStudent));
-        when(studentRepository.update(any(Student.class))).thenReturn(existingStudent);
-
-        Student result = studentService.updateStudent(studentId, updatedData);
-
-        assertNotNull(result);
-        assertEquals("Juan Carlos", result.getName());
-        assertEquals("García López", result.getSurnames());
-        verify(studentRepository, times(1)).update(any(Student.class));
-    }
-
-    @Test
-    void updateStudent_shouldThrowNotFoundException_whenStudentDoesNotExist() {
-        Integer studentId = 999;
-        Integer teacherId = 1;
-        Student updatedData = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .build();
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.empty());
-
-        StudentNotFoundException exception = assertThrows(StudentNotFoundException.class, () -> {
-            studentService.updateStudent(studentId, updatedData);
-        });
-
-        assertNotNull(exception);
-        verify(studentRepository, never()).update(any());
-    }
-
-    @Test
-    void updateStudent_shouldThrowValidationException_whenNameIsInvalid() {
-        Student invalidData = Student.builder()
-                .name("A")
-                .surnames("García López")
-                .gender("M")
-                .build();
-
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () -> {
-            studentService.updateStudent(1, invalidData);
-        });
-
-        assertNotNull(exception);
-        verify(studentRepository, never()).update(any());
-    }
-
-    @Test
-    void softDeleteStudent_shouldDeleteStudent_whenStudentExists() {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        Student existingStudent = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García")
-                .build();
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(existingStudent));
-
-        studentService.softDeleteStudent(studentId);
-
-        verify(studentRepository, times(1)).softDelete(studentId, teacherId);
-        verify(exerciseStudentGradeRepository, never()).softDeleteByStudentId(any());
-        verify(studentClassRepository, never()).softDeleteByStudentId(any());
-    }
-
-    @Test
-    void softDeleteStudent_shouldThrowNotFoundException_whenStudentDoesNotExist() {
-        Integer studentId = 999;
-        Integer teacherId = 1;
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.empty());
-
-        StudentNotFoundException exception = assertThrows(StudentNotFoundException.class, () -> {
             studentService.softDeleteStudent(studentId);
-        });
 
-        assertNotNull(exception);
-        verify(studentRepository, never()).softDelete(any(), any());
-    }
-
-    @Test
-    void saveStudentPhoto_shouldSavePhoto_whenStudentExists() {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        byte[] photoBytes = "test photo content".getBytes();
-        MultipartFile file = mock(MultipartFile.class);
-
-        Student existingStudent = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García")
-                .build();
-
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getOriginalFilename()).thenReturn("photo.jpg");
-        try {
-            when(file.getBytes()).thenReturn(photoBytes);
-        } catch (Exception e) {
-            fail("Mock setup failed");
+            verify(studentRepository, times(1)).softDelete(studentId, teacherId);
+            verify(exerciseStudentGradeRepository, never()).softDeleteByStudentId(any());
+            verify(studentClassRepository, never()).softDeleteByStudentId(any());
         }
 
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(existingStudent));
-        when(studentRepository.update(any(Student.class))).thenReturn(existingStudent);
+        @Test
+        void when_student_does_not_exist_expect_throw_not_found_exception() {
+            final Integer studentId = 999;
 
-        String result = studentService.saveStudentPhoto(studentId, file);
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, 1))
+                    .thenReturn(Optional.empty());
 
-        assertNotNull(result);
-        assertEquals("1.jpg", result);
-        verify(studentRepository, times(1)).update(any(Student.class));
+            final ThrowingCallable call = () -> studentService.softDeleteStudent(studentId);
+
+            assertThatThrownBy(call).isInstanceOf(StudentNotFoundException.class);
+            verify(studentRepository, never()).softDelete(any(), any());
+        }
     }
 
-    @Test
-    void saveStudentPhoto_shouldThrowException_whenFileSizeExceeds500KB() {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        byte[] photoBytes = new byte[600 * 1024];
-        MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class GetAllStudents {
 
-        Student existingStudent = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García")
-                .build();
+        @Test
+        void when_students_exist_expect_return_all_students() {
+            final Integer teacherId = 1;
+            final Student student1 = Student.builder()
+                    .id(1).teacherId(teacherId).name("Juan").surnames("García López").build();
+            final Student student2 = Student.builder()
+                    .id(2).teacherId(teacherId).name("María").surnames("Pérez Martínez").build();
+            final List<Student> expectedStudents = Arrays.asList(student1, student2);
+            final Map<Integer, List<Integer>> studentClassMap = new HashMap<>();
+            studentClassMap.put(1, Arrays.asList(1, 2));
+            studentClassMap.put(2, Arrays.asList(3));
 
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getOriginalFilename()).thenReturn("photo.jpg");
-        try {
-            when(file.getBytes()).thenReturn(photoBytes);
-        } catch (Exception e) {
-            fail("Mock setup failed");
+            when(studentRepository.findAllByTeacherId(teacherId)).thenReturn(expectedStudents);
+            when(studentClassRepository.findClassIdsByTeacherId(teacherId)).thenReturn(studentClassMap);
+
+            final List<Student> result = studentService.getAllStudents();
+
+            assertThat(result).isNotNull().hasSize(2);
+            assertThat(result.get(0).getName()).isEqualTo("Juan");
+            assertThat(result.get(1).getName()).isEqualTo("María");
+            assertThat(result.get(0).getClassIds()).hasSize(2).isEqualTo(Arrays.asList(1, 2));
+            assertThat(result.get(1).getClassIds()).hasSize(1).isEqualTo(Arrays.asList(3));
+            verify(studentRepository, times(1)).findAllByTeacherId(teacherId);
+            verify(studentClassRepository, times(1)).findClassIdsByTeacherId(teacherId);
+            verify(studentClassRepository, never()).findClassIdsByStudentId(any());
         }
 
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(existingStudent));
+        @Test
+        void when_no_students_exist_expect_return_empty_list() {
+            final Integer teacherId = 1;
 
-        assertThrows(org.web.codefm.domain.exception.teachernotebook.StudentPhotoUploadException.class, () -> {
-            studentService.saveStudentPhoto(studentId, file);
-        });
+            when(studentRepository.findAllByTeacherId(teacherId)).thenReturn(List.of());
+            when(studentClassRepository.findClassIdsByTeacherId(teacherId)).thenReturn(new HashMap<>());
 
-        verify(studentRepository, never()).update(any());
+            final List<Student> result = studentService.getAllStudents();
+
+            assertThat(result).isNotNull().isEmpty();
+            verify(studentRepository, times(1)).findAllByTeacherId(teacherId);
+            verify(studentClassRepository, times(1)).findClassIdsByTeacherId(teacherId);
+            verify(studentClassRepository, never()).findClassIdsByStudentId(any());
+        }
     }
 
-    @Test
-    void saveStudentPhoto_shouldThrowException_whenExtensionIsInvalid() {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        byte[] photoBytes = "test photo content".getBytes();
-        MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class SearchStudents {
 
-        Student existingStudent = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García")
-                .build();
+        @Test
+        void when_id_provided_expect_return_students() {
+            final Integer teacherId = 1;
+            final Integer id = 1;
+            final Student student = Student.builder()
+                    .id(id).teacherId(teacherId).name("Juan").surnames("García López").build();
 
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getOriginalFilename()).thenReturn("photo.pdf");
-        try {
-            when(file.getBytes()).thenReturn(photoBytes);
-        } catch (Exception e) {
-            fail("Mock setup failed");
+            when(studentRepository.searchStudents(teacherId, id, null, null))
+                    .thenReturn(Arrays.asList(student));
+
+            final List<Student> result = studentService.searchStudents(id, null, null);
+
+            assertThat(result).isNotNull().hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Juan");
+            verify(studentRepository, times(1)).searchStudents(teacherId, id, null, null);
         }
 
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(existingStudent));
+        @Test
+        void when_no_filters_provided_expect_throw_exception() {
+            when(messageSource.getMessage(eq(MessageKeys.STUDENT_SEARCH_NO_FILTERS), eq(null), any(Locale.class)))
+                    .thenReturn("At least one filter is required");
 
-        assertThrows(org.web.codefm.domain.exception.teachernotebook.StudentPhotoUploadException.class, () -> {
-            studentService.saveStudentPhoto(studentId, file);
-        });
+            final ThrowingCallable call = () -> studentService.searchStudents(null, null, null);
 
-        verify(studentRepository, never()).update(any());
+            assertThatThrownBy(call).isInstanceOf(StudentSearchValidationException.class);
+            verify(messageSource, times(1)).getMessage(eq(MessageKeys.STUDENT_SEARCH_NO_FILTERS), eq(null), any(Locale.class));
+            verify(studentRepository, never()).searchStudents(any(), any(), any(), any());
+        }
     }
 
-    @Test
-    void saveStudentPhoto_shouldThrowNotFoundException_whenStudentDoesNotExist() {
-        Integer studentId = 999;
-        Integer teacherId = 1;
-        byte[] photoBytes = "test photo content".getBytes();
-        MultipartFile file = mock(MultipartFile.class);
+    @Nested
+    class SaveStudentPhoto {
 
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getOriginalFilename()).thenReturn("photo.jpg");
-        try {
-            when(file.getBytes()).thenReturn(photoBytes);
-        } catch (Exception e) {
-            fail("Mock setup failed");
+        @Test
+        void when_student_exists_expect_save_photo() {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final byte[] photoBytes = "test photo content".getBytes();
+            final MultipartFile file = mock(MultipartFile.class);
+            final Student existingStudent = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García").build();
+
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getOriginalFilename()).thenReturn("photo.jpg");
+            try {
+                when(file.getBytes()).thenReturn(photoBytes);
+            } catch (Exception e) {
+                fail("Mock setup failed");
+            }
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(existingStudent));
+            when(studentRepository.update(any(Student.class))).thenReturn(existingStudent);
+
+            final String result = studentService.saveStudentPhoto(studentId, file);
+
+            assertThat(result).isNotNull().isEqualTo("1.jpg");
+            verify(studentRepository, times(1)).update(any(Student.class));
         }
 
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.empty());
+        @Test
+        void when_file_size_exceeds_500kb_expect_throw_exception() {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final byte[] photoBytes = new byte[600 * 1024];
+            final MultipartFile file = mock(MultipartFile.class);
+            final Student existingStudent = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García").build();
 
-        StudentNotFoundException exception = assertThrows(StudentNotFoundException.class, () -> {
-            studentService.saveStudentPhoto(studentId, file);
-        });
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getOriginalFilename()).thenReturn("photo.jpg");
+            try {
+                when(file.getBytes()).thenReturn(photoBytes);
+            } catch (Exception e) {
+                fail("Mock setup failed");
+            }
 
-        assertNotNull(exception);
-        verify(studentRepository, never()).update(any());
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(existingStudent));
+
+            final ThrowingCallable call = () -> studentService.saveStudentPhoto(studentId, file);
+
+            assertThatThrownBy(call).isInstanceOf(StudentPhotoUploadException.class);
+            verify(studentRepository, never()).update(any());
+        }
+
+        @Test
+        void when_extension_is_invalid_expect_throw_exception() {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final byte[] photoBytes = "test photo content".getBytes();
+            final MultipartFile file = mock(MultipartFile.class);
+            final Student existingStudent = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García").build();
+
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getOriginalFilename()).thenReturn("photo.pdf");
+            try {
+                when(file.getBytes()).thenReturn(photoBytes);
+            } catch (Exception e) {
+                fail("Mock setup failed");
+            }
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(existingStudent));
+
+            final ThrowingCallable call = () -> studentService.saveStudentPhoto(studentId, file);
+
+            assertThatThrownBy(call).isInstanceOf(StudentPhotoUploadException.class);
+            verify(studentRepository, never()).update(any());
+        }
+
+        @Test
+        void when_student_does_not_exist_expect_throw_not_found_exception() {
+            final Integer studentId = 999;
+            final Integer teacherId = 1;
+            final byte[] photoBytes = "test photo content".getBytes();
+            final MultipartFile file = mock(MultipartFile.class);
+
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getOriginalFilename()).thenReturn("photo.jpg");
+            try {
+                when(file.getBytes()).thenReturn(photoBytes);
+            } catch (Exception e) {
+                fail("Mock setup failed");
+            }
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> studentService.saveStudentPhoto(studentId, file);
+
+            assertThatThrownBy(call).isInstanceOf(StudentNotFoundException.class);
+            verify(studentRepository, never()).update(any());
+        }
+
+        @Test
+        void when_get_bytes_throws_io_exception_expect_throw_upload_exception() throws Exception {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final MultipartFile file = mock(MultipartFile.class);
+            final Student existingStudent = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García").build();
+
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getOriginalFilename()).thenReturn("photo.jpg");
+            when(file.getBytes()).thenThrow(new IOException("Error reading file"));
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(existingStudent));
+
+            final ThrowingCallable call = () -> studentService.saveStudentPhoto(studentId, file);
+            final StudentPhotoUploadException exception = catchThrowableOfType(call, StudentPhotoUploadException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getMessage()).isEqualTo("[Code: 1000, CodeDescription: GENERIC_ERROR, ErrorDescription: Error uploading student photo.]");
+            verify(studentRepository, never()).update(any());
+        }
+
+        @Test
+        void when_file_write_throws_io_exception_expect_throw_upload_exception() throws Exception {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final byte[] photoBytes = "test photo content".getBytes();
+            final MultipartFile file = mock(MultipartFile.class);
+            final Student existingStudent = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García").build();
+
+            when(file.isEmpty()).thenReturn(false);
+            when(file.getOriginalFilename()).thenReturn("photo.jpg");
+            when(file.getBytes()).thenReturn(photoBytes);
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(existingStudent));
+
+            ReflectionTestUtils.setField(studentService, "photosDirectory", "/nonexistent/readonly/path");
+
+            final ThrowingCallable call = () -> studentService.saveStudentPhoto(studentId, file);
+            final StudentPhotoUploadException exception = catchThrowableOfType(call, StudentPhotoUploadException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getMessage()).isEqualTo("[Code: 1000, CodeDescription: GENERIC_ERROR, ErrorDescription: Error uploading student photo.]");
+            verify(studentRepository, never()).update(any());
+
+            ReflectionTestUtils.setField(studentService, "photosDirectory", tempDir.toString());
+        }
+
+        @Test
+        void when_file_is_empty_expect_throw_upload_exception() throws Exception {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final MultipartFile file = mock(MultipartFile.class);
+            final Student existingStudent = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García").build();
+
+            when(file.isEmpty()).thenReturn(true);
+            when(file.getOriginalFilename()).thenReturn("photo.jpg");
+            when(file.getBytes()).thenReturn(new byte[0]);
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(existingStudent));
+
+            final ThrowingCallable call = () -> studentService.saveStudentPhoto(studentId, file);
+            final StudentPhotoUploadException exception = catchThrowableOfType(call, StudentPhotoUploadException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getMessage()).isEqualTo("[Code: 1000, CodeDescription: GENERIC_ERROR, ErrorDescription: Photo file is required.]");
+            verify(studentRepository, never()).update(any());
+        }
+
+        @Test
+        void when_file_is_null_expect_throw_upload_exception() {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final Student existingStudent = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García").build();
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(existingStudent));
+
+            final ThrowingCallable call = () -> studentService.saveStudentPhoto(studentId, null);
+            final StudentPhotoUploadException exception = catchThrowableOfType(call, StudentPhotoUploadException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getMessage()).isEqualTo("[Code: 1000, CodeDescription: GENERIC_ERROR, ErrorDescription: Photo file is required.]");
+            verify(studentRepository, never()).update(any());
+        }
     }
 
-    @Test
-    void searchStudents_shouldReturnStudents_whenIdProvided() {
-        Integer teacherId = 1;
-        Integer id = 1;
-        Student student = Student.builder()
-                .id(id)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García López")
-                .build();
+    @Nested
+    class GetStudentPhoto {
 
-        when(studentRepository.searchStudents(teacherId, id, null, null))
-                .thenReturn(Arrays.asList(student));
+        @Test
+        void when_photo_exists_expect_return_photo_bytes() throws Exception {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final String photoFileName = "1.jpg";
+            final byte[] expectedPhotoBytes = new byte[]{1, 2, 3, 4, 5};
+            final Student student = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García López").photo(photoFileName).build();
 
-        List<Student> result = studentService.searchStudents(id, null, null);
+            java.nio.file.Files.write(tempDir.resolve(photoFileName), expectedPhotoBytes);
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(student));
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("Juan", result.get(0).getName());
-        verify(studentRepository, times(1)).searchStudents(teacherId, id, null, null);
+            final byte[] result = studentService.getStudentPhoto(studentId);
+
+            assertThat(result).isNotNull().isEqualTo(expectedPhotoBytes);
+            verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
+        }
+
+        @Test
+        void when_student_not_found_expect_throw_not_found_exception() {
+            final Integer studentId = 99;
+            final Integer teacherId = 1;
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> studentService.getStudentPhoto(studentId);
+
+            assertThatThrownBy(call).isInstanceOf(StudentNotFoundException.class);
+            verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
+        }
+
+        @Test
+        void when_photo_is_empty_expect_throw_not_found_exception() {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final Student student = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García López").build();
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(student));
+
+            final ThrowingCallable call = () -> studentService.getStudentPhoto(studentId);
+
+            assertThatThrownBy(call).isInstanceOf(StudentPhotoNotFoundException.class);
+            verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
+        }
+
+        @Test
+        void when_file_read_throws_io_exception_expect_throw_not_found_exception() throws Exception {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final String photoFileName = "nonexistent.jpg";
+            final Student student = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García López").photo(photoFileName).build();
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(student));
+
+            final ThrowingCallable call = () -> studentService.getStudentPhoto(studentId);
+            final StudentPhotoNotFoundException exception = catchThrowableOfType(call, StudentPhotoNotFoundException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getMessage()).isEqualTo("[Code: 1003, CodeDescription: RESOURCE_NOT_FOUND, ErrorDescription: Student photo not found.]");
+        }
+
+        @Test
+        void when_photo_field_is_null_expect_throw_not_found_exception() {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final Student student = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García López").photo(null).build();
+
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(student));
+
+            final ThrowingCallable call = () -> studentService.getStudentPhoto(studentId);
+            final StudentPhotoNotFoundException exception = catchThrowableOfType(call, StudentPhotoNotFoundException.class);
+
+            assertThat(exception).isNotNull();
+            assertThat(exception.getMessage()).isEqualTo("[Code: 1003, CodeDescription: RESOURCE_NOT_FOUND, ErrorDescription: Student photo not found.]");
+        }
     }
 
-    @Test
-    void searchStudents_shouldThrowException_whenNoFiltersProvided() {
-        when(messageSource.getMessage(eq(MessageKeys.STUDENT_SEARCH_NO_FILTERS), eq(null), any(Locale.class)))
-                .thenReturn("At least one filter is required");
+    @Nested
+    class DeleteStudentPhoto {
 
-        StudentSearchValidationException exception = assertThrows(
-                StudentSearchValidationException.class,
-                () -> studentService.searchStudents(null, null, null)
-        );
+        @Test
+        void when_photo_exists_expect_delete_photo_and_update_student() throws Exception {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final String photoFileName = "1.jpg";
+            final byte[] photoBytes = new byte[]{1, 2, 3, 4, 5};
+            final Student student = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García López").photo(photoFileName).build();
 
-        assertNotNull(exception);
-        verify(messageSource, times(1)).getMessage(eq(MessageKeys.STUDENT_SEARCH_NO_FILTERS), eq(null), any(Locale.class));
-        verify(studentRepository, never()).searchStudents(any(), any(), any(), any());
-    }
+            java.nio.file.Files.write(tempDir.resolve(photoFileName), photoBytes);
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(student));
+            when(studentRepository.update(any(Student.class))).thenReturn(student);
 
-
-    @Test
-    void getAllStudents_shouldReturnAllStudents() {
-        Integer teacherId = 1;
-        Student student1 = Student.builder()
-                .id(1)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García López")
-                .build();
-
-        Student student2 = Student.builder()
-                .id(2)
-                .teacherId(teacherId)
-                .name("María")
-                .surnames("Pérez Martínez")
-                .build();
-
-        List<Student> expectedStudents = Arrays.asList(student1, student2);
-        Map<Integer, List<Integer>> studentClassMap = new HashMap<>();
-        studentClassMap.put(1, Arrays.asList(1, 2));
-        studentClassMap.put(2, Arrays.asList(3));
-
-        when(studentRepository.findAllByTeacherId(teacherId)).thenReturn(expectedStudents);
-        when(studentClassRepository.findClassIdsByTeacherId(teacherId)).thenReturn(studentClassMap);
-
-        List<Student> result = studentService.getAllStudents();
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("Juan", result.get(0).getName());
-        assertEquals("María", result.get(1).getName());
-        assertEquals(2, result.get(0).getClassIds().size());
-        assertEquals(Arrays.asList(1, 2), result.get(0).getClassIds());
-        assertEquals(1, result.get(1).getClassIds().size());
-        assertEquals(Arrays.asList(3), result.get(1).getClassIds());
-        verify(studentRepository, times(1)).findAllByTeacherId(teacherId);
-        verify(studentClassRepository, times(1)).findClassIdsByTeacherId(teacherId);
-        verify(studentClassRepository, never()).findClassIdsByStudentId(any());
-    }
-
-    @Test
-    void getAllStudents_shouldReturnEmptyListWhenNoStudents() {
-        Integer teacherId = 1;
-        List<Student> emptyList = List.of();
-        Map<Integer, List<Integer>> emptyMap = new HashMap<>();
-
-        when(studentRepository.findAllByTeacherId(teacherId)).thenReturn(emptyList);
-        when(studentClassRepository.findClassIdsByTeacherId(teacherId)).thenReturn(emptyMap);
-
-        List<Student> result = studentService.getAllStudents();
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(studentRepository, times(1)).findAllByTeacherId(teacherId);
-        verify(studentClassRepository, times(1)).findClassIdsByTeacherId(teacherId);
-        verify(studentClassRepository, never()).findClassIdsByStudentId(any());
-    }
-
-    @Test
-    void saveStudentPhoto_shouldThrowUploadException_whenGetBytesThrowsIOException() throws Exception {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        MultipartFile file = mock(MultipartFile.class);
-
-        Student existingStudent = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García")
-                .build();
-
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getOriginalFilename()).thenReturn("photo.jpg");
-        when(file.getBytes()).thenThrow(new IOException("Error reading file"));
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(existingStudent));
-
-        StudentPhotoUploadException exception = assertThrows(StudentPhotoUploadException.class, () ->
-                studentService.saveStudentPhoto(studentId, file));
-
-        assertNotNull(exception);
-        assertEquals("[Code: 1000, CodeDescription: GENERIC_ERROR, ErrorDescription: Error uploading student photo.]", exception.getMessage());
-        verify(studentRepository, never()).update(any());
-    }
-
-    @Test
-    void saveStudentPhoto_shouldThrowUploadException_whenFileWriteThrowsIOException() throws Exception {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        byte[] photoBytes = "test photo content".getBytes();
-        MultipartFile file = mock(MultipartFile.class);
-
-        Student existingStudent = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García")
-                .build();
-
-        when(file.isEmpty()).thenReturn(false);
-        when(file.getOriginalFilename()).thenReturn("photo.jpg");
-        when(file.getBytes()).thenReturn(photoBytes);
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(existingStudent));
-
-        ReflectionTestUtils.setField(studentService, "photosDirectory", "/nonexistent/readonly/path");
-
-        StudentPhotoUploadException exception = assertThrows(StudentPhotoUploadException.class, () ->
-                studentService.saveStudentPhoto(studentId, file));
-
-        assertNotNull(exception);
-        assertEquals("[Code: 1000, CodeDescription: GENERIC_ERROR, ErrorDescription: Error uploading student photo.]", exception.getMessage());
-        verify(studentRepository, never()).update(any());
-
-        ReflectionTestUtils.setField(studentService, "photosDirectory", tempDir.toString());
-    }
-
-    @Test
-    void saveStudentPhoto_shouldThrowUploadException_whenFileIsEmpty() throws Exception {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        MultipartFile file = mock(MultipartFile.class);
-
-        Student existingStudent = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García")
-                .build();
-
-        when(file.isEmpty()).thenReturn(true);
-        when(file.getOriginalFilename()).thenReturn("photo.jpg");
-        when(file.getBytes()).thenReturn(new byte[0]);
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(existingStudent));
-
-        StudentPhotoUploadException exception = assertThrows(StudentPhotoUploadException.class, () ->
-                studentService.saveStudentPhoto(studentId, file));
-
-        assertNotNull(exception);
-        assertEquals("[Code: 1000, CodeDescription: GENERIC_ERROR, ErrorDescription: Photo file is required.]", exception.getMessage());
-        verify(studentRepository, never()).update(any());
-    }
-
-    @Test
-    void getStudentPhoto_shouldThrowNotFoundException_whenFileReadThrowsIOException() throws Exception {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        String photoFileName = "nonexistent.jpg";
-
-        Student student = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García López")
-                .photo(photoFileName)
-                .build();
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(student));
-
-        StudentPhotoNotFoundException exception = assertThrows(StudentPhotoNotFoundException.class, () ->
-                studentService.getStudentPhoto(studentId));
-
-        assertNotNull(exception);
-        assertEquals("[Code: 1003, CodeDescription: RESOURCE_NOT_FOUND, ErrorDescription: Student photo not found.]", exception.getMessage());
-    }
-
-    @Test
-    void deleteStudentPhoto_shouldThrowDeleteException_whenFileDeleteThrowsIOException() throws Exception {
-        Integer studentId = 1;
-        Integer teacherId = 1;
-        String photoFileName = "1.jpg";
-
-        Student student = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García López")
-                .photo(photoFileName)
-                .build();
-
-        Path photoPath = tempDir.resolve(photoFileName);
-        java.nio.file.Files.write(photoPath, new byte[]{1, 2, 3});
-        photoPath.toFile().setReadOnly();
-
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(student));
-
-        try {
             studentService.deleteStudentPhoto(studentId);
-            photoPath.toFile().setWritable(true);
-        } catch (StudentPhotoDeleteException e) {
-            photoPath.toFile().setWritable(true);
-            assertEquals("[Code: 1000, CodeDescription: GENERIC_ERROR, ErrorDescription: Error deleting student photo.]", e.getMessage());
-            return;
+
+            assertThat(tempDir.resolve(photoFileName)).doesNotExist();
+            assertThat(student.getPhoto()).isNull();
+            verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
+            verify(studentRepository, times(1)).update(any(Student.class));
         }
 
-        photoPath.toFile().setWritable(true);
-    }
+        @Test
+        void when_student_not_found_expect_throw_not_found_exception() {
+            final Integer studentId = 99;
+            final Integer teacherId = 1;
 
-    @Test
-    void getStudentPhoto_shouldThrowNotFoundException_whenPhotoFieldIsNull() {
-        Integer studentId = 1;
-        Integer teacherId = 1;
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.empty());
 
-        Student student = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García López")
-                .photo(null)
-                .build();
+            final ThrowingCallable call = () -> studentService.deleteStudentPhoto(studentId);
 
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(student));
+            assertThatThrownBy(call).isInstanceOf(StudentNotFoundException.class);
+            verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
+        }
 
-        StudentPhotoNotFoundException exception = assertThrows(StudentPhotoNotFoundException.class, () ->
-                studentService.getStudentPhoto(studentId));
+        @Test
+        void when_photo_is_empty_expect_throw_not_found_exception() {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final Student student = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García López").build();
 
-        assertNotNull(exception);
-        assertEquals("[Code: 1003, CodeDescription: RESOURCE_NOT_FOUND, ErrorDescription: Student photo not found.]", exception.getMessage());
-    }
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(student));
 
-    @Test
-    void deleteStudentPhoto_shouldThrowNotFoundException_whenPhotoFieldIsNull() {
-        Integer studentId = 1;
-        Integer teacherId = 1;
+            final ThrowingCallable call = () -> studentService.deleteStudentPhoto(studentId);
 
-        Student student = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García López")
-                .photo(null)
-                .build();
+            assertThatThrownBy(call).isInstanceOf(StudentPhotoNotFoundException.class);
+            verify(studentRepository, times(1)).findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
+        }
 
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(student));
+        @Test
+        void when_file_delete_throws_io_exception_expect_throw_delete_exception() throws Exception {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final String photoFileName = "1.jpg";
+            final Student student = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García López").photo(photoFileName).build();
 
-        StudentPhotoNotFoundException exception = assertThrows(StudentPhotoNotFoundException.class, () ->
-                studentService.deleteStudentPhoto(studentId));
+            final Path photoPath = tempDir.resolve(photoFileName);
+            java.nio.file.Files.write(photoPath, new byte[]{1, 2, 3});
+            photoPath.toFile().setReadOnly();
 
-        assertNotNull(exception);
-        assertEquals("[Code: 1003, CodeDescription: RESOURCE_NOT_FOUND, ErrorDescription: Student photo not found.]", exception.getMessage());
-    }
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(student));
 
-    @Test
-    void saveStudentPhoto_shouldThrowUploadException_whenFileIsNull() throws Exception {
-        Integer studentId = 1;
-        Integer teacherId = 1;
+            final ThrowingCallable call = () -> studentService.deleteStudentPhoto(studentId);
+            final Throwable thrown = catchThrowable(call);
+            photoPath.toFile().setWritable(true);
+            if (thrown != null) {
+                assertThat(thrown).isInstanceOf(StudentPhotoDeleteException.class)
+                        .hasMessage("[Code: 1000, CodeDescription: GENERIC_ERROR, ErrorDescription: Error deleting student photo.]");
+            }
+        }
 
-        Student existingStudent = Student.builder()
-                .id(studentId)
-                .teacherId(teacherId)
-                .name("Juan")
-                .surnames("García")
-                .build();
+        @Test
+        void when_photo_field_is_null_expect_throw_not_found_exception() {
+            final Integer studentId = 1;
+            final Integer teacherId = 1;
+            final Student student = Student.builder()
+                    .id(studentId).teacherId(teacherId).name("Juan").surnames("García López").photo(null).build();
 
-        when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
-                .thenReturn(Optional.of(existingStudent));
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId))
+                    .thenReturn(Optional.of(student));
 
-        StudentPhotoUploadException exception = assertThrows(StudentPhotoUploadException.class, () ->
-                studentService.saveStudentPhoto(studentId, null));
+            final ThrowingCallable call = () -> studentService.deleteStudentPhoto(studentId);
+            final StudentPhotoNotFoundException exception = catchThrowableOfType(call, StudentPhotoNotFoundException.class);
 
-        assertNotNull(exception);
-        assertEquals("[Code: 1000, CodeDescription: GENERIC_ERROR, ErrorDescription: Photo file is required.]", exception.getMessage());
-        verify(studentRepository, never()).update(any());
-    }
-
-    @Test
-    void createStudent_shouldSaveStudent_whenGenderIsM() {
-        Student studentToCreate = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .build();
-
-        Student expectedStudent = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .teacherId(1)
-                .build();
-
-        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
-
-        Student createdStudent = studentService.createStudent(studentToCreate);
-
-        assertNotNull(createdStudent);
-        assertEquals("M", createdStudent.getGender());
-        verify(studentRepository, times(1)).save(any(Student.class));
-    }
-
-    @Test
-    void createStudent_shouldSaveStudent_whenGenderIsF() {
-        Student studentToCreate = Student.builder()
-                .name("María")
-                .surnames("López García")
-                .gender("F")
-                .build();
-
-        Student expectedStudent = Student.builder()
-                .name("María")
-                .surnames("López García")
-                .gender("F")
-                .teacherId(1)
-                .build();
-
-        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
-
-        Student createdStudent = studentService.createStudent(studentToCreate);
-
-        assertNotNull(createdStudent);
-        assertEquals("F", createdStudent.getGender());
-        verify(studentRepository, times(1)).save(any(Student.class));
-    }
-
-    @Test
-    void createStudent_shouldThrowValidationException_whenGenderIsNull() {
-        Student studentWithoutGender = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender(null)
-                .build();
-
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () ->
-                studentService.createStudent(studentWithoutGender));
-
-        assertNotNull(exception);
-        assertTrue(exception.getErrors().stream()
-                .anyMatch(e -> e.getParam().equals("gender")));
-        verify(studentRepository, never()).save(any());
-    }
-
-    @Test
-    void createStudent_shouldThrowValidationException_whenGenderIsEmpty() {
-        Student studentWithEmptyGender = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("")
-                .build();
-
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () ->
-                studentService.createStudent(studentWithEmptyGender));
-
-        assertNotNull(exception);
-        assertTrue(exception.getErrors().stream()
-                .anyMatch(e -> e.getParam().equals("gender")));
-        verify(studentRepository, never()).save(any());
-    }
-
-    @Test
-    void createStudent_shouldThrowValidationException_whenGenderIsInvalid() {
-        Student studentWithInvalidGender = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("X")
-                .build();
-
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () ->
-                studentService.createStudent(studentWithInvalidGender));
-
-        assertNotNull(exception);
-        assertTrue(exception.getErrors().stream()
-                .anyMatch(e -> e.getParam().equals("gender")));
-        verify(studentRepository, never()).save(any());
-    }
-
-    @Test
-    void createStudent_shouldSaveStudent_whenShapeIsSquare() {
-        Student studentToCreate = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .shape("SQUARE")
-                .build();
-
-        Student expectedStudent = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .shape("SQUARE")
-                .teacherId(1)
-                .build();
-
-        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
-
-        Student createdStudent = studentService.createStudent(studentToCreate);
-
-        assertNotNull(createdStudent);
-        assertEquals("SQUARE", createdStudent.getShape());
-        verify(studentRepository, times(1)).save(any(Student.class));
-    }
-
-    @Test
-    void createStudent_shouldSaveStudent_whenShapeIsNull() {
-        Student studentToCreate = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .shape(null)
-                .build();
-
-        Student expectedStudent = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .teacherId(1)
-                .build();
-
-        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
-
-        Student createdStudent = studentService.createStudent(studentToCreate);
-
-        assertNotNull(createdStudent);
-        assertNull(createdStudent.getShape());
-        verify(studentRepository, times(1)).save(any(Student.class));
-    }
-
-    @Test
-    void createStudent_shouldNormalizeShapeToUpperCase() {
-        Student studentToCreate = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .shape("circle")
-                .build();
-
-        Student expectedStudent = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .shape("CIRCLE")
-                .teacherId(1)
-                .build();
-
-        when(studentRepository.save(any(Student.class))).thenReturn(expectedStudent);
-
-        Student createdStudent = studentService.createStudent(studentToCreate);
-
-        assertNotNull(createdStudent);
-        assertEquals("CIRCLE", createdStudent.getShape());
-        verify(studentRepository, times(1)).save(any(Student.class));
-    }
-
-    @Test
-    void createStudent_shouldThrowValidationException_whenShapeIsInvalid() {
-        Student studentWithInvalidShape = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .gender("M")
-                .shape("HEXAGON")
-                .build();
-
-        StudentValidationException exception = assertThrows(StudentValidationException.class, () ->
-                studentService.createStudent(studentWithInvalidShape));
-
-        assertNotNull(exception);
-        assertTrue(exception.getErrors().stream()
-                .anyMatch(e -> e.getParam().equals("shape")));
-        verify(studentRepository, never()).save(any());
+            assertThat(exception).isNotNull();
+            assertThat(exception.getMessage()).isEqualTo("[Code: 1003, CodeDescription: RESOURCE_NOT_FOUND, ErrorDescription: Student photo not found.]");
+        }
     }
 }

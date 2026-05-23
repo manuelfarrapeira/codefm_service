@@ -1,167 +1,180 @@
 package org.web.codefm.domain.exception;
 
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.exception.ErrorMessage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@ExtendWith(MockitoExtension.class)
+import static org.assertj.core.api.Assertions.assertThat;
+
 class ListErrorMessageBaseExceptionTest {
 
-    @Test
-    void testConstructorWithErrorMessageListAndThrowable() {
+    @Nested
+    class Constructor {
 
-        ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
-        List<ErrorMessage> errorMessages = Arrays.asList(
-                new ErrorMessage("field1", "Error message 1"),
-                new ErrorMessage("field2", "Error message 2")
-        );
-        Throwable throwable = new Exception("Test exception");
+        @Test
+        void when_created_with_error_list_and_throwable_expect_errors_and_cause() {
+            final ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
+            final List<ErrorMessage> errorMessages = Arrays.asList(
+                    new ErrorMessage("field1", "Error message 1"),
+                    new ErrorMessage("field2", "Error message 2")
+            );
+            final Throwable throwable = new Exception("Test exception");
 
-        ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum, errorMessages, throwable);
+            final ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum,
+                    errorMessages, throwable);
 
-        Assertions.assertEquals(2, exception.getErrors().size());
-        Assertions.assertEquals("field1", exception.getErrors().get(0).getParam());
-        Assertions.assertEquals("Error message 1", exception.getErrors().get(0).getMessage());
-        Assertions.assertEquals("field2", exception.getErrors().get(1).getParam());
-        Assertions.assertEquals("Error message 2", exception.getErrors().get(1).getMessage());
-        Assertions.assertEquals("Test exception", exception.getCause().getMessage());
+            assertThat(exception.getErrors()).hasSize(2);
+            assertThat(exception.getErrors().get(0).getParam()).isEqualTo("field1");
+            assertThat(exception.getErrors().get(0).getMessage()).isEqualTo("Error message 1");
+            assertThat(exception.getErrors().get(1).getParam()).isEqualTo("field2");
+            assertThat(exception.getErrors().get(1).getMessage()).isEqualTo("Error message 2");
+            assertThat(exception.getCause()).hasMessage("Test exception");
+        }
+
+        @Test
+        void when_created_with_single_error_and_throwable_expect_single_error_and_cause() {
+            final ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
+            final ErrorMessage errorMessage = new ErrorMessage("field1", "Single error message");
+            final Throwable throwable = new Exception("Test exception");
+
+            final ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum,
+                    errorMessage, throwable);
+
+            assertThat(exception.getErrors()).hasSize(1);
+            assertThat(exception.getErrors().get(0).getParam()).isEqualTo("field1");
+            assertThat(exception.getErrors().get(0).getMessage()).isEqualTo("Single error message");
+            assertThat(exception.getCause()).hasMessage("Test exception");
+        }
+
+        @Test
+        void when_created_with_param_and_message_expect_single_error() {
+            final ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
+
+            final ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum,
+                    "field1", "Error message for field1");
+
+            assertThat(exception.getErrors()).hasSize(1);
+            assertThat(exception.getErrors().get(0).getParam()).isEqualTo("field1");
+            assertThat(exception.getErrors().get(0).getMessage()).isEqualTo("Error message for field1");
+        }
+
+        @Test
+        void when_created_with_error_list_expect_all_errors() {
+            final ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
+            final List<ErrorMessage> errorMessages = Arrays.asList(
+                    new ErrorMessage("field1", "Error message 1"),
+                    new ErrorMessage("field2", "Error message 2")
+            );
+
+            final ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum,
+                    errorMessages);
+
+            assertThat(exception.getErrors()).hasSize(2);
+            assertThat(exception.getErrors().get(0).getParam()).isEqualTo("field1");
+            assertThat(exception.getErrors().get(0).getMessage()).isEqualTo("Error message 1");
+            assertThat(exception.getErrors().get(1).getParam()).isEqualTo("field2");
+            assertThat(exception.getErrors().get(1).getMessage()).isEqualTo("Error message 2");
+        }
+
+        @Test
+        void when_created_with_single_error_expect_single_error() {
+            final ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
+            final ErrorMessage errorMessage = new ErrorMessage("field1", "Single error message");
+
+            final ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum,
+                    errorMessage);
+
+            assertThat(exception.getErrors()).hasSize(1);
+            assertThat(exception.getErrors().get(0).getParam()).isEqualTo("field1");
+            assertThat(exception.getErrors().get(0).getMessage()).isEqualTo("Single error message");
+        }
     }
 
-    @Test
-    void testConstructorWithSingleErrorMessageAndThrowable() {
+    @Nested
+    class AddError {
 
-        ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
-        ErrorMessage errorMessage = new ErrorMessage("field1", "Single error message");
-        Throwable throwable = new Exception("Test exception");
+        @Test
+        void when_error_message_is_added_expect_error_in_list() {
+            final ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
+            final ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum);
 
-        ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum, errorMessage, throwable);
+            exception.addError(new ErrorMessage("field1", "New error message"));
 
-        Assertions.assertEquals(1, exception.getErrors().size());
-        Assertions.assertEquals("field1", exception.getErrors().get(0).getParam());
-        Assertions.assertEquals("Single error message", exception.getErrors().get(0).getMessage());
-        Assertions.assertEquals("Test exception", exception.getCause().getMessage());
+            assertThat(exception.getErrors()).hasSize(1);
+            assertThat(exception.getErrors().get(0).getParam()).isEqualTo("field1");
+            assertThat(exception.getErrors().get(0).getMessage()).isEqualTo("New error message");
+        }
+
+        @Test
+        void when_error_list_is_added_expect_all_errors_in_list() {
+            final ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
+            final ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum);
+            final List<ErrorMessage> errorMessages = Arrays.asList(
+                    new ErrorMessage("field2", "Error message 2"),
+                    new ErrorMessage("field3", "Error message 3")
+            );
+
+            exception.addError(errorMessages);
+
+            assertThat(exception.getErrors()).hasSize(2);
+            assertThat(exception.getErrors().get(0).getParam()).isEqualTo("field2");
+            assertThat(exception.getErrors().get(0).getMessage()).isEqualTo("Error message 2");
+            assertThat(exception.getErrors().get(1).getParam()).isEqualTo("field3");
+            assertThat(exception.getErrors().get(1).getMessage()).isEqualTo("Error message 3");
+        }
     }
 
-    @Test
-    void testConstructorWithParamAndMessage() {
+    @Nested
+    class GetMessage {
 
-        ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
-        String param = "field1";
-        String message = "Error message for field1";
+        @Test
+        void when_message_is_requested_expect_formatted_message() {
+            final ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
+            final List<ErrorMessage> errorMessages = Arrays.asList(
+                    new ErrorMessage("field1", "First error"),
+                    new ErrorMessage("field2", "Second error")
+            );
+            final ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum,
+                    errorMessages);
 
-        ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum, param, message);
+            final String message = exception.getMessage();
 
-        Assertions.assertEquals(1, exception.getErrors().size());
-        Assertions.assertEquals("field1", exception.getErrors().get(0).getParam());
-        Assertions.assertEquals("Error message for field1", exception.getErrors().get(0).getMessage());
-    }
-
-    @Test
-    void testConstructorWithErrorMessageList() {
-
-        ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
-        List<ErrorMessage> errorMessages = Arrays.asList(
-                new ErrorMessage("field1", "Error message 1"),
-                new ErrorMessage("field2", "Error message 2")
-        );
-
-        ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum, errorMessages);
-
-        Assertions.assertEquals(2, exception.getErrors().size());
-        Assertions.assertEquals("field1", exception.getErrors().get(0).getParam());
-        Assertions.assertEquals("Error message 1", exception.getErrors().get(0).getMessage());
-        Assertions.assertEquals("field2", exception.getErrors().get(1).getParam());
-        Assertions.assertEquals("Error message 2", exception.getErrors().get(1).getMessage());
-    }
-
-    @Test
-    void testConstructorWithSingleErrorMessage() {
-
-        ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
-        ErrorMessage errorMessage = new ErrorMessage("field1", "Single error message");
-
-        ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum, errorMessage);
-
-        Assertions.assertEquals(1, exception.getErrors().size());
-        Assertions.assertEquals("field1", exception.getErrors().get(0).getParam());
-        Assertions.assertEquals("Single error message", exception.getErrors().get(0).getMessage());
-    }
-
-    @Test
-    void testAddErrorWithErrorMessage() {
-
-        ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
-        ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum);
-
-        exception.addError(new ErrorMessage("field1", "New error message"));
-
-        Assertions.assertEquals(1, exception.getErrors().size());
-        Assertions.assertEquals("field1", exception.getErrors().get(0).getParam());
-        Assertions.assertEquals("New error message", exception.getErrors().get(0).getMessage());
-    }
-
-    @Test
-    void testAddErrorWithList() {
-
-        ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
-        ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum);
-        List<ErrorMessage> errorMessages = Arrays.asList(
-                new ErrorMessage("field2", "Error message 2"),
-                new ErrorMessage("field3", "Error message 3")
-        );
-
-        exception.addError(errorMessages);
-
-        Assertions.assertEquals(2, exception.getErrors().size());
-        Assertions.assertEquals("field2", exception.getErrors().get(0).getParam());
-        Assertions.assertEquals("Error message 2", exception.getErrors().get(0).getMessage());
-        Assertions.assertEquals("field3", exception.getErrors().get(1).getParam());
-        Assertions.assertEquals("Error message 3", exception.getErrors().get(1).getMessage());
-    }
-
-    @Test
-    void testGetMessage() {
-
-        ErrorCodeEnum errorCodeEnum = ErrorCodeEnum.GENERIC_ERROR;
-        List<ErrorMessage> errorMessages = Arrays.asList(
-                new ErrorMessage("field1", "First error"),
-                new ErrorMessage("field2", "Second error")
-        );
-        ListErrorMessageBaseException exception = new MockListErrorMessageBaseException(errorCodeEnum, errorMessages);
-
-        String message = exception.getMessage();
-
-        Assertions.assertEquals("[Code: 1000, CodeDescription: GENERIC_ERROR, Errors: (ErrorMessage(param=field1, message=First error) | ErrorMessage(param=field2, message=Second error))]", message);
+            assertThat(message).isEqualTo("[Code: 1000, CodeDescription: GENERIC_ERROR, Errors: (ErrorMessage(param=field1, message=First error) | ErrorMessage(param=field2, message=Second error))]");
+        }
     }
 
     private static class MockListErrorMessageBaseException extends ListErrorMessageBaseException {
-        public MockListErrorMessageBaseException(ErrorCodeEnum errorCodeEnum) {
+        MockListErrorMessageBaseException(final ErrorCodeEnum errorCodeEnum) {
             super(errorCodeEnum, new ArrayList<>());
         }
 
-        public MockListErrorMessageBaseException(ErrorCodeEnum errorCodeEnum, List<ErrorMessage> errorMessageList) {
+        MockListErrorMessageBaseException(final ErrorCodeEnum errorCodeEnum, final List<ErrorMessage> errorMessageList) {
             super(errorCodeEnum, errorMessageList);
         }
 
-        public MockListErrorMessageBaseException(ErrorCodeEnum errorCodeEnum, ErrorMessage errorMessage) {
+        MockListErrorMessageBaseException(final ErrorCodeEnum errorCodeEnum, final ErrorMessage errorMessage) {
             super(errorCodeEnum, errorMessage);
         }
 
-        public MockListErrorMessageBaseException(ErrorCodeEnum errorCodeEnum, List<ErrorMessage> errorMessageList, Throwable throwable) {
+        MockListErrorMessageBaseException(final ErrorCodeEnum errorCodeEnum,
+                                          final List<ErrorMessage> errorMessageList,
+                                          final Throwable throwable) {
             super(errorCodeEnum, errorMessageList, throwable);
         }
 
-        public MockListErrorMessageBaseException(ErrorCodeEnum errorCodeEnum, ErrorMessage errorMessage, Throwable throwable) {
+        MockListErrorMessageBaseException(final ErrorCodeEnum errorCodeEnum,
+                                          final ErrorMessage errorMessage,
+                                          final Throwable throwable) {
             super(errorCodeEnum, errorMessage, throwable);
         }
 
-        public MockListErrorMessageBaseException(ErrorCodeEnum errorCodeEnum, String param, String message) {
+        MockListErrorMessageBaseException(final ErrorCodeEnum errorCodeEnum,
+                                          final String param,
+                                          final String message) {
             super(errorCodeEnum, param, message);
         }
     }

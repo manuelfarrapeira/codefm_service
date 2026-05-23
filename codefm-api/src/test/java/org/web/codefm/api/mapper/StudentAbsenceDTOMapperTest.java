@@ -1,10 +1,7 @@
 package org.web.codefm.api.mapper;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.StudentAbsence;
 import org.web.codefm.model.StudentAbsenceDTO;
 
@@ -13,63 +10,64 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(MockitoExtension.class)
 class StudentAbsenceDTOMapperTest {
 
-	@Spy
-	@InjectMocks
-	private StudentAbsenceDTOMapperImpl mapper;
+    private final StudentAbsenceDTOMapper mapper = new StudentAbsenceDTOMapperImpl();
 
-	@Test
-	void toDTO_shouldMapAllFields() {
-		StudentAbsence absence = StudentAbsence.builder().id(1).studentId(10).studentName("Juan")
-				.studentSurnames("García López").classId(5).subjectId(3).subjectName("Matemáticas")
-				.absenceDate(LocalDate.of(2026, 3, 15)).build();
+    @Nested
+    class ToDTO {
 
-		StudentAbsenceDTO result = mapper.toDTO(absence);
+        @Test
+        void when_all_fields_are_present_expect_mapped_dto() {
+            final StudentAbsence absence = StudentAbsence.builder().id(1).studentId(10).studentName("Juan")
+                    .studentSurnames("García López").classId(5).subjectId(3).subjectName("Matemáticas")
+                    .absenceDate(LocalDate.of(2026, 3, 15)).build();
 
-		assertNotNull(result);
-		assertEquals(1, result.getId());
-		assertEquals(10, result.getStudentId());
-		assertEquals("Juan", result.getStudentName());
-		assertEquals("García López", result.getStudentSurnames());
-		assertEquals(5, result.getClassId());
-		assertEquals(3, result.getSubjectId());
-		assertEquals("Matemáticas", result.getSubjectName());
-		assertEquals("15/03/2026", result.getAbsenceDate());
-	}
+            final StudentAbsenceDTO result = StudentAbsenceDTOMapperTest.this.mapper.toDTO(absence);
 
-	@Test
-	void toDTO_shouldReturnNullAbsenceDate_whenDateIsNull() {
-		StudentAbsence absence = StudentAbsence.builder().id(1).studentId(10).absenceDate(null).build();
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            assertThat(result.getStudentId()).isEqualTo(10);
+            assertThat(result.getStudentName()).isEqualTo("Juan");
+            assertThat(result.getStudentSurnames()).isEqualTo("García López");
+            assertThat(result.getClassId()).isEqualTo(5);
+            assertThat(result.getSubjectId()).isEqualTo(3);
+            assertThat(result.getSubjectName()).isEqualTo("Matemáticas");
+            assertThat(result.getAbsenceDate()).isEqualTo("15/03/2026");
+        }
 
-		StudentAbsenceDTO result = mapper.toDTO(absence);
+        @Test
+        void when_date_is_null_expect_null_absence_date() {
+            final StudentAbsence absence = StudentAbsence.builder().id(1).studentId(10).absenceDate(null).build();
 
-		assertNotNull(result);
-		assertNull(result.getAbsenceDate());
-	}
+            final StudentAbsenceDTO result = StudentAbsenceDTOMapperTest.this.mapper.toDTO(absence);
 
-	@Test
-	void toDTOList_shouldMapAllElements() {
-		List<StudentAbsence> absences = Arrays.asList(
-				StudentAbsence.builder().id(1).absenceDate(LocalDate.of(2026, 3, 15)).build(),
-				StudentAbsence.builder().id(2).absenceDate(LocalDate.of(2026, 3, 16)).build());
+            assertThat(result).isNotNull();
+            assertThat(result.getAbsenceDate()).isNull();
+        }
+    }
 
-		List<StudentAbsenceDTO> result = mapper.toDTOList(absences);
+    @Nested
+    class ToDTOList {
 
-		assertNotNull(result);
-		assertEquals(2, result.size());
-		assertEquals("15/03/2026", result.get(0).getAbsenceDate());
-		assertEquals("16/03/2026", result.get(1).getAbsenceDate());
-	}
+        @Test
+        void when_input_has_elements_expect_mapped_list() {
+            final List<StudentAbsence> absences = Arrays.asList(
+                    StudentAbsence.builder().id(1).absenceDate(LocalDate.of(2026, 3, 15)).build(),
+                    StudentAbsence.builder().id(2).absenceDate(LocalDate.of(2026, 3, 16)).build());
 
-	@Test
-	void toDTOList_shouldReturnEmptyList_whenInputIsEmpty() {
-		List<StudentAbsenceDTO> result = mapper.toDTOList(Collections.emptyList());
+            final List<StudentAbsenceDTO> result = StudentAbsenceDTOMapperTest.this.mapper.toDTOList(absences);
 
-		assertNotNull(result);
-		assertTrue(result.isEmpty());
-	}
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0).getAbsenceDate()).isEqualTo("15/03/2026");
+            assertThat(result.get(1).getAbsenceDate()).isEqualTo("16/03/2026");
+        }
+
+        @Test
+        void when_input_is_empty_expect_empty_list() {
+            assertThat(StudentAbsenceDTOMapperTest.this.mapper.toDTOList(Collections.emptyList())).isEmpty();
+        }
+    }
 }

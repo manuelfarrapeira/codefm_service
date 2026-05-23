@@ -1,11 +1,12 @@
 package org.web.codefm.service.teachernotebook;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -28,7 +29,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -36,441 +37,460 @@ import static org.mockito.Mockito.*;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class StudentAbsenceServiceImplTest {
 
-	@Mock
-	private StudentAbsenceRepository studentAbsenceRepository;
-
-	@Mock
-	private ClassRepository classRepository;
-
-	@Mock
-	private StudentRepository studentRepository;
-
-	@Mock
-	private SubjectRepository subjectRepository;
-
-	@Mock
-	private StudentClassRepository studentClassRepository;
-
-	@Mock
-	private SubjectClassRepository subjectClassRepository;
-
-	@Mock
-	private ScheduleRepository scheduleRepository;
-
-	@Mock
-	private MessageSource messageSource;
-
-	@Mock
-	private SessionUser sessionUser;
-
-	@InjectMocks
-	private StudentAbsenceServiceImpl studentAbsenceService;
-
-	private static final Integer TEACHER_ID = 1;
-	private static final Integer CLASS_ID = 10;
-	private static final Integer STUDENT_ID = 20;
-	private static final Integer SUBJECT_ID = 30;
-	private static final Integer ABSENCE_ID = 100;
-	private static final Integer STUDENT_CLASS_ID = 50;
-	private static final LocalDate DATE = LocalDate.of(2025, 3, 17);
-
-	@BeforeEach
-	void setUp() {
-		when(this.sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
-		when(this.sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
-		when(this.messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("error message");
-	}
-
-	@Test
-	void createAbsences_shouldCreateAbsences_whenSubjectIdProvided() {
-		final Class clazz = Class.builder().id(CLASS_ID).build();
-		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-				.thenReturn(Optional.of(clazz));
-
-		final Student student = Student.builder().id(STUDENT_ID).build();
-		when(this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
-				.thenReturn(Optional.of(student));
-
-		final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
-		when(this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
-
-		final Subject subject = Subject.builder().id(SUBJECT_ID).build();
-		when(this.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID)).thenReturn(Optional.of(subject));
-		when(this.subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID))
-				.thenReturn(true);
-		when(this.scheduleRepository.existsByClassIdAndSubjectIdAndDay(CLASS_ID, SUBJECT_ID, DATE.getDayOfWeek().getValue()))
-				.thenReturn(true);
-		when(this.studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID, SUBJECT_ID, DATE))
-				.thenReturn(false);
-
-		final StudentAbsence saved = StudentAbsence.builder().id(ABSENCE_ID).studentClassId(STUDENT_CLASS_ID)
-				.studentId(STUDENT_ID).classId(CLASS_ID).subjectId(SUBJECT_ID).absenceDate(DATE).build();
-		when(this.studentAbsenceRepository.saveAll(anyList())).thenReturn(List.of(saved));
-		when(this.studentAbsenceRepository.findByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE)).thenReturn(List.of(saved));
-
-		final List<StudentAbsence> result = this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE);
-
-		assertFalse(result.isEmpty());
-		assertEquals(ABSENCE_ID, result.get(0).getId());
-		verify(this.studentAbsenceRepository).saveAll(anyList());
-	}
-
-	@Test
-	void createAbsences_shouldCreateAbsencesFromSchedule_whenSubjectIdIsNull() {
-		final Class clazz = Class.builder().id(CLASS_ID).build();
-		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-				.thenReturn(Optional.of(clazz));
-
-		final Student student = Student.builder().id(STUDENT_ID).build();
-		when(this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
-				.thenReturn(Optional.of(student));
-
-		final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
-		when(this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
-
-		final int dayOfWeek = DATE.getDayOfWeek().getValue();
-		when(this.scheduleRepository.findSubjectIdsByClassIdAndDay(CLASS_ID, dayOfWeek)).thenReturn(List.of(30, 31));
-		when(this.studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID, 30, DATE))
-				.thenReturn(false);
-		when(this.studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID, 31, DATE))
-				.thenReturn(false);
-
-		final StudentAbsence saved1 = StudentAbsence.builder().id(ABSENCE_ID).studentClassId(STUDENT_CLASS_ID)
-				.studentId(STUDENT_ID).classId(CLASS_ID).subjectId(30).absenceDate(DATE).build();
-		final StudentAbsence saved2 = StudentAbsence.builder().id(101).studentClassId(STUDENT_CLASS_ID)
-				.studentId(STUDENT_ID).classId(CLASS_ID).subjectId(31).absenceDate(DATE).build();
-		when(this.studentAbsenceRepository.saveAll(anyList())).thenReturn(List.of(saved1, saved2));
-		when(this.studentAbsenceRepository.findByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE))
-				.thenReturn(List.of(saved1, saved2));
-
-		final List<StudentAbsence> result = this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, null, DATE);
-
-		assertEquals(2, result.size());
-		verify(this.scheduleRepository).findSubjectIdsByClassIdAndDay(CLASS_ID, dayOfWeek);
-		verify(this.studentAbsenceRepository).saveAll(anyList());
-	}
-
-	@ParameterizedTest
-	@MethodSource("classNotFoundSetups")
-	void createAbsences_shouldThrowClassNotFoundException_whenClassNotExists(
-			Consumer<StudentAbsenceServiceImplTest> setup) {
-		setup.accept(this);
-
-		assertThrows(ClassNotFoundException.class,
-				() -> this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE));
-	}
-
-	@ParameterizedTest
-	@MethodSource("classForbiddenSetups")
-	void createAbsences_shouldThrowClassForbiddenException_whenClassNotOwnedByTeacher(
-			Consumer<StudentAbsenceServiceImplTest> setup) {
-		setup.accept(this);
-
-		assertThrows(ClassForbiddenException.class,
-				() -> this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE));
-	}
-
-	@ParameterizedTest
-	@MethodSource("studentValidationSetups")
-	void createAbsences_shouldThrowValidationException_whenStudentIsInvalid(
-			Consumer<StudentAbsenceServiceImplTest> setup) {
-		final Class clazz = Class.builder().id(CLASS_ID).build();
-		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-				.thenReturn(Optional.of(clazz));
-
-		setup.accept(this);
-
-		final StudentAbsenceValidationException exception = assertThrows(StudentAbsenceValidationException.class,
-				() -> this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE));
-
-		assertFalse(exception.getErrors().isEmpty());
-		assertEquals("studentId", exception.getErrors().get(0).getParam());
-	}
-
-	@ParameterizedTest
-	@MethodSource("subjectValidationSetups")
-	void createAbsences_shouldThrowValidationException_whenSubjectIsInvalid(
-			Consumer<StudentAbsenceServiceImplTest> setup) {
-		final Class clazz = Class.builder().id(CLASS_ID).build();
-		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-				.thenReturn(Optional.of(clazz));
-
-		final Student student = Student.builder().id(STUDENT_ID).build();
-		when(this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
-				.thenReturn(Optional.of(student));
-
-		final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
-		when(this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
-
-		setup.accept(this);
-
-		final StudentAbsenceValidationException exception = assertThrows(StudentAbsenceValidationException.class,
-				() -> this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE));
-
-		assertFalse(exception.getErrors().isEmpty());
-		assertEquals("subjectId", exception.getErrors().get(0).getParam());
-	}
-
-	@Test
-	void createAbsences_shouldThrowValidationException_whenNoSubjectsScheduledOnDay() {
-		final Class clazz = Class.builder().id(CLASS_ID).build();
-		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-				.thenReturn(Optional.of(clazz));
-
-		final Student student = Student.builder().id(STUDENT_ID).build();
-		when(this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
-				.thenReturn(Optional.of(student));
-
-		final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
-		when(this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
-
-		when(this.scheduleRepository.findSubjectIdsByClassIdAndDay(CLASS_ID, DATE.getDayOfWeek().getValue()))
-				.thenReturn(List.of());
-
-		final StudentAbsenceValidationException exception = assertThrows(StudentAbsenceValidationException.class,
-				() -> this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, null, DATE));
-
-		assertFalse(exception.getErrors().isEmpty());
-		assertEquals("date", exception.getErrors().get(0).getParam());
-	}
-
-	@Test
-	void createAbsences_shouldSkipDuplicates_whenAbsencesAlreadyExist() {
-		final Class clazz = Class.builder().id(CLASS_ID).build();
-		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-				.thenReturn(Optional.of(clazz));
-
-		final Student student = Student.builder().id(STUDENT_ID).build();
-		when(this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
-				.thenReturn(Optional.of(student));
-
-		final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
-		when(this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
-
-		final int dayOfWeek = DATE.getDayOfWeek().getValue();
-		when(this.scheduleRepository.findSubjectIdsByClassIdAndDay(CLASS_ID, dayOfWeek)).thenReturn(List.of(30, 31));
-		when(this.studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID, 30, DATE))
-				.thenReturn(true);
-		when(this.studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID, 31, DATE))
-				.thenReturn(true);
-
-		final StudentAbsence existing = StudentAbsence.builder().id(ABSENCE_ID).studentClassId(STUDENT_CLASS_ID)
-				.studentId(STUDENT_ID).classId(CLASS_ID).subjectId(30).absenceDate(DATE).build();
-		when(this.studentAbsenceRepository.findByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE))
-				.thenReturn(List.of(existing));
-
-		final List<StudentAbsence> result = this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, null, DATE);
-
-		assertFalse(result.isEmpty());
-		verify(this.studentAbsenceRepository, never()).saveAll(anyList());
-	}
-
-	@Test
-	void getAbsences_shouldReturnAbsences_whenStudentIdProvided() {
-		final Class clazz = Class.builder().id(CLASS_ID).build();
-		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-				.thenReturn(Optional.of(clazz));
-
-		final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
-		when(this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
-
-		final StudentAbsence absence = StudentAbsence.builder().id(ABSENCE_ID).studentClassId(STUDENT_CLASS_ID)
-				.studentId(STUDENT_ID).classId(CLASS_ID).build();
-		when(this.studentAbsenceRepository.findByStudentClassId(STUDENT_CLASS_ID)).thenReturn(List.of(absence));
-
-		final List<StudentAbsence> result = this.studentAbsenceService.getAbsences(CLASS_ID, STUDENT_ID, null);
-
-		assertEquals(1, result.size());
-		verify(this.studentAbsenceRepository).findByStudentClassId(STUDENT_CLASS_ID);
-	}
-
-	@Test
-	void getAbsences_shouldReturnAbsences_whenDateProvided() {
-		final Class clazz = Class.builder().id(CLASS_ID).build();
-		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-				.thenReturn(Optional.of(clazz));
-
-		final StudentAbsence absence = StudentAbsence.builder().id(ABSENCE_ID).classId(CLASS_ID).absenceDate(DATE).build();
-		when(this.studentAbsenceRepository.findByClassIdAndDate(CLASS_ID, DATE)).thenReturn(List.of(absence));
-
-		final List<StudentAbsence> result = this.studentAbsenceService.getAbsences(CLASS_ID, null, DATE);
-
-		assertEquals(1, result.size());
-		verify(this.studentAbsenceRepository).findByClassIdAndDate(CLASS_ID, DATE);
-	}
-
-	@Test
-	void getAbsences_shouldReturnAbsences_whenBothStudentIdAndDateProvided() {
-		final Class clazz = Class.builder().id(CLASS_ID).build();
-		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-				.thenReturn(Optional.of(clazz));
-
-		final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
-		when(this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
-
-		final StudentAbsence absence = StudentAbsence.builder().id(ABSENCE_ID).studentClassId(STUDENT_CLASS_ID)
-				.studentId(STUDENT_ID).classId(CLASS_ID).absenceDate(DATE).build();
-		when(this.studentAbsenceRepository.findByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE)).thenReturn(List.of(absence));
-
-		final List<StudentAbsence> result = this.studentAbsenceService.getAbsences(CLASS_ID, STUDENT_ID, DATE);
-
-		assertEquals(1, result.size());
-		verify(this.studentAbsenceRepository).findByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE);
-	}
-
-	@Test
-	void getAbsences_shouldReturnAllAbsences_whenNeitherStudentIdNorDateProvided() {
-		final Class clazz = Class.builder().id(CLASS_ID).build();
-		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-				.thenReturn(Optional.of(clazz));
-
-		final List<StudentAbsence> expected = List.of(StudentAbsence.builder().id(1).build());
-		when(this.studentAbsenceRepository.findByClassId(CLASS_ID)).thenReturn(expected);
-
-		final List<StudentAbsence> result = this.studentAbsenceService.getAbsences(CLASS_ID, null, null);
-
-		assertEquals(expected, result);
-		verify(this.studentAbsenceRepository).findByClassId(CLASS_ID);
-	}
-
-	@ParameterizedTest
-	@MethodSource("classNotFoundSetups")
-	void getAbsences_shouldThrowClassNotFoundException_whenClassNotExists(
-			Consumer<StudentAbsenceServiceImplTest> setup) {
-		setup.accept(this);
-
-		assertThrows(ClassNotFoundException.class,
-				() -> this.studentAbsenceService.getAbsences(CLASS_ID, STUDENT_ID, DATE));
-	}
-
-	@ParameterizedTest
-	@MethodSource("classForbiddenSetups")
-	void getAbsences_shouldThrowClassForbiddenException_whenClassNotOwnedByTeacher(
-			Consumer<StudentAbsenceServiceImplTest> setup) {
-		setup.accept(this);
-
-		assertThrows(ClassForbiddenException.class,
-				() -> this.studentAbsenceService.getAbsences(CLASS_ID, STUDENT_ID, DATE));
-	}
-
-	@Test
-	void deleteAbsence_shouldDeleteAbsence_whenAbsenceExistsAndOwnedByTeacher() {
-		final StudentAbsence absence = StudentAbsence.builder().id(ABSENCE_ID).build();
-		when(this.studentAbsenceRepository.findByIdAndTeacherId(ABSENCE_ID, TEACHER_ID)).thenReturn(Optional.of(absence));
-
-		this.studentAbsenceService.deleteAbsence(ABSENCE_ID);
-
-		verify(this.studentAbsenceRepository).deleteById(ABSENCE_ID);
-	}
-
-	@Test
-	void deleteAbsence_shouldThrowNotFoundException_whenAbsenceNotFound() {
-		when(this.studentAbsenceRepository.findByIdAndTeacherId(ABSENCE_ID, TEACHER_ID)).thenReturn(Optional.empty());
-
-		assertThrows(StudentAbsenceNotFoundException.class,
-				() -> this.studentAbsenceService.deleteAbsence(ABSENCE_ID));
-	}
-
-	@Test
-	void deleteAbsencesByStudentAndDate_shouldDeleteAbsences_whenClassOwnedByTeacher() {
-		final Class clazz = Class.builder().id(CLASS_ID).build();
-		when(this.classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
-		when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-				.thenReturn(Optional.of(clazz));
-
-		final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
-		when(this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
-
-		this.studentAbsenceService.deleteAbsencesByStudentAndDate(CLASS_ID, STUDENT_ID, DATE);
-
-		verify(this.studentAbsenceRepository).deleteByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE);
-	}
-
-	@ParameterizedTest
-	@MethodSource("classNotFoundSetups")
-	void deleteAbsencesByStudentAndDate_shouldThrowClassNotFoundException_whenClassNotExists(
-			Consumer<StudentAbsenceServiceImplTest> setup) {
-		setup.accept(this);
-
-		assertThrows(ClassNotFoundException.class,
-				() -> this.studentAbsenceService.deleteAbsencesByStudentAndDate(CLASS_ID, STUDENT_ID, DATE));
-	}
-
-	@ParameterizedTest
-	@MethodSource("classForbiddenSetups")
-	void deleteAbsencesByStudentAndDate_shouldThrowClassForbiddenException_whenClassNotOwnedByTeacher(
-			Consumer<StudentAbsenceServiceImplTest> setup) {
-		setup.accept(this);
-
-		assertThrows(ClassForbiddenException.class,
-				() -> this.studentAbsenceService.deleteAbsencesByStudentAndDate(CLASS_ID, STUDENT_ID, DATE));
-	}
-
-	static Stream<Consumer<StudentAbsenceServiceImplTest>> classNotFoundSetups() {
-		return Stream.of(
-				t -> when(t.classRepository.findById(CLASS_ID)).thenReturn(Optional.empty())
-		);
-	}
-
-	static Stream<Consumer<StudentAbsenceServiceImplTest>> classForbiddenSetups() {
-		return Stream.of(
-				t -> {
-					when(t.classRepository.findById(CLASS_ID))
-							.thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
-					when(t.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-							.thenReturn(Optional.empty());
-				}
-		);
-	}
-
-	static Stream<Consumer<StudentAbsenceServiceImplTest>> studentValidationSetups() {
-		return Stream.of(
-				t -> when(t.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
-						.thenReturn(Optional.empty()),
-				t -> {
-					when(t.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
-							.thenReturn(Optional.of(Student.builder().id(STUDENT_ID).build()));
-					when(t.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID))
-							.thenReturn(Optional.empty());
-				},
-				t -> {
-					when(t.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
-							.thenReturn(Optional.of(Student.builder().id(STUDENT_ID).build()));
-					when(t.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID))
-							.thenReturn(Optional.of(StudentClass.builder().classId(CLASS_ID).studentId(STUDENT_ID)
-									.deletionDate(LocalDate.now()).build()));
-				}
-		);
-	}
-
-	static Stream<Consumer<StudentAbsenceServiceImplTest>> subjectValidationSetups() {
-		return Stream.of(
-				t -> when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
-						.thenReturn(Optional.empty()),
-				t -> {
-					when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
-							.thenReturn(Optional.of(Subject.builder().id(SUBJECT_ID).build()));
-					when(t.subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID))
-							.thenReturn(false);
-				},
-				t -> {
-					when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
-							.thenReturn(Optional.of(Subject.builder().id(SUBJECT_ID).build()));
-					when(t.subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID))
-							.thenReturn(true);
-					when(t.scheduleRepository.existsByClassIdAndSubjectIdAndDay(CLASS_ID, SUBJECT_ID,
-							DATE.getDayOfWeek().getValue())).thenReturn(false);
-				}
-		);
-	}
+    @Mock
+    private StudentAbsenceRepository studentAbsenceRepository;
+
+    @Mock
+    private ClassRepository classRepository;
+
+    @Mock
+    private StudentRepository studentRepository;
+
+    @Mock
+    private SubjectRepository subjectRepository;
+
+    @Mock
+    private StudentClassRepository studentClassRepository;
+
+    @Mock
+    private SubjectClassRepository subjectClassRepository;
+
+    @Mock
+    private ScheduleRepository scheduleRepository;
+
+    @Mock
+    private MessageSource messageSource;
+
+    @Mock
+    private SessionUser sessionUser;
+
+    private StudentAbsenceServiceImpl studentAbsenceService;
+
+    private static final Integer TEACHER_ID = 1;
+    private static final Integer CLASS_ID = 10;
+    private static final Integer STUDENT_ID = 20;
+    private static final Integer SUBJECT_ID = 30;
+    private static final Integer ABSENCE_ID = 100;
+    private static final Integer STUDENT_CLASS_ID = 50;
+    private static final LocalDate DATE = LocalDate.of(2025, 3, 17);
+
+    @BeforeEach
+    void beforeEach() {
+        studentAbsenceService = new StudentAbsenceServiceImpl(
+                studentAbsenceRepository, classRepository, studentRepository,
+                studentClassRepository, subjectRepository, subjectClassRepository,
+                scheduleRepository, messageSource, sessionUser);
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
+        when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+        when(messageSource.getMessage(anyString(), any(), any(Locale.class))).thenReturn("error message");
+    }
+
+    @Nested
+    class CreateAbsences {
+
+        @Test
+        void when_subject_id_provided_expect_create_absences() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(clazz));
+
+            final Student student = Student.builder().id(STUDENT_ID).build();
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(student));
+
+            final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
+            when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
+
+            final Subject subject = Subject.builder().id(SUBJECT_ID).build();
+            when(subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID)).thenReturn(Optional.of(subject));
+            when(subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID))
+                    .thenReturn(true);
+            when(scheduleRepository.existsByClassIdAndSubjectIdAndDay(CLASS_ID, SUBJECT_ID, DATE.getDayOfWeek().getValue()))
+                    .thenReturn(true);
+            when(studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID, SUBJECT_ID, DATE))
+                    .thenReturn(false);
+
+            final StudentAbsence saved = StudentAbsence.builder().id(ABSENCE_ID).studentClassId(STUDENT_CLASS_ID)
+                    .studentId(STUDENT_ID).classId(CLASS_ID).subjectId(SUBJECT_ID).absenceDate(DATE).build();
+            when(studentAbsenceRepository.saveAll(anyList())).thenReturn(List.of(saved));
+            when(studentAbsenceRepository.findByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE)).thenReturn(List.of(saved));
+
+            final List<StudentAbsence> result = studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE);
+
+            assertThat(result).isNotEmpty();
+            assertThat(result.get(0).getId()).isEqualTo(ABSENCE_ID);
+            verify(studentAbsenceRepository).saveAll(anyList());
+        }
+
+        @Test
+        void when_subject_id_is_null_expect_create_absences_from_schedule() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(clazz));
+
+            final Student student = Student.builder().id(STUDENT_ID).build();
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(student));
+
+            final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
+            when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
+
+            final int dayOfWeek = DATE.getDayOfWeek().getValue();
+            when(scheduleRepository.findSubjectIdsByClassIdAndDay(CLASS_ID, dayOfWeek)).thenReturn(List.of(30, 31));
+            when(studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID, 30, DATE))
+                    .thenReturn(false);
+            when(studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID, 31, DATE))
+                    .thenReturn(false);
+
+            final StudentAbsence saved1 = StudentAbsence.builder().id(ABSENCE_ID).studentClassId(STUDENT_CLASS_ID)
+                    .studentId(STUDENT_ID).classId(CLASS_ID).subjectId(30).absenceDate(DATE).build();
+            final StudentAbsence saved2 = StudentAbsence.builder().id(101).studentClassId(STUDENT_CLASS_ID)
+                    .studentId(STUDENT_ID).classId(CLASS_ID).subjectId(31).absenceDate(DATE).build();
+            when(studentAbsenceRepository.saveAll(anyList())).thenReturn(List.of(saved1, saved2));
+            when(studentAbsenceRepository.findByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE))
+                    .thenReturn(List.of(saved1, saved2));
+
+            final List<StudentAbsence> result = studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, null, DATE);
+
+            assertThat(result).hasSize(2);
+            verify(scheduleRepository).findSubjectIdsByClassIdAndDay(CLASS_ID, dayOfWeek);
+            verify(studentAbsenceRepository).saveAll(anyList());
+        }
+
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.service.teachernotebook.StudentAbsenceServiceImplTest#classNotFoundSetups")
+        void when_class_not_exists_expect_throw_class_not_found_exception(Consumer<StudentAbsenceServiceImplTest> setup) {
+            setup.accept(StudentAbsenceServiceImplTest.this);
+
+            final ThrowingCallable call = () -> StudentAbsenceServiceImplTest.this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE);
+
+            assertThatThrownBy(call).isInstanceOf(ClassNotFoundException.class);
+        }
+
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.service.teachernotebook.StudentAbsenceServiceImplTest#classForbiddenSetups")
+        void when_class_not_owned_by_teacher_expect_throw_class_forbidden_exception(Consumer<StudentAbsenceServiceImplTest> setup) {
+            setup.accept(StudentAbsenceServiceImplTest.this);
+
+            final ThrowingCallable call = () -> StudentAbsenceServiceImplTest.this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE);
+
+            assertThatThrownBy(call).isInstanceOf(ClassForbiddenException.class);
+        }
+
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.service.teachernotebook.StudentAbsenceServiceImplTest#studentValidationSetups")
+        void when_student_is_invalid_expect_throw_validation_exception(Consumer<StudentAbsenceServiceImplTest> setup) {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(clazz));
+
+            setup.accept(StudentAbsenceServiceImplTest.this);
+
+            final ThrowingCallable call = () -> StudentAbsenceServiceImplTest.this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE);
+            final StudentAbsenceValidationException exception = catchThrowableOfType(call, StudentAbsenceValidationException.class);
+
+            assertThat(exception.getErrors()).isNotEmpty();
+            assertThat(exception.getErrors().get(0).getParam()).isEqualTo("studentId");
+        }
+
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.service.teachernotebook.StudentAbsenceServiceImplTest#subjectValidationSetups")
+        void when_subject_is_invalid_expect_throw_validation_exception(Consumer<StudentAbsenceServiceImplTest> setup) {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(clazz));
+
+            final Student student = Student.builder().id(STUDENT_ID).build();
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(student));
+
+            final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
+            when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
+
+            setup.accept(StudentAbsenceServiceImplTest.this);
+
+            final ThrowingCallable call = () -> StudentAbsenceServiceImplTest.this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE);
+            final StudentAbsenceValidationException exception = catchThrowableOfType(call, StudentAbsenceValidationException.class);
+
+            assertThat(exception.getErrors()).isNotEmpty();
+            assertThat(exception.getErrors().get(0).getParam()).isEqualTo("subjectId");
+        }
+
+        @Test
+        void when_no_subjects_scheduled_on_day_expect_throw_validation_exception() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(clazz));
+
+            final Student student = Student.builder().id(STUDENT_ID).build();
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(student));
+
+            final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
+            when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
+
+            when(scheduleRepository.findSubjectIdsByClassIdAndDay(CLASS_ID, DATE.getDayOfWeek().getValue()))
+                    .thenReturn(List.of());
+
+            final ThrowingCallable call = () -> studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, null, DATE);
+            final StudentAbsenceValidationException exception = catchThrowableOfType(call, StudentAbsenceValidationException.class);
+
+            assertThat(exception.getErrors()).isNotEmpty();
+            assertThat(exception.getErrors().get(0).getParam()).isEqualTo("date");
+        }
+
+        @Test
+        void when_absences_already_exist_expect_skip_duplicates() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(clazz));
+
+            final Student student = Student.builder().id(STUDENT_ID).build();
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(student));
+
+            final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
+            when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
+
+            final int dayOfWeek = DATE.getDayOfWeek().getValue();
+            when(scheduleRepository.findSubjectIdsByClassIdAndDay(CLASS_ID, dayOfWeek)).thenReturn(List.of(30, 31));
+            when(studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID, 30, DATE))
+                    .thenReturn(true);
+            when(studentAbsenceRepository.existsByStudentClassIdAndSubjectIdAndDate(STUDENT_CLASS_ID, 31, DATE))
+                    .thenReturn(true);
+
+            final StudentAbsence existing = StudentAbsence.builder().id(ABSENCE_ID).studentClassId(STUDENT_CLASS_ID)
+                    .studentId(STUDENT_ID).classId(CLASS_ID).subjectId(30).absenceDate(DATE).build();
+            when(studentAbsenceRepository.findByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE))
+                    .thenReturn(List.of(existing));
+
+            final List<StudentAbsence> result = studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, null, DATE);
+
+            assertThat(result).isNotEmpty();
+            verify(studentAbsenceRepository, never()).saveAll(anyList());
+        }
+    }
+
+    @Nested
+    class GetAbsences {
+
+        @Test
+        void when_student_id_provided_expect_return_absences() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(clazz));
+
+            final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
+            when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
+
+            final StudentAbsence absence = StudentAbsence.builder().id(ABSENCE_ID).studentClassId(STUDENT_CLASS_ID)
+                    .studentId(STUDENT_ID).classId(CLASS_ID).build();
+            when(studentAbsenceRepository.findByStudentClassId(STUDENT_CLASS_ID)).thenReturn(List.of(absence));
+
+            final List<StudentAbsence> result = studentAbsenceService.getAbsences(CLASS_ID, STUDENT_ID, null);
+
+            assertThat(result).hasSize(1);
+            verify(studentAbsenceRepository).findByStudentClassId(STUDENT_CLASS_ID);
+        }
+
+        @Test
+        void when_date_provided_expect_return_absences() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(clazz));
+
+            final StudentAbsence absence = StudentAbsence.builder().id(ABSENCE_ID).classId(CLASS_ID).absenceDate(DATE).build();
+            when(studentAbsenceRepository.findByClassIdAndDate(CLASS_ID, DATE)).thenReturn(List.of(absence));
+
+            final List<StudentAbsence> result = studentAbsenceService.getAbsences(CLASS_ID, null, DATE);
+
+            assertThat(result).hasSize(1);
+            verify(studentAbsenceRepository).findByClassIdAndDate(CLASS_ID, DATE);
+        }
+
+        @Test
+        void when_both_student_id_and_date_provided_expect_return_absences() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(clazz));
+
+            final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
+            when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
+
+            final StudentAbsence absence = StudentAbsence.builder().id(ABSENCE_ID).studentClassId(STUDENT_CLASS_ID)
+                    .studentId(STUDENT_ID).classId(CLASS_ID).absenceDate(DATE).build();
+            when(studentAbsenceRepository.findByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE)).thenReturn(List.of(absence));
+
+            final List<StudentAbsence> result = studentAbsenceService.getAbsences(CLASS_ID, STUDENT_ID, DATE);
+
+            assertThat(result).hasSize(1);
+            verify(studentAbsenceRepository).findByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE);
+        }
+
+        @Test
+        void when_neither_student_id_nor_date_provided_expect_return_all_absences() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(clazz));
+
+            final List<StudentAbsence> expected = List.of(StudentAbsence.builder().id(1).build());
+            when(studentAbsenceRepository.findByClassId(CLASS_ID)).thenReturn(expected);
+
+            final List<StudentAbsence> result = studentAbsenceService.getAbsences(CLASS_ID, null, null);
+
+            assertThat(result).isEqualTo(expected);
+            verify(studentAbsenceRepository).findByClassId(CLASS_ID);
+        }
+
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.service.teachernotebook.StudentAbsenceServiceImplTest#classNotFoundSetups")
+        void when_class_not_exists_expect_throw_class_not_found_exception(Consumer<StudentAbsenceServiceImplTest> setup) {
+            setup.accept(StudentAbsenceServiceImplTest.this);
+
+            final ThrowingCallable call = () -> StudentAbsenceServiceImplTest.this.studentAbsenceService.getAbsences(CLASS_ID, STUDENT_ID, DATE);
+
+            assertThatThrownBy(call).isInstanceOf(ClassNotFoundException.class);
+        }
+
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.service.teachernotebook.StudentAbsenceServiceImplTest#classForbiddenSetups")
+        void when_class_not_owned_by_teacher_expect_throw_class_forbidden_exception(Consumer<StudentAbsenceServiceImplTest> setup) {
+            setup.accept(StudentAbsenceServiceImplTest.this);
+
+            final ThrowingCallable call = () -> StudentAbsenceServiceImplTest.this.studentAbsenceService.getAbsences(CLASS_ID, STUDENT_ID, DATE);
+
+            assertThatThrownBy(call).isInstanceOf(ClassForbiddenException.class);
+        }
+    }
+
+    @Nested
+    class DeleteAbsence {
+
+        @Test
+        void when_absence_exists_and_owned_by_teacher_expect_delete_absence() {
+            final StudentAbsence absence = StudentAbsence.builder().id(ABSENCE_ID).build();
+            when(studentAbsenceRepository.findByIdAndTeacherId(ABSENCE_ID, TEACHER_ID)).thenReturn(Optional.of(absence));
+
+            studentAbsenceService.deleteAbsence(ABSENCE_ID);
+
+            verify(studentAbsenceRepository).deleteById(ABSENCE_ID);
+        }
+
+        @Test
+        void when_absence_not_found_expect_throw_not_found_exception() {
+            when(studentAbsenceRepository.findByIdAndTeacherId(ABSENCE_ID, TEACHER_ID)).thenReturn(Optional.empty());
+
+            final ThrowingCallable call = () -> studentAbsenceService.deleteAbsence(ABSENCE_ID);
+
+            assertThatThrownBy(call).isInstanceOf(StudentAbsenceNotFoundException.class);
+        }
+    }
+
+    @Nested
+    class DeleteAbsencesByStudentAndDate {
+
+        @Test
+        void when_class_owned_by_teacher_expect_delete_absences() {
+            final Class clazz = Class.builder().id(CLASS_ID).build();
+            when(classRepository.findById(CLASS_ID)).thenReturn(Optional.of(clazz));
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(clazz));
+
+            final StudentClass sc = StudentClass.builder().id(STUDENT_CLASS_ID).classId(CLASS_ID).studentId(STUDENT_ID).build();
+            when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID)).thenReturn(Optional.of(sc));
+
+            studentAbsenceService.deleteAbsencesByStudentAndDate(CLASS_ID, STUDENT_ID, DATE);
+
+            verify(studentAbsenceRepository).deleteByStudentClassIdAndDate(STUDENT_CLASS_ID, DATE);
+        }
+
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.service.teachernotebook.StudentAbsenceServiceImplTest#classNotFoundSetups")
+        void when_class_not_exists_expect_throw_class_not_found_exception(Consumer<StudentAbsenceServiceImplTest> setup) {
+            setup.accept(StudentAbsenceServiceImplTest.this);
+
+            final ThrowingCallable call = () -> StudentAbsenceServiceImplTest.this.studentAbsenceService.deleteAbsencesByStudentAndDate(CLASS_ID, STUDENT_ID, DATE);
+
+            assertThatThrownBy(call).isInstanceOf(ClassNotFoundException.class);
+        }
+
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.service.teachernotebook.StudentAbsenceServiceImplTest#classForbiddenSetups")
+        void when_class_not_owned_by_teacher_expect_throw_class_forbidden_exception(Consumer<StudentAbsenceServiceImplTest> setup) {
+            setup.accept(StudentAbsenceServiceImplTest.this);
+
+            final ThrowingCallable call = () -> StudentAbsenceServiceImplTest.this.studentAbsenceService.deleteAbsencesByStudentAndDate(CLASS_ID, STUDENT_ID, DATE);
+
+            assertThatThrownBy(call).isInstanceOf(ClassForbiddenException.class);
+        }
+    }
+
+    static Stream<Consumer<StudentAbsenceServiceImplTest>> classNotFoundSetups() {
+        return Stream.of(
+                t -> when(t.classRepository.findById(CLASS_ID)).thenReturn(Optional.empty())
+        );
+    }
+
+    static Stream<Consumer<StudentAbsenceServiceImplTest>> classForbiddenSetups() {
+        return Stream.of(
+                t -> {
+                    when(t.classRepository.findById(CLASS_ID))
+                            .thenReturn(Optional.of(Class.builder().id(CLASS_ID).build()));
+                    when(t.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                            .thenReturn(Optional.empty());
+                }
+        );
+    }
+
+    static Stream<Consumer<StudentAbsenceServiceImplTest>> studentValidationSetups() {
+        return Stream.of(
+                t -> when(t.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
+                        .thenReturn(Optional.empty()),
+                t -> {
+                    when(t.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
+                            .thenReturn(Optional.of(Student.builder().id(STUDENT_ID).build()));
+                    when(t.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID))
+                            .thenReturn(Optional.empty());
+                },
+                t -> {
+                    when(t.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
+                            .thenReturn(Optional.of(Student.builder().id(STUDENT_ID).build()));
+                    when(t.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID))
+                            .thenReturn(Optional.of(StudentClass.builder().classId(CLASS_ID).studentId(STUDENT_ID)
+                                    .deletionDate(LocalDate.now()).build()));
+                }
+        );
+    }
+
+    static Stream<Consumer<StudentAbsenceServiceImplTest>> subjectValidationSetups() {
+        return Stream.of(
+                t -> when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
+                        .thenReturn(Optional.empty()),
+                t -> {
+                    when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
+                            .thenReturn(Optional.of(Subject.builder().id(SUBJECT_ID).build()));
+                    when(t.subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID))
+                            .thenReturn(false);
+                },
+                t -> {
+                    when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
+                            .thenReturn(Optional.of(Subject.builder().id(SUBJECT_ID).build()));
+                    when(t.subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID))
+                            .thenReturn(true);
+                    when(t.scheduleRepository.existsByClassIdAndSubjectIdAndDay(CLASS_ID, SUBJECT_ID,
+                            DATE.getDayOfWeek().getValue())).thenReturn(false);
+                }
+        );
+    }
 }
+

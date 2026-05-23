@@ -1,9 +1,15 @@
 package org.web.codefm.api.exception;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
@@ -22,235 +28,186 @@ import org.web.codefm.model.ErrorResponseDTO;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 @ExtendWith(MockitoExtension.class)
 class RestExceptionHandlerTest {
-    @InjectMocks
-    private RestExceptionHandler restExceptionHandler;
-    @Mock
-    private ExceptionStatusEnum exceptionStatusEnum; // This mock is not used directly in the current RestExceptionHandler logic
+
     @Mock
     private ErrorResponseMapper errorResponseMapper;
-    // MessageSource is no longer directly used by RestExceptionHandler for error message translation
-    // @Mock
-    // private MessageSource messageSource;
+
+    private RestExceptionHandler restExceptionHandler;
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        // RestExceptionHandler constructor no longer takes MessageSource
-        restExceptionHandler = new RestExceptionHandler(errorResponseMapper);
+    void beforeEach() {
+        this.restExceptionHandler = new RestExceptionHandler(this.errorResponseMapper);
     }
 
-    @Test
-    void testMapperExceptionWithUserNotFound() {
-        // Arrange
-        UserNotFound exception = new UserNotFound(ErrorCodeEnum.RESOURCE_NOT_FOUND, "User not found");
-        ErrorResponseDTO expectedErrorDTO = new ErrorResponseDTO();
-        expectedErrorDTO.setDetail("User not found");
-        expectedErrorDTO.setCode(ErrorCodeEnum.RESOURCE_NOT_FOUND.getCode());
-        expectedErrorDTO.setDescription(ErrorCodeEnum.RESOURCE_NOT_FOUND.getDescription());
+    @Nested
+    class MapperException {
 
-        try (MockedStatic<ExceptionStatusEnum> statusEnumMock = mockStatic(ExceptionStatusEnum.class)) {
-            // Mock static method call for ExceptionStatusEnum
-            ExceptionStatusEnum mockEnum = org.mockito.Mockito.mock(ExceptionStatusEnum.class);
-            statusEnumMock.when(() -> ExceptionStatusEnum.getExceptionEnum(UserNotFound.class)).thenReturn(mockEnum);
-            when(mockEnum.getStatus()).thenReturn(HttpStatus.NOT_FOUND);
+        @Test
+        void when_user_not_found_is_mapped_expect_not_found_response() {
+            final UserNotFound exception = new UserNotFound(ErrorCodeEnum.RESOURCE_NOT_FOUND, "User not found");
+            final ErrorResponseDTO expectedErrorDTO = new ErrorResponseDTO();
+            expectedErrorDTO.setDetail("User not found");
+            expectedErrorDTO.setCode(ErrorCodeEnum.RESOURCE_NOT_FOUND.getCode());
+            expectedErrorDTO.setDescription(ErrorCodeEnum.RESOURCE_NOT_FOUND.getDescription());
 
-            // Mock the injected ErrorResponseMapper
-            // For ErrorMessageBaseException, the detail comes directly from the exception, not MessageSource
-            when(errorResponseMapper.toDTO(any())).thenReturn(expectedErrorDTO); // Updated toDTO call
+            try (MockedStatic<ExceptionStatusEnum> statusEnumMock = mockStatic(ExceptionStatusEnum.class)) {
+                final ExceptionStatusEnum mockEnum = Mockito.mock(ExceptionStatusEnum.class);
+                statusEnumMock.when(() -> ExceptionStatusEnum.getExceptionEnum(UserNotFound.class)).thenReturn(mockEnum);
+                when(mockEnum.getStatus()).thenReturn(HttpStatus.NOT_FOUND);
+                when(RestExceptionHandlerTest.this.errorResponseMapper.toDTO(any())).thenReturn(expectedErrorDTO);
 
-            // Act
-            // mapperException no longer takes acceptLanguage
-            ResponseEntity<ErrorResponseDTO> response = restExceptionHandler.mapperException(exception);
+                final ResponseEntity<ErrorResponseDTO> response = RestExceptionHandlerTest.this.restExceptionHandler.mapperException(exception);
 
-            // Verify that toDTO was called
-            Mockito.verify(errorResponseMapper).toDTO(any()); // Updated verify call
+                verify(RestExceptionHandlerTest.this.errorResponseMapper).toDTO(any());
+                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                assertThat(response.getBody().getDetail()).isEqualTo("User not found");
+                assertThat(response.getBody().getCode()).isEqualTo(ErrorCodeEnum.RESOURCE_NOT_FOUND.getCode());
+                assertThat(response.getBody().getDescription()).isEqualTo(ErrorCodeEnum.RESOURCE_NOT_FOUND.getDescription());
+            }
+        }
 
-            // Assert
-            assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-            assertEquals("User not found", response.getBody().getDetail());
-            assertEquals(ErrorCodeEnum.RESOURCE_NOT_FOUND.getCode(), response.getBody().getCode());
-            assertEquals(ErrorCodeEnum.RESOURCE_NOT_FOUND.getDescription(), response.getBody().getDescription());
+        @ParameterizedTest
+        @MethodSource("schoolValidationResponses")
+        void when_school_validation_exception_is_mapped_expect_bad_request_response(final String firstReason,
+                                                                                    final String secondReason) {
+            final List<ErrorMessage> errorMessages = Arrays.asList(
+                    new ErrorMessage("name", firstReason),
+                    new ErrorMessage("tlf", secondReason)
+            );
+            final SchoolValidationException exception = new SchoolValidationException(errorMessages);
+            final ErrorResponseDTO expectedErrorDTO = new ErrorResponseDTO();
+            expectedErrorDTO.setCode(ErrorCodeEnum.VALIDATION_ERROR.getCode());
+            expectedErrorDTO.setDescription(ErrorCodeEnum.VALIDATION_ERROR.getDescription());
+            expectedErrorDTO.setDetails(Arrays.asList(
+                    new DetailDTO().field("name").reason(firstReason),
+                    new DetailDTO().field("tlf").reason(secondReason)
+            ));
+
+            try (MockedStatic<ExceptionStatusEnum> statusEnumMock = mockStatic(ExceptionStatusEnum.class)) {
+                final ExceptionStatusEnum mockEnum = Mockito.mock(ExceptionStatusEnum.class);
+                statusEnumMock.when(() -> ExceptionStatusEnum.getExceptionEnum(SchoolValidationException.class)).thenReturn(mockEnum);
+                when(mockEnum.getStatus()).thenReturn(HttpStatus.BAD_REQUEST);
+                when(RestExceptionHandlerTest.this.errorResponseMapper.toDTO(any())).thenReturn(expectedErrorDTO);
+
+                final ResponseEntity<ErrorResponseDTO> response = RestExceptionHandlerTest.this.restExceptionHandler.mapperException(exception);
+
+                verify(RestExceptionHandlerTest.this.errorResponseMapper).toDTO(any());
+                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+                assertThat(response.getBody().getCode()).isEqualTo(ErrorCodeEnum.VALIDATION_ERROR.getCode());
+                assertThat(response.getBody().getDescription()).isEqualTo(ErrorCodeEnum.VALIDATION_ERROR.getDescription());
+                assertThat(response.getBody().getDetails()).hasSize(2);
+                assertThat(response.getBody().getDetails().get(0).getField()).isEqualTo("name");
+                assertThat(response.getBody().getDetails().get(0).getReason()).isEqualTo(firstReason);
+                assertThat(response.getBody().getDetails().get(1).getField()).isEqualTo("tlf");
+                assertThat(response.getBody().getDetails().get(1).getReason()).isEqualTo(secondReason);
+            }
+        }
+
+        private static Stream<Arguments> schoolValidationResponses() {
+            return Stream.of(
+                    Arguments.of("School name is required.", "Telephone number must be 9 digits."),
+                    Arguments.of("El nombre del colegio es obligatorio.", "El número de teléfono debe tener 9 dígitos.")
+            );
         }
     }
 
-    @Test
-    void testMapperExceptionWithSchoolValidationException_enLocale() {
-        // Arrange
-        List<ErrorMessage> errorMessages = Arrays.asList(
-                // ErrorMessage now contains the pre-translated message
-                new ErrorMessage("name", "School name is required."),
-                new ErrorMessage("tlf", "Telephone number must be 9 digits.")
-        );
-        SchoolValidationException exception = new SchoolValidationException(errorMessages);
+    @Nested
+    class MapperGenericException {
 
-        ErrorResponseDTO expectedErrorDTO = new ErrorResponseDTO();
-        expectedErrorDTO.setCode(ErrorCodeEnum.VALIDATION_ERROR.getCode());
-        expectedErrorDTO.setDescription(ErrorCodeEnum.VALIDATION_ERROR.getDescription());
-        expectedErrorDTO.setDetails(Arrays.asList(
-                new DetailDTO().field("name").reason("School name is required."),
-                new DetailDTO().field("tlf").reason("Telephone number must be 9 digits.")
-        ));
+        @Test
+        void when_access_is_denied_expect_forbidden_response() {
+            final AccessDeniedException accessDeniedException = new AccessDeniedException("Acceso denegado");
 
-        try (MockedStatic<ExceptionStatusEnum> statusEnumMock = mockStatic(ExceptionStatusEnum.class)) {
-            // Mock static method call for ExceptionStatusEnum
-            ExceptionStatusEnum mockEnum = org.mockito.Mockito.mock(ExceptionStatusEnum.class);
-            statusEnumMock.when(() -> ExceptionStatusEnum.getExceptionEnum(SchoolValidationException.class)).thenReturn(mockEnum);
-            when(mockEnum.getStatus()).thenReturn(HttpStatus.BAD_REQUEST);
+            final ResponseEntity<ErrorResponseDTO> response = RestExceptionHandlerTest.this.restExceptionHandler.mapperGenericException(accessDeniedException);
 
-            // Mock the injected ErrorResponseMapper to return the expected DTO with translated messages
-            when(errorResponseMapper.toDTO(any())).thenReturn(expectedErrorDTO); // Updated toDTO call
+            assertThat(response.getStatusCode()).isEqualTo(FORBIDDEN);
+            assertThat(response.getBody().getDetail()).isEqualTo("Acceso denegado");
+            assertThat(response.getBody().getCode()).isEqualTo("403");
+            assertThat(response.getBody().getDescription()).isEqualTo("FORBIDDEN");
+        }
 
-            // Act
-            // mapperException no longer takes acceptLanguage
-            ResponseEntity<ErrorResponseDTO> response = restExceptionHandler.mapperException(exception);
+        @Test
+        void when_generic_exception_is_mapped_expect_internal_server_error_response() {
+            final Exception genericException = new Exception("Error genérico");
 
-            // Verify that toDTO was called
-            Mockito.verify(errorResponseMapper).toDTO(any()); // Updated verify call
+            final ResponseEntity<ErrorResponseDTO> response = RestExceptionHandlerTest.this.restExceptionHandler.mapperGenericException(genericException);
 
-            // Assert
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-            assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getCode(), response.getBody().getCode());
-            assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getDescription(), response.getBody().getDescription());
-            assertEquals(2, response.getBody().getDetails().size());
-            assertEquals("name", response.getBody().getDetails().get(0).getField());
-            assertEquals("School name is required.", response.getBody().getDetails().get(0).getReason());
-            assertEquals("tlf", response.getBody().getDetails().get(1).getField());
-            assertEquals("Telephone number must be 9 digits.", response.getBody().getDetails().get(1).getReason());
+            assertThat(response.getStatusCode()).isEqualTo(INTERNAL_SERVER_ERROR);
+            assertThat(response.getBody().getDetail()).isEqualTo("Error genérico");
+            assertThat(response.getBody().getCode()).isEqualTo("1000");
+            assertThat(response.getBody().getDescription()).isEqualTo("INTERNAL_SERVER_ERROR");
         }
     }
 
-    @Test
-    void testMapperExceptionWithSchoolValidationException_esLocale() {
-        // Arrange
-        List<ErrorMessage> errorMessages = Arrays.asList(
-                // ErrorMessage now contains the pre-translated message
-                new ErrorMessage("name", "El nombre del colegio es obligatorio."),
-                new ErrorMessage("tlf", "El número de teléfono debe tener 9 dígitos.")
-        );
-        SchoolValidationException exception = new SchoolValidationException(errorMessages);
+    @Nested
+    class HandleMethodArgumentNotValid {
 
-        ErrorResponseDTO expectedErrorDTO = new ErrorResponseDTO();
-        expectedErrorDTO.setCode(ErrorCodeEnum.VALIDATION_ERROR.getCode());
-        expectedErrorDTO.setDescription(ErrorCodeEnum.VALIDATION_ERROR.getDescription());
-        expectedErrorDTO.setDetails(Arrays.asList(
-                new DetailDTO().field("name").reason("El nombre del colegio es obligatorio."),
-                new DetailDTO().field("tlf").reason("El número de teléfono debe tener 9 dígitos.")
-        ));
+        @Test
+        void when_single_field_error_exists_expect_bad_request_response() throws NoSuchMethodException {
+            final BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "request");
+            bindingResult.addError(new FieldError("request", "name", "must not be blank"));
 
-        try (MockedStatic<ExceptionStatusEnum> statusEnumMock = mockStatic(ExceptionStatusEnum.class)) {
-            // Mock static method call for ExceptionStatusEnum
-            ExceptionStatusEnum mockEnum = org.mockito.Mockito.mock(ExceptionStatusEnum.class);
-            statusEnumMock.when(() -> ExceptionStatusEnum.getExceptionEnum(SchoolValidationException.class)).thenReturn(mockEnum);
-            when(mockEnum.getStatus()).thenReturn(HttpStatus.BAD_REQUEST);
+            final ResponseEntity<ErrorResponseDTO> response = RestExceptionHandlerTest.this.restExceptionHandler.handleMethodArgumentNotValid(
+                    buildException(bindingResult));
 
-            // Mock the injected ErrorResponseMapper to return the expected DTO with translated messages
-            when(errorResponseMapper.toDTO(any())).thenReturn(expectedErrorDTO); // Updated toDTO call
-
-            // Act
-            // mapperException no longer takes acceptLanguage
-            ResponseEntity<ErrorResponseDTO> response = restExceptionHandler.mapperException(exception);
-
-            // Verify that toDTO was called
-            Mockito.verify(errorResponseMapper).toDTO(any()); // Updated verify call
-
-            // Assert
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-            assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getCode(), response.getBody().getCode());
-            assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getDescription(), response.getBody().getDescription());
-            assertEquals(2, response.getBody().getDetails().size());
-            assertEquals("name", response.getBody().getDetails().get(0).getField());
-            assertEquals("El nombre del colegio es obligatorio.", response.getBody().getDetails().get(0).getReason());
-            assertEquals("tlf", response.getBody().getDetails().get(1).getField());
-            assertEquals("El número de teléfono debe tener 9 dígitos.", response.getBody().getDetails().get(1).getReason());
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().getCode()).isEqualTo(ErrorCodeEnum.VALIDATION_ERROR.getCode());
+            assertThat(response.getBody().getDescription()).isEqualTo(ErrorCodeEnum.VALIDATION_ERROR.getDescription());
+            assertThat(response.getBody().getDetails()).hasSize(1);
+            assertThat(response.getBody().getDetails().get(0).getField()).isEqualTo("name");
+            assertThat(response.getBody().getDetails().get(0).getReason()).isEqualTo("must not be blank");
         }
-    }
 
-    @Test
-    void testMapperAccessDeniedException() {
-        AccessDeniedException accessDeniedException = new AccessDeniedException("Acceso denegado");
-        ResponseEntity<ErrorResponseDTO> response = restExceptionHandler.mapperGenericException(accessDeniedException);
-        assertEquals(FORBIDDEN, response.getStatusCode());
-        assertEquals("Acceso denegado", response.getBody().getDetail());
-        assertEquals("403", response.getBody().getCode());
-        assertEquals("FORBIDDEN", response.getBody().getDescription());
-    }
+        @Test
+        void when_multiple_field_errors_exist_expect_bad_request_response() throws NoSuchMethodException {
+            final BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "request");
+            bindingResult.addError(new FieldError("request", "name", "must not be blank"));
+            bindingResult.addError(new FieldError("request", "rubricId", "must not be null"));
+            bindingResult.addError(new FieldError("request", "gradeStart", "must be between 0 and 10"));
 
-    @Test
-    void testMapperGenericException() {
-        Exception genericException = new Exception("Error genérico");
-        ResponseEntity<ErrorResponseDTO> response = restExceptionHandler.mapperGenericException(genericException);
-        assertEquals(INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertEquals("Error genérico", response.getBody().getDetail());
-        assertEquals("1000", response.getBody().getCode());
-        assertEquals("INTERNAL_SERVER_ERROR", response.getBody().getDescription());
-    }
+            final ResponseEntity<ErrorResponseDTO> response = RestExceptionHandlerTest.this.restExceptionHandler.handleMethodArgumentNotValid(
+                    buildException(bindingResult));
 
-    @Test
-    void handleMethodArgumentNotValid_shouldReturnBadRequest_whenSingleFieldError() throws NoSuchMethodException {
-        final BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "request");
-        bindingResult.addError(new FieldError("request", "name", "must not be blank"));
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().getCode()).isEqualTo(ErrorCodeEnum.VALIDATION_ERROR.getCode());
+            assertThat(response.getBody().getDetails()).hasSize(3);
+            assertThat(response.getBody().getDetails().get(0).getField()).isEqualTo("name");
+            assertThat(response.getBody().getDetails().get(0).getReason()).isEqualTo("must not be blank");
+            assertThat(response.getBody().getDetails().get(1).getField()).isEqualTo("rubricId");
+            assertThat(response.getBody().getDetails().get(1).getReason()).isEqualTo("must not be null");
+            assertThat(response.getBody().getDetails().get(2).getField()).isEqualTo("gradeStart");
+            assertThat(response.getBody().getDetails().get(2).getReason()).isEqualTo("must be between 0 and 10");
+        }
 
-        final MethodParameter methodParameter = new MethodParameter(
-                RestExceptionHandler.class.getDeclaredMethod("handleMethodArgumentNotValid", MethodArgumentNotValidException.class), -1);
-        final MethodArgumentNotValidException ex = new MethodArgumentNotValidException(methodParameter, bindingResult);
+        @Test
+        void when_no_field_errors_exist_expect_empty_details() throws NoSuchMethodException {
+            final BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "request");
 
-        final ResponseEntity<ErrorResponseDTO> response = restExceptionHandler.handleMethodArgumentNotValid(ex);
+            final ResponseEntity<ErrorResponseDTO> response = RestExceptionHandlerTest.this.restExceptionHandler.handleMethodArgumentNotValid(
+                    buildException(bindingResult));
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getCode(), response.getBody().getCode());
-        assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getDescription(), response.getBody().getDescription());
-        assertEquals(1, response.getBody().getDetails().size());
-        assertEquals("name", response.getBody().getDetails().get(0).getField());
-        assertEquals("must not be blank", response.getBody().getDetails().get(0).getReason());
-    }
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+            assertThat(response.getBody().getCode()).isEqualTo(ErrorCodeEnum.VALIDATION_ERROR.getCode());
+            assertThat(response.getBody().getDescription()).isEqualTo(ErrorCodeEnum.VALIDATION_ERROR.getDescription());
+            assertThat(response.getBody().getDetails()).isEmpty();
+        }
 
-    @Test
-    void handleMethodArgumentNotValid_shouldReturnBadRequest_whenMultipleFieldErrors() throws NoSuchMethodException {
-        final BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "request");
-        bindingResult.addError(new FieldError("request", "name", "must not be blank"));
-        bindingResult.addError(new FieldError("request", "rubricId", "must not be null"));
-        bindingResult.addError(new FieldError("request", "gradeStart", "must be between 0 and 10"));
-
-        final MethodParameter methodParameter = new MethodParameter(
-                RestExceptionHandler.class.getDeclaredMethod("handleMethodArgumentNotValid", MethodArgumentNotValidException.class), -1);
-        final MethodArgumentNotValidException ex = new MethodArgumentNotValidException(methodParameter, bindingResult);
-
-        final ResponseEntity<ErrorResponseDTO> response = restExceptionHandler.handleMethodArgumentNotValid(ex);
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getCode(), response.getBody().getCode());
-        assertEquals(3, response.getBody().getDetails().size());
-        assertEquals("name", response.getBody().getDetails().get(0).getField());
-        assertEquals("must not be blank", response.getBody().getDetails().get(0).getReason());
-        assertEquals("rubricId", response.getBody().getDetails().get(1).getField());
-        assertEquals("must not be null", response.getBody().getDetails().get(1).getReason());
-        assertEquals("gradeStart", response.getBody().getDetails().get(2).getField());
-        assertEquals("must be between 0 and 10", response.getBody().getDetails().get(2).getReason());
-    }
-
-    @Test
-    void handleMethodArgumentNotValid_shouldReturnEmptyDetails_whenNoFieldErrors() throws NoSuchMethodException {
-        final BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "request");
-
-        final MethodParameter methodParameter = new MethodParameter(
-                RestExceptionHandler.class.getDeclaredMethod("handleMethodArgumentNotValid", MethodArgumentNotValidException.class), -1);
-        final MethodArgumentNotValidException ex = new MethodArgumentNotValidException(methodParameter, bindingResult);
-
-        final ResponseEntity<ErrorResponseDTO> response = restExceptionHandler.handleMethodArgumentNotValid(ex);
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-        assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getCode(), response.getBody().getCode());
-        assertEquals(ErrorCodeEnum.VALIDATION_ERROR.getDescription(), response.getBody().getDescription());
-        assertEquals(0, response.getBody().getDetails().size());
+        private MethodArgumentNotValidException buildException(final BeanPropertyBindingResult bindingResult)
+                throws NoSuchMethodException {
+            final MethodParameter methodParameter = new MethodParameter(
+                    RestExceptionHandler.class.getDeclaredMethod("handleMethodArgumentNotValid", MethodArgumentNotValidException.class),
+                    -1);
+            return new MethodArgumentNotValidException(methodParameter, bindingResult);
+        }
     }
 }

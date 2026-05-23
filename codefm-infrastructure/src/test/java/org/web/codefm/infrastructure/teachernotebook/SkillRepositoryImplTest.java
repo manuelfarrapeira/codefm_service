@@ -1,8 +1,10 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Skill;
@@ -11,16 +13,18 @@ import org.web.codefm.infrastructure.jpa.teachernotebook.SkillJPARepository;
 import org.web.codefm.infrastructure.mapper.SkillMapper;
 
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SkillRepositoryImplTest {
+
+    private SkillRepositoryImpl skillRepository;
 
     @Mock
     private SkillJPARepository skillJPARepository;
@@ -28,141 +32,166 @@ class SkillRepositoryImplTest {
     @Mock
     private SkillMapper skillMapper;
 
-    @InjectMocks
-    private SkillRepositoryImpl skillRepository;
-
-    @Test
-    void findByTeacherId_shouldReturnSkillsWhenTeacherHasSkills() {
-        final Integer teacherId = 1;
-        final SkillEntity entity1 = new SkillEntity(1, "Skill One", "Critical thinking", teacherId, null);
-        final SkillEntity entity2 = new SkillEntity(2, "Skill Two", "Problem solving", teacherId, null);
-        final List<SkillEntity> entities = Arrays.asList(entity1, entity2);
-
-        final Skill skill1 = Skill.builder().id(1).title("Skill One").description("Critical thinking").teacherId(teacherId).build();
-        final Skill skill2 = Skill.builder().id(2).title("Skill Two").description("Problem solving").teacherId(teacherId).build();
-        final List<Skill> expectedSkills = Arrays.asList(skill1, skill2);
-
-        when(skillJPARepository.findByTeacherId(teacherId)).thenReturn(entities);
-        when(skillMapper.toModelList(entities)).thenReturn(expectedSkills);
-
-        final List<Skill> result = skillRepository.findByTeacherId(teacherId);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        verify(skillJPARepository, times(1)).findByTeacherId(teacherId);
-        verify(skillMapper, times(1)).toModelList(entities);
+    @BeforeEach
+    void beforeEach() {
+        this.skillRepository = new SkillRepositoryImpl(this.skillJPARepository, this.skillMapper);
     }
 
-    @Test
-    void findByTeacherId_shouldReturnEmptyListWhenTeacherHasNoSkills() {
-        final Integer teacherId = 1;
-        when(skillJPARepository.findByTeacherId(teacherId)).thenReturn(Collections.emptyList());
-        when(skillMapper.toModelList(Collections.emptyList())).thenReturn(Collections.emptyList());
+    @Nested
+    class FindByTeacherId {
 
-        final List<Skill> result = skillRepository.findByTeacherId(teacherId);
+        @Test
+        void when_teacher_has_skills_expect_skills_returned() {
+            final Integer teacherId = 1;
+            final SkillEntity entity1 = new SkillEntity(1, "Skill One", "Critical thinking", teacherId, null);
+            final SkillEntity entity2 = new SkillEntity(2, "Skill Two", "Problem solving", teacherId, null);
+            final List<SkillEntity> entities = List.of(entity1, entity2);
+            final Skill skill1 = Skill.builder().id(1).title("Skill One").description("Critical thinking").teacherId(teacherId).build();
+            final Skill skill2 = Skill.builder().id(2).title("Skill Two").description("Problem solving").teacherId(teacherId).build();
+            final List<Skill> expectedSkills = List.of(skill1, skill2);
 
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+            when(SkillRepositoryImplTest.this.skillJPARepository.findByTeacherId(teacherId)).thenReturn(entities);
+            when(SkillRepositoryImplTest.this.skillMapper.toModelList(entities)).thenReturn(expectedSkills);
+
+            final List<Skill> result = SkillRepositoryImplTest.this.skillRepository.findByTeacherId(teacherId);
+
+            assertThat(result).isNotNull().hasSize(2);
+            verify(SkillRepositoryImplTest.this.skillJPARepository, times(1)).findByTeacherId(teacherId);
+            verify(SkillRepositoryImplTest.this.skillMapper, times(1)).toModelList(entities);
+        }
+
+        @Test
+        void when_teacher_has_no_skills_expect_empty_list_returned() {
+            final Integer teacherId = 1;
+
+            when(SkillRepositoryImplTest.this.skillJPARepository.findByTeacherId(teacherId)).thenReturn(Collections.emptyList());
+            when(SkillRepositoryImplTest.this.skillMapper.toModelList(Collections.emptyList())).thenReturn(Collections.emptyList());
+
+            final List<Skill> result = SkillRepositoryImplTest.this.skillRepository.findByTeacherId(teacherId);
+
+            assertThat(result).isNotNull().isEmpty();
+        }
     }
 
-    @Test
-    void save_shouldMapToEntityAndSaveAndMapBackToModel() {
-        final Skill skillToSave = Skill.builder().title("Teamwork").description("Teamwork skill").teacherId(1).build();
-        final SkillEntity skillEntity = new SkillEntity();
-        final SkillEntity savedEntity = new SkillEntity(1, "Teamwork", "Teamwork skill", 1, null);
-        final Skill savedSkill = Skill.builder().id(1).title("Teamwork").description("Teamwork skill").teacherId(1).build();
+    @Nested
+    class Save {
 
-        when(skillMapper.toEntity(skillToSave)).thenReturn(skillEntity);
-        when(skillJPARepository.save(skillEntity)).thenReturn(savedEntity);
-        when(skillMapper.toModel(savedEntity)).thenReturn(savedSkill);
+        @Test
+        void when_valid_skill_expect_skill_saved() {
+            final Skill skillToSave = Skill.builder().title("Teamwork").description("Teamwork skill").teacherId(1).build();
+            final SkillEntity skillEntity = new SkillEntity();
+            final SkillEntity savedEntity = new SkillEntity(1, "Teamwork", "Teamwork skill", 1, null);
+            final Skill savedSkill = Skill.builder().id(1).title("Teamwork").description("Teamwork skill").teacherId(1).build();
 
-        final Skill result = skillRepository.save(skillToSave);
+            when(SkillRepositoryImplTest.this.skillMapper.toEntity(skillToSave)).thenReturn(skillEntity);
+            when(SkillRepositoryImplTest.this.skillJPARepository.save(skillEntity)).thenReturn(savedEntity);
+            when(SkillRepositoryImplTest.this.skillMapper.toModel(savedEntity)).thenReturn(savedSkill);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals("Teamwork skill", result.getDescription());
+            final Skill result = SkillRepositoryImplTest.this.skillRepository.save(skillToSave);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            assertThat(result.getDescription()).isEqualTo("Teamwork skill");
+        }
     }
 
-    @Test
-    void findById_shouldReturnSkillWhenFoundAndNotDeleted() {
-        final Integer skillId = 1;
-        final SkillEntity skillEntity = new SkillEntity(skillId, "Creativity", "Creative thinking", 1, null);
-        final Skill expectedSkill = Skill.builder().id(skillId).title("Creativity").description("Creative thinking").teacherId(1).build();
+    @Nested
+    class FindById {
 
-        when(skillJPARepository.findByIdAndDeletionDateIsNull(skillId)).thenReturn(Optional.of(skillEntity));
-        when(skillMapper.toModel(skillEntity)).thenReturn(expectedSkill);
+        @Test
+        void when_skill_is_found_and_not_deleted_expect_skill_returned() {
+            final Integer skillId = 1;
+            final SkillEntity skillEntity = new SkillEntity(skillId, "Creativity", "Creative thinking", 1, null);
+            final Skill expectedSkill = Skill.builder().id(skillId).title("Creativity").description("Creative thinking").teacherId(1).build();
 
-        final Optional<Skill> result = skillRepository.findById(skillId);
+            when(SkillRepositoryImplTest.this.skillJPARepository.findByIdAndDeletionDateIsNull(skillId)).thenReturn(Optional.of(skillEntity));
+            when(SkillRepositoryImplTest.this.skillMapper.toModel(skillEntity)).thenReturn(expectedSkill);
 
-        assertTrue(result.isPresent());
-        assertEquals(expectedSkill, result.get());
+            final Optional<Skill> result = SkillRepositoryImplTest.this.skillRepository.findById(skillId);
+
+            assertThat(result).isPresent();
+            assertThat(result.get()).isEqualTo(expectedSkill);
+        }
+
+        @Test
+        void when_skill_is_not_found_expect_empty_optional_returned() {
+            final Integer skillId = 1;
+
+            when(SkillRepositoryImplTest.this.skillJPARepository.findByIdAndDeletionDateIsNull(skillId)).thenReturn(Optional.empty());
+
+            final Optional<Skill> result = SkillRepositoryImplTest.this.skillRepository.findById(skillId);
+
+            assertThat(result).isNotPresent();
+            verify(SkillRepositoryImplTest.this.skillMapper, never()).toModel(any(SkillEntity.class));
+        }
     }
 
-    @Test
-    void findById_shouldReturnEmptyWhenNotFound() {
-        final Integer skillId = 1;
-        when(skillJPARepository.findByIdAndDeletionDateIsNull(skillId)).thenReturn(Optional.empty());
+    @Nested
+    class FindByIdAndTeacherId {
 
-        final Optional<Skill> result = skillRepository.findById(skillId);
+        @Test
+        void when_skill_is_found_and_owned_by_teacher_expect_skill_returned() {
+            final Integer skillId = 1;
+            final Integer teacherId = 101;
+            final SkillEntity skillEntity = new SkillEntity(skillId, "Leadership", "Lead teams", teacherId, null);
+            final Skill expectedSkill = Skill.builder().id(skillId).title("Leadership").description("Lead teams").teacherId(teacherId).build();
 
-        assertFalse(result.isPresent());
-        verify(skillMapper, never()).toModel(any(SkillEntity.class));
+            when(SkillRepositoryImplTest.this.skillJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(skillId, teacherId)).thenReturn(Optional.of(skillEntity));
+            when(SkillRepositoryImplTest.this.skillMapper.toModel(skillEntity)).thenReturn(expectedSkill);
+
+            final Optional<Skill> result = SkillRepositoryImplTest.this.skillRepository.findByIdAndTeacherId(skillId, teacherId);
+
+            assertThat(result).isPresent();
+            assertThat(result.get()).isEqualTo(expectedSkill);
+        }
+
+        @Test
+        void when_skill_is_not_found_or_not_owned_expect_empty_optional_returned() {
+            final Integer skillId = 1;
+            final Integer teacherId = 101;
+
+            when(SkillRepositoryImplTest.this.skillJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(skillId, teacherId)).thenReturn(Optional.empty());
+
+            final Optional<Skill> result = SkillRepositoryImplTest.this.skillRepository.findByIdAndTeacherId(skillId, teacherId);
+
+            assertThat(result).isNotPresent();
+            verify(SkillRepositoryImplTest.this.skillMapper, never()).toModel(any(SkillEntity.class));
+        }
     }
 
-    @Test
-    void findByIdAndTeacherId_shouldReturnSkillWhenFoundAndOwnedByTeacher() {
-        final Integer skillId = 1;
-        final Integer teacherId = 101;
-        final SkillEntity skillEntity = new SkillEntity(skillId, "Leadership", "Lead teams", teacherId, null);
-        final Skill expectedSkill = Skill.builder().id(skillId).title("Leadership").description("Lead teams").teacherId(teacherId).build();
+    @Nested
+    class SoftDeleteSkill {
 
-        when(skillJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(skillId, teacherId)).thenReturn(Optional.of(skillEntity));
-        when(skillMapper.toModel(skillEntity)).thenReturn(expectedSkill);
+        @Test
+        void when_skill_is_found_expect_deletion_date_set() {
+            final Integer skillId = 1;
+            final Integer teacherId = 101;
+            final SkillEntity skillEntity = new SkillEntity(skillId, "Adaptability", "Adapt to change", teacherId, null);
+            final Skill updatedSkill = Skill.builder().id(skillId).title("Adaptability").description("Adapt to change")
+                    .teacherId(teacherId).deletionDate(LocalDate.now()).build();
 
-        final Optional<Skill> result = skillRepository.findByIdAndTeacherId(skillId, teacherId);
+            when(SkillRepositoryImplTest.this.skillJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(skillId, teacherId)).thenReturn(Optional.of(skillEntity));
+            when(SkillRepositoryImplTest.this.skillJPARepository.save(any(SkillEntity.class))).thenReturn(skillEntity);
+            when(SkillRepositoryImplTest.this.skillMapper.toModel(any(SkillEntity.class))).thenReturn(updatedSkill);
 
-        assertTrue(result.isPresent());
-        assertEquals(expectedSkill, result.get());
-    }
+            final Skill result = SkillRepositoryImplTest.this.skillRepository.softDeleteSkill(skillId, teacherId);
 
-    @Test
-    void findByIdAndTeacherId_shouldReturnEmptyWhenNotFoundOrNotOwnedByTeacher() {
-        final Integer skillId = 1;
-        final Integer teacherId = 101;
-        when(skillJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(skillId, teacherId)).thenReturn(Optional.empty());
+            assertThat(result).isNotNull();
+            assertThat(result.getDeletionDate()).isNotNull();
+            verify(SkillRepositoryImplTest.this.skillJPARepository, times(1)).save(skillEntity);
+        }
 
-        final Optional<Skill> result = skillRepository.findByIdAndTeacherId(skillId, teacherId);
+        @Test
+        void when_skill_is_not_found_expect_exception_thrown() {
+            final Integer skillId = 1;
+            final Integer teacherId = 101;
+            final ThrowingCallable callable = () -> SkillRepositoryImplTest.this.skillRepository.softDeleteSkill(skillId, teacherId);
 
-        assertFalse(result.isPresent());
-        verify(skillMapper, never()).toModel(any(SkillEntity.class));
-    }
+            when(SkillRepositoryImplTest.this.skillJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(skillId, teacherId)).thenReturn(Optional.empty());
 
-    @Test
-    void softDeleteSkill_shouldSetDeletionDateAndReturnUpdatedSkill() {
-        final Integer skillId = 1;
-        final Integer teacherId = 101;
-        final SkillEntity skillEntity = new SkillEntity(skillId, "Adaptability", "Adapt to change", teacherId, null);
-        final Skill updatedSkill = Skill.builder().id(skillId).title("Adaptability").description("Adapt to change").teacherId(teacherId).deletionDate(LocalDate.now()).build();
-
-        when(skillJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(skillId, teacherId)).thenReturn(Optional.of(skillEntity));
-        when(skillJPARepository.save(any(SkillEntity.class))).thenReturn(skillEntity);
-        when(skillMapper.toModel(any(SkillEntity.class))).thenReturn(updatedSkill);
-
-        final Skill result = skillRepository.softDeleteSkill(skillId, teacherId);
-
-        assertNotNull(result);
-        assertNotNull(result.getDeletionDate());
-        verify(skillJPARepository, times(1)).save(skillEntity);
-    }
-
-    @Test
-    void softDeleteSkill_shouldThrowExceptionWhenSkillNotFoundOrNotOwned() {
-        final Integer skillId = 1;
-        final Integer teacherId = 101;
-        when(skillJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(skillId, teacherId)).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () -> skillRepository.softDeleteSkill(skillId, teacherId));
-        verify(skillJPARepository, never()).save(any(SkillEntity.class));
+            assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
+            verify(SkillRepositoryImplTest.this.skillJPARepository, never()).save(any(SkillEntity.class));
+        }
     }
 }
 

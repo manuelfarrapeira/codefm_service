@@ -1,8 +1,9 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.ExerciseDocument;
@@ -16,11 +17,13 @@ import org.web.codefm.infrastructure.mapper.ExerciseDocumentMapper;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ExerciseDocumentRepositoryImplTest {
+
+    private ExerciseDocumentRepositoryImpl exerciseDocumentRepository;
 
     @Mock
     private ExerciseDocumentJPARepository exerciseDocumentJPARepository;
@@ -34,180 +37,218 @@ class ExerciseDocumentRepositoryImplTest {
     @Mock
     private CacheEvictionService cacheEvictionService;
 
-    @InjectMocks
-    private ExerciseDocumentRepositoryImpl exerciseDocumentRepository;
-
-    @Test
-    void save_shouldMapAndSaveEntityAndEvictCache() {
-        ExerciseDocument input = ExerciseDocument.builder()
-                .exerciseId(1).document("file.pdf").description("desc").build();
-        ExerciseDocumentEntity entity = new ExerciseDocumentEntity(null, 1, "file.pdf", "desc");
-        ExerciseDocumentEntity savedEntity = new ExerciseDocumentEntity(10, 1, "file.pdf", "desc");
-        ExerciseDocument expected = ExerciseDocument.builder()
-                .id(10).exerciseId(1).document("file.pdf").description("desc").build();
-
-        when(exerciseDocumentMapper.toEntity(input)).thenReturn(entity);
-        when(exerciseDocumentJPARepository.save(entity)).thenReturn(savedEntity);
-        when(exerciseDocumentMapper.toModel(savedEntity)).thenReturn(expected);
-        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(10));
-
-        ExerciseDocument result = exerciseDocumentRepository.save(input);
-
-        assertNotNull(result);
-        assertEquals(10, result.getId());
-        verify(exerciseDocumentJPARepository).save(entity);
-        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 10);
-    }
-
-    @Test
-    void update_shouldMapAndUpdateEntityAndEvictCache() {
-        ExerciseDocument input = ExerciseDocument.builder()
-                .id(10).exerciseId(1).document("file.pdf").description("updated").build();
-        ExerciseDocumentEntity entity = new ExerciseDocumentEntity(10, 1, "file.pdf", "updated");
-        ExerciseDocument expected = ExerciseDocument.builder()
-                .id(10).exerciseId(1).document("file.pdf").description("updated").build();
-
-        when(exerciseDocumentMapper.toEntity(input)).thenReturn(entity);
-        when(exerciseDocumentJPARepository.save(entity)).thenReturn(entity);
-        when(exerciseDocumentMapper.toModel(entity)).thenReturn(expected);
-        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(10));
-
-        ExerciseDocument result = exerciseDocumentRepository.update(input);
-
-        assertNotNull(result);
-        assertEquals("updated", result.getDescription());
-        verify(exerciseDocumentJPARepository).save(entity);
-        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 10);
-    }
-
-    @Test
-    void findByExerciseId_shouldReturnMappedDocuments() {
-        Integer exerciseId = 1;
-        List<ExerciseDocumentEntity> entities = List.of(
-                new ExerciseDocumentEntity(10, exerciseId, "file1.pdf", "desc1"),
-                new ExerciseDocumentEntity(11, exerciseId, "file2.pdf", "desc2")
+    @BeforeEach
+    void beforeEach() {
+        this.exerciseDocumentRepository = new ExerciseDocumentRepositoryImpl(
+                this.exerciseDocumentJPARepository,
+                this.exerciseDocumentMapper,
+                this.exerciseJPARepository,
+                this.cacheEvictionService
         );
-        List<ExerciseDocument> expected = List.of(
-                ExerciseDocument.builder().id(10).exerciseId(exerciseId).document("file1.pdf").build(),
-                ExerciseDocument.builder().id(11).exerciseId(exerciseId).document("file2.pdf").build()
-        );
-
-        when(exerciseDocumentJPARepository.findByExerciseId(exerciseId)).thenReturn(entities);
-        when(exerciseDocumentMapper.toModelList(entities)).thenReturn(expected);
-
-        List<ExerciseDocument> result = exerciseDocumentRepository.findByExerciseId(exerciseId);
-
-        assertEquals(2, result.size());
-        verify(exerciseDocumentJPARepository).findByExerciseId(exerciseId);
     }
 
-    @Test
-    void findById_shouldReturnMappedDocument_whenFound() {
-        ExerciseDocumentEntity entity = new ExerciseDocumentEntity(10, 1, "file.pdf", "desc");
-        ExerciseDocument expected = ExerciseDocument.builder()
-                .id(10).exerciseId(1).document("file.pdf").description("desc").build();
+    @Nested
+    class Save {
 
-        when(exerciseDocumentJPARepository.findById(10)).thenReturn(Optional.of(entity));
-        when(exerciseDocumentMapper.toModel(entity)).thenReturn(expected);
+        @Test
+        void when_valid_document_expect_document_saved_and_cache_evicted() {
+            final ExerciseDocument input = ExerciseDocument.builder()
+                    .exerciseId(1).document("file.pdf").description("desc").build();
+            final ExerciseDocumentEntity entity = new ExerciseDocumentEntity(null, 1, "file.pdf", "desc");
+            final ExerciseDocumentEntity savedEntity = new ExerciseDocumentEntity(10, 1, "file.pdf", "desc");
+            final ExerciseDocument expected = ExerciseDocument.builder()
+                    .id(10).exerciseId(1).document("file.pdf").description("desc").build();
 
-        Optional<ExerciseDocument> result = exerciseDocumentRepository.findById(10);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentMapper.toEntity(input)).thenReturn(entity);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository.save(entity)).thenReturn(savedEntity);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentMapper.toModel(savedEntity)).thenReturn(expected);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(10));
 
-        assertTrue(result.isPresent());
-        assertEquals(10, result.get().getId());
+            final ExerciseDocument result = ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.save(input);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(10);
+            verify(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository).save(entity);
+            verify(ExerciseDocumentRepositoryImplTest.this.cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 10);
+        }
     }
 
-    @Test
-    void findById_shouldReturnEmpty_whenNotFound() {
-        when(exerciseDocumentJPARepository.findById(10)).thenReturn(Optional.empty());
+    @Nested
+    class Update {
 
-        Optional<ExerciseDocument> result = exerciseDocumentRepository.findById(10);
+        @Test
+        void when_valid_document_expect_document_updated_and_cache_evicted() {
+            final ExerciseDocument input = ExerciseDocument.builder()
+                    .id(10).exerciseId(1).document("file.pdf").description("updated").build();
+            final ExerciseDocumentEntity entity = new ExerciseDocumentEntity(10, 1, "file.pdf", "updated");
+            final ExerciseDocument expected = ExerciseDocument.builder()
+                    .id(10).exerciseId(1).document("file.pdf").description("updated").build();
 
-        assertFalse(result.isPresent());
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentMapper.toEntity(input)).thenReturn(entity);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository.save(entity)).thenReturn(entity);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentMapper.toModel(entity)).thenReturn(expected);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(10));
+
+            final ExerciseDocument result = ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.update(input);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getDescription()).isEqualTo("updated");
+            verify(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository).save(entity);
+            verify(ExerciseDocumentRepositoryImplTest.this.cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 10);
+        }
     }
 
-    @Test
-    void deleteById_shouldEvictCacheAndDelegateToJPARepository() {
-        ExerciseDocumentEntity entity = new ExerciseDocumentEntity(10, 1, "file.pdf", "desc");
+    @Nested
+    class FindByExerciseId {
 
-        when(exerciseDocumentJPARepository.findById(10)).thenReturn(Optional.of(entity));
-        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(20));
+        @Test
+        void when_exercise_exists_expect_mapped_documents_returned() {
+            final Integer exerciseId = 1;
+            final List<ExerciseDocumentEntity> entities = List.of(
+                    new ExerciseDocumentEntity(10, exerciseId, "file1.pdf", "desc1"),
+                    new ExerciseDocumentEntity(11, exerciseId, "file2.pdf", "desc2")
+            );
+            final List<ExerciseDocument> expected = List.of(
+                    ExerciseDocument.builder().id(10).exerciseId(exerciseId).document("file1.pdf").build(),
+                    ExerciseDocument.builder().id(11).exerciseId(exerciseId).document("file2.pdf").build()
+            );
 
-        exerciseDocumentRepository.deleteById(10);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository.findByExerciseId(exerciseId)).thenReturn(entities);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentMapper.toModelList(entities)).thenReturn(expected);
 
-        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 20);
-        verify(exerciseDocumentJPARepository).deleteById(10);
+            final List<ExerciseDocument> result = ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.findByExerciseId(exerciseId);
+
+            assertThat(result).hasSize(2);
+            verify(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository).findByExerciseId(exerciseId);
+        }
     }
 
-    @Test
-    void deleteByExerciseId_shouldEvictCacheAndDelegateToJPARepository() {
-        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(20));
+    @Nested
+    class FindById {
 
-        exerciseDocumentRepository.deleteByExerciseId(1);
+        @Test
+        void when_document_found_expect_document_returned() {
+            final ExerciseDocumentEntity entity = new ExerciseDocumentEntity(10, 1, "file.pdf", "desc");
+            final ExerciseDocument expected = ExerciseDocument.builder()
+                    .id(10).exerciseId(1).document("file.pdf").description("desc").build();
 
-        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 20);
-        verify(exerciseDocumentJPARepository).deleteByExerciseId(1);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository.findById(10)).thenReturn(Optional.of(entity));
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentMapper.toModel(entity)).thenReturn(expected);
+
+            final Optional<ExerciseDocument> result = ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.findById(10);
+
+            assertThat(result).isPresent();
+            assertThat(result.orElseThrow().getId()).isEqualTo(10);
+        }
+
+        @Test
+        void when_document_not_found_expect_empty_optional_returned() {
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository.findById(10)).thenReturn(Optional.empty());
+
+            final Optional<ExerciseDocument> result = ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.findById(10);
+
+            assertThat(result).isNotPresent();
+        }
     }
 
-    @Test
-    void deleteByExerciseIds_shouldEvictCacheAndDelegateToJPARepository() {
-        List<Integer> exerciseIds = List.of(1, 2, 3);
+    @Nested
+    class DeleteById {
 
-        when(exerciseJPARepository.findDistinctClassIdsByExerciseIds(exerciseIds)).thenReturn(List.of(20));
+        @Test
+        void when_document_found_expect_jpa_delegated_and_cache_evicted() {
+            final ExerciseDocumentEntity entity = new ExerciseDocumentEntity(10, 1, "file.pdf", "desc");
 
-        exerciseDocumentRepository.deleteByExerciseIds(exerciseIds);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository.findById(10)).thenReturn(Optional.of(entity));
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(20));
 
-        verify(cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 20);
-        verify(exerciseDocumentJPARepository).deleteByExerciseIdIn(exerciseIds);
+            ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.deleteById(10);
+
+            verify(ExerciseDocumentRepositoryImplTest.this.cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 20);
+            verify(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository).deleteById(10);
+        }
     }
 
-    @Test
-    void deleteByExerciseIds_shouldDoNothing_whenListIsNull() {
-        exerciseDocumentRepository.deleteByExerciseIds(null);
+    @Nested
+    class DeleteByExerciseId {
 
-        verify(exerciseDocumentJPARepository, never()).deleteByExerciseIdIn(any());
+        @Test
+        void when_called_expect_jpa_delegated_and_cache_evicted() {
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(List.of(1))).thenReturn(List.of(20));
+
+            ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.deleteByExerciseId(1);
+
+            verify(ExerciseDocumentRepositoryImplTest.this.cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 20);
+            verify(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository).deleteByExerciseId(1);
+        }
     }
 
-    @Test
-    void deleteByExerciseIds_shouldDoNothing_whenListIsEmpty() {
-        exerciseDocumentRepository.deleteByExerciseIds(List.of());
+    @Nested
+    class DeleteByExerciseIds {
 
-        verify(exerciseDocumentJPARepository, never()).deleteByExerciseIdIn(any());
+        @Test
+        void when_list_contains_ids_expect_jpa_delegated_and_cache_evicted() {
+            final List<Integer> exerciseIds = List.of(1, 2, 3);
+
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseJPARepository.findDistinctClassIdsByExerciseIds(exerciseIds)).thenReturn(List.of(20));
+
+            ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.deleteByExerciseIds(exerciseIds);
+
+            verify(ExerciseDocumentRepositoryImplTest.this.cacheEvictionService).evict(CacheName.EXERCISES_BY_CLASS, 20);
+            verify(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository).deleteByExerciseIdIn(exerciseIds);
+        }
+
+        @Test
+        void when_list_is_null_expect_no_jpa_interaction() {
+            ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.deleteByExerciseIds(null);
+
+            verify(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository, never()).deleteByExerciseIdIn(any());
+        }
+
+        @Test
+        void when_list_is_empty_expect_no_jpa_interaction() {
+            ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.deleteByExerciseIds(List.of());
+
+            verify(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository, never()).deleteByExerciseIdIn(any());
+        }
     }
 
-    @Test
-    void findByExerciseIds_shouldReturnMappedDocuments() {
-        List<Integer> exerciseIds = List.of(1, 2);
-        List<ExerciseDocumentEntity> entities = List.of(
-                new ExerciseDocumentEntity(10, 1, "file1.pdf", "desc1"),
-                new ExerciseDocumentEntity(11, 2, "file2.pdf", "desc2")
-        );
-        List<ExerciseDocument> expected = List.of(
-                ExerciseDocument.builder().id(10).exerciseId(1).document("file1.pdf").build(),
-                ExerciseDocument.builder().id(11).exerciseId(2).document("file2.pdf").build()
-        );
+    @Nested
+    class FindByExerciseIds {
 
-        when(exerciseDocumentJPARepository.findByExerciseIdIn(exerciseIds)).thenReturn(entities);
-        when(exerciseDocumentMapper.toModelList(entities)).thenReturn(expected);
+        @Test
+        void when_list_contains_ids_expect_mapped_documents_returned() {
+            final List<Integer> exerciseIds = List.of(1, 2);
+            final List<ExerciseDocumentEntity> entities = List.of(
+                    new ExerciseDocumentEntity(10, 1, "file1.pdf", "desc1"),
+                    new ExerciseDocumentEntity(11, 2, "file2.pdf", "desc2")
+            );
+            final List<ExerciseDocument> expected = List.of(
+                    ExerciseDocument.builder().id(10).exerciseId(1).document("file1.pdf").build(),
+                    ExerciseDocument.builder().id(11).exerciseId(2).document("file2.pdf").build()
+            );
 
-        List<ExerciseDocument> result = exerciseDocumentRepository.findByExerciseIds(exerciseIds);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository.findByExerciseIdIn(exerciseIds)).thenReturn(entities);
+            when(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentMapper.toModelList(entities)).thenReturn(expected);
 
-        assertEquals(2, result.size());
-    }
+            final List<ExerciseDocument> result = ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.findByExerciseIds(exerciseIds);
 
-    @Test
-    void findByExerciseIds_shouldReturnEmptyList_whenListIsNull() {
-        List<ExerciseDocument> result = exerciseDocumentRepository.findByExerciseIds(null);
+            assertThat(result).hasSize(2);
+        }
 
-        assertTrue(result.isEmpty());
-        verify(exerciseDocumentJPARepository, never()).findByExerciseIdIn(any());
-    }
+        @Test
+        void when_list_is_null_expect_empty_list_returned() {
+            final List<ExerciseDocument> result = ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.findByExerciseIds(null);
 
-    @Test
-    void findByExerciseIds_shouldReturnEmptyList_whenListIsEmpty() {
-        List<ExerciseDocument> result = exerciseDocumentRepository.findByExerciseIds(List.of());
+            assertThat(result).isEmpty();
+            verify(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository, never()).findByExerciseIdIn(any());
+        }
 
-        assertTrue(result.isEmpty());
-        verify(exerciseDocumentJPARepository, never()).findByExerciseIdIn(any());
+        @Test
+        void when_list_is_empty_expect_empty_list_returned() {
+            final List<ExerciseDocument> result = ExerciseDocumentRepositoryImplTest.this.exerciseDocumentRepository.findByExerciseIds(List.of());
+
+            assertThat(result).isEmpty();
+            verify(ExerciseDocumentRepositoryImplTest.this.exerciseDocumentJPARepository, never()).findByExerciseIdIn(any());
+        }
     }
 }
-

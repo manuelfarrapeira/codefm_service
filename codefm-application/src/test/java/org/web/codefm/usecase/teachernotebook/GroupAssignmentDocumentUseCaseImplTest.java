@@ -1,88 +1,110 @@
 package org.web.codefm.usecase.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 import org.web.codefm.domain.entity.teachernotebook.GroupAssignmentDocument;
 import org.web.codefm.domain.service.teachernotebook.GroupAssignmentDocumentService;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class GroupAssignmentDocumentUseCaseImplTest {
 
-    private static final Integer ASSIGNMENT_ID = 100;
-    private static final Integer GROUP_ID = 50;
-    private static final Integer DOCUMENT_ID = 200;
+    private GroupAssignmentDocumentUseCaseImpl groupAssignmentDocumentUseCase;
 
     @Mock
     private GroupAssignmentDocumentService groupAssignmentDocumentService;
 
-    @InjectMocks
-    private GroupAssignmentDocumentUseCaseImpl groupAssignmentDocumentUseCase;
+    private static final Integer ASSIGNMENT_ID = 100;
+    private static final Integer GROUP_ID = 50;
+    private static final Integer DOCUMENT_ID = 200;
 
-    @Test
-    void uploadAssignmentDocument_shouldDelegateToServiceWithGroupDocumentFalse() {
-        final MultipartFile file = mock(MultipartFile.class);
-        final GroupAssignmentDocument expected = GroupAssignmentDocument.builder()
-                .id(DOCUMENT_ID).groupAssignmentId(ASSIGNMENT_ID).document("file.pdf").groupDocument(false).build();
-        when(this.groupAssignmentDocumentService.uploadDocument(ASSIGNMENT_ID, null, file, "desc", false))
-                .thenReturn(expected);
-
-        final GroupAssignmentDocument result = this.groupAssignmentDocumentUseCase.uploadAssignmentDocument(ASSIGNMENT_ID, file, "desc");
-
-        assertEquals(expected, result);
-        verify(this.groupAssignmentDocumentService).uploadDocument(ASSIGNMENT_ID, null, file, "desc", false);
+    @BeforeEach
+    void beforeEach() {
+        groupAssignmentDocumentUseCase = new GroupAssignmentDocumentUseCaseImpl(groupAssignmentDocumentService);
     }
 
-    @Test
-    void uploadGroupDocument_shouldDelegateToServiceWithGroupDocumentTrue() {
-        final MultipartFile file = mock(MultipartFile.class);
-        final GroupAssignmentDocument expected = GroupAssignmentDocument.builder()
-                .id(DOCUMENT_ID).groupAssignmentId(ASSIGNMENT_ID).groupId(GROUP_ID).document("file.pdf").groupDocument(true).build();
-        when(this.groupAssignmentDocumentService.uploadDocument(ASSIGNMENT_ID, GROUP_ID, file, "desc", true))
-                .thenReturn(expected);
+    @Nested
+    class UploadAssignmentDocument {
 
-        final GroupAssignmentDocument result = this.groupAssignmentDocumentUseCase.uploadGroupDocument(ASSIGNMENT_ID, GROUP_ID, file, "desc");
+        @Test
+        void when_uploading_assignment_document_expect_group_document_false() {
+            final MultipartFile file = mock(MultipartFile.class);
+            final GroupAssignmentDocument expected = GroupAssignmentDocument.builder()
+                    .id(DOCUMENT_ID).groupAssignmentId(ASSIGNMENT_ID).document("file.pdf").groupDocument(false).build();
+            when(groupAssignmentDocumentService.uploadDocument(ASSIGNMENT_ID, null, file, "desc", false))
+                    .thenReturn(expected);
 
-        assertEquals(expected, result);
-        verify(this.groupAssignmentDocumentService).uploadDocument(ASSIGNMENT_ID, GROUP_ID, file, "desc", true);
+            final GroupAssignmentDocument result = groupAssignmentDocumentUseCase.uploadAssignmentDocument(ASSIGNMENT_ID, file, "desc");
+
+            assertThat(result).isEqualTo(expected);
+            verify(groupAssignmentDocumentService).uploadDocument(ASSIGNMENT_ID, null, file, "desc", false);
+        }
     }
 
-    @Test
-    void downloadDocument_shouldDelegateToService() {
-        final byte[] expected = "content".getBytes();
-        when(this.groupAssignmentDocumentService.downloadDocument(ASSIGNMENT_ID, DOCUMENT_ID)).thenReturn(expected);
+    @Nested
+    class UploadGroupDocument {
 
-        final byte[] result = this.groupAssignmentDocumentUseCase.downloadDocument(ASSIGNMENT_ID, DOCUMENT_ID);
+        @Test
+        void when_uploading_group_document_expect_group_document_true() {
+            final MultipartFile file = mock(MultipartFile.class);
+            final GroupAssignmentDocument expected = GroupAssignmentDocument.builder()
+                    .id(DOCUMENT_ID).groupAssignmentId(ASSIGNMENT_ID).groupId(GROUP_ID).document("file.pdf").groupDocument(true).build();
+            when(groupAssignmentDocumentService.uploadDocument(ASSIGNMENT_ID, GROUP_ID, file, "desc", true))
+                    .thenReturn(expected);
 
-        assertArrayEquals(expected, result);
-        verify(this.groupAssignmentDocumentService).downloadDocument(ASSIGNMENT_ID, DOCUMENT_ID);
+            final GroupAssignmentDocument result = groupAssignmentDocumentUseCase.uploadGroupDocument(ASSIGNMENT_ID, GROUP_ID, file, "desc");
+
+            assertThat(result).isEqualTo(expected);
+            verify(groupAssignmentDocumentService).uploadDocument(ASSIGNMENT_ID, GROUP_ID, file, "desc", true);
+        }
     }
 
-    @Test
-    void getDocumentFilename_shouldDelegateToService() {
-        when(this.groupAssignmentDocumentService.getDocumentFilename(ASSIGNMENT_ID, DOCUMENT_ID))
-                .thenReturn("file.pdf");
+    @Nested
+    class DownloadDocument {
 
-        final String result = this.groupAssignmentDocumentUseCase.getDocumentFilename(ASSIGNMENT_ID, DOCUMENT_ID);
+        @Test
+        void when_downloading_document_expect_delegated_to_service() {
+            final byte[] expected = "content".getBytes();
+            when(groupAssignmentDocumentService.downloadDocument(ASSIGNMENT_ID, DOCUMENT_ID)).thenReturn(expected);
 
-        assertEquals("file.pdf", result);
-        verify(this.groupAssignmentDocumentService).getDocumentFilename(ASSIGNMENT_ID, DOCUMENT_ID);
+            final byte[] result = groupAssignmentDocumentUseCase.downloadDocument(ASSIGNMENT_ID, DOCUMENT_ID);
+
+            assertThat(result).isEqualTo(expected);
+            verify(groupAssignmentDocumentService).downloadDocument(ASSIGNMENT_ID, DOCUMENT_ID);
+        }
     }
 
-    @Test
-    void deleteDocument_shouldDelegateToService() {
-        doNothing().when(this.groupAssignmentDocumentService).deleteDocument(ASSIGNMENT_ID, DOCUMENT_ID);
+    @Nested
+    class GetDocumentFilename {
 
-        this.groupAssignmentDocumentUseCase.deleteDocument(ASSIGNMENT_ID, DOCUMENT_ID);
+        @Test
+        void when_getting_filename_expect_delegated_to_service() {
+            when(groupAssignmentDocumentService.getDocumentFilename(ASSIGNMENT_ID, DOCUMENT_ID)).thenReturn("file.pdf");
 
-        verify(this.groupAssignmentDocumentService).deleteDocument(ASSIGNMENT_ID, DOCUMENT_ID);
+            final String result = groupAssignmentDocumentUseCase.getDocumentFilename(ASSIGNMENT_ID, DOCUMENT_ID);
+
+            assertThat(result).isEqualTo("file.pdf");
+            verify(groupAssignmentDocumentService).getDocumentFilename(ASSIGNMENT_ID, DOCUMENT_ID);
+        }
+    }
+
+    @Nested
+    class DeleteDocument {
+
+        @Test
+        void when_deleting_document_expect_delegated_to_service() {
+            doNothing().when(groupAssignmentDocumentService).deleteDocument(ASSIGNMENT_ID, DOCUMENT_ID);
+
+            groupAssignmentDocumentUseCase.deleteDocument(ASSIGNMENT_ID, DOCUMENT_ID);
+
+            verify(groupAssignmentDocumentService).deleteDocument(ASSIGNMENT_ID, DOCUMENT_ID);
+        }
     }
 }
-

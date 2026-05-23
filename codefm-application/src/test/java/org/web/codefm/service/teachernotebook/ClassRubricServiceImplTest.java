@@ -1,10 +1,12 @@
 package org.web.codefm.service.teachernotebook;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
@@ -24,7 +26,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -53,7 +56,6 @@ class ClassRubricServiceImplTest {
     @Mock
     private SessionUser sessionUser;
 
-    @InjectMocks
     private ClassRubricServiceImpl classRubricService;
 
     private static final Integer TEACHER_ID = 1;
@@ -64,6 +66,14 @@ class ClassRubricServiceImplTest {
     private static final Integer CRITERION_ID = 50;
     private static final Integer SKILL_ID = 60;
     private static final Integer CRITERIA_ID = 70;
+
+    @BeforeEach
+    void beforeEach() {
+        this.classRubricService = new ClassRubricServiceImpl(this.classRubricRepository,
+                this.studentClassRubricCriteriaRepository, this.classRepository, this.skillRubricRepository,
+                this.skillRepository, this.studentRepository, this.studentClassRepository,
+                this.skillRubricCriteriaRepository, this.messageSource, this.sessionUser);
+    }
 
     private void setupSession() {
         when(this.sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
@@ -81,62 +91,68 @@ class ClassRubricServiceImplTest {
                         .id(CLASS_RUBRIC_ID).classId(CLASS_ID).rubricId(RUBRIC_ID).build()));
     }
 
-    @Test
-    void getRubricsByClassId_shouldReturnRubrics_whenClassBelongsToTeacher() {
-        this.setupSession();
-        this.setupClassOwnership();
-        final List<ClassRubric> expected = List.of(
-                ClassRubric.builder().id(CLASS_RUBRIC_ID).classId(CLASS_ID).rubricId(RUBRIC_ID).build());
-        when(this.classRubricRepository.findByClassId(CLASS_ID)).thenReturn(expected);
+    @Nested
+    class GetRubricsByClassId {
 
-        final List<ClassRubric> result = this.classRubricService.getRubricsByClassId(CLASS_ID);
+        @Test
+        void when_class_belongs_to_teacher_expect_rubrics() {
+            setupSession();
+            setupClassOwnership();
+            final List<ClassRubric> expected = List.of(
+                    ClassRubric.builder().id(CLASS_RUBRIC_ID).classId(CLASS_ID).rubricId(RUBRIC_ID).build());
+            when(classRubricRepository.findByClassId(CLASS_ID)).thenReturn(expected);
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(this.classRubricRepository).findByClassId(CLASS_ID);
+            final List<ClassRubric> result = classRubricService.getRubricsByClassId(CLASS_ID);
+
+            assertThat(result).isNotNull().hasSize(1);
+            verify(classRubricRepository).findByClassId(CLASS_ID);
+        }
+
+        @Test
+        void when_class_is_not_owned_by_teacher_expect_not_found_exception() {
+            setupSession();
+            when(classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
+                    .thenReturn(Optional.empty());
+            when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
+            final ThrowingCallable callable = () -> classRubricService.getRubricsByClassId(CLASS_ID);
+
+            assertThatThrownBy(callable).isInstanceOf(ClassRubricNotFoundException.class);
+        }
     }
 
-    @Test
-    void getRubricsByClassId_shouldThrowClassRubricNotFoundException_whenClassNotOwnedByTeacher() {
-        this.setupSession();
-        when(this.classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(CLASS_ID, TEACHER_ID))
-                .thenReturn(Optional.empty());
-        when(this.messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
+    @Nested
+    class AssignRubricToClass {
 
-        assertThrows(ClassRubricNotFoundException.class,
-                () -> this.classRubricService.getRubricsByClassId(CLASS_ID));
-    }
+        @Test
+        void when_all_validations_pass_expect_assignment_to_be_saved() {
+            setupSession();
+            setupClassOwnership();
+            when(skillRubricRepository.findById(RUBRIC_ID))
+                    .thenReturn(Optional.of(SkillRubric.builder().id(RUBRIC_ID).skillId(SKILL_ID).build()));
+            when(skillRepository.findByIdAndTeacherId(SKILL_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(Skill.builder().id(SKILL_ID).teacherId(TEACHER_ID).build()));
+            when(classRubricRepository.existsByClassIdAndRubricIdAndDeletionDateIsNull(CLASS_ID, RUBRIC_ID))
+                    .thenReturn(false);
+            final ClassRubric saved = ClassRubric.builder().id(CLASS_RUBRIC_ID).classId(CLASS_ID).rubricId(RUBRIC_ID).build();
+            when(classRubricRepository.save(any(ClassRubric.class))).thenReturn(saved);
 
-    @Test
-    void assignRubricToClass_shouldSaveAssignment_whenAllValidationsPass() {
-        this.setupSession();
-        this.setupClassOwnership();
-        when(this.skillRubricRepository.findById(RUBRIC_ID))
-                .thenReturn(Optional.of(SkillRubric.builder().id(RUBRIC_ID).skillId(SKILL_ID).build()));
-        when(this.skillRepository.findByIdAndTeacherId(SKILL_ID, TEACHER_ID))
-                .thenReturn(Optional.of(Skill.builder().id(SKILL_ID).teacherId(TEACHER_ID).build()));
-        when(this.classRubricRepository.existsByClassIdAndRubricIdAndDeletionDateIsNull(CLASS_ID, RUBRIC_ID))
-                .thenReturn(false);
-        final ClassRubric saved = ClassRubric.builder().id(CLASS_RUBRIC_ID).classId(CLASS_ID).rubricId(RUBRIC_ID).build();
-        when(this.classRubricRepository.save(any(ClassRubric.class))).thenReturn(saved);
+            final ClassRubric result = classRubricService.assignRubricToClass(CLASS_ID, RUBRIC_ID);
 
-        final ClassRubric result = this.classRubricService.assignRubricToClass(CLASS_ID, RUBRIC_ID);
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(CLASS_RUBRIC_ID);
+            verify(classRubricRepository).save(any(ClassRubric.class));
+        }
 
-        assertNotNull(result);
-        assertEquals(CLASS_RUBRIC_ID, result.getId());
-        verify(this.classRubricRepository).save(any(ClassRubric.class));
-    }
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.service.teachernotebook.ClassRubricServiceImplTest#assignRubricToClassValidationSetups")
+        void when_validation_fails_expect_class_rubric_validation_exception(Consumer<ClassRubricServiceImplTest> setup) {
+            setupSession();
+            when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
+            setup.accept(ClassRubricServiceImplTest.this);
+            final ThrowingCallable callable = () -> classRubricService.assignRubricToClass(CLASS_ID, RUBRIC_ID);
 
-    @ParameterizedTest
-    @MethodSource("assignRubricToClassValidationSetups")
-    void assignRubricToClass_shouldThrowClassRubricValidationException_whenValidationFails(
-            Consumer<ClassRubricServiceImplTest> setup) {
-        this.setupSession();
-        when(this.messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
-        setup.accept(this);
-
-        assertThrows(ClassRubricValidationException.class,
-                () -> this.classRubricService.assignRubricToClass(CLASS_ID, RUBRIC_ID));
+            assertThatThrownBy(callable).isInstanceOf(ClassRubricValidationException.class);
+        }
     }
 
     static Stream<Consumer<ClassRubricServiceImplTest>> assignRubricToClassValidationSetups() {
@@ -169,106 +185,130 @@ class ClassRubricServiceImplTest {
         );
     }
 
-    @Test
-    void removeRubricFromClass_shouldSoftDelete_whenClassRubricBelongsToTeacher() {
-        this.setupSession();
-        this.setupClassRubricOwnership();
+    @Nested
+    class RemoveRubricFromClass {
 
-        this.classRubricService.removeRubricFromClass(CLASS_RUBRIC_ID);
+        @Test
+        void when_class_rubric_belongs_to_teacher_expect_soft_delete() {
+            setupSession();
+            setupClassRubricOwnership();
 
-        verify(this.classRubricRepository).softDeleteById(CLASS_RUBRIC_ID);
+            classRubricService.removeRubricFromClass(CLASS_RUBRIC_ID);
+
+            verify(classRubricRepository).softDeleteById(CLASS_RUBRIC_ID);
+        }
+
+        @Test
+        void when_class_rubric_is_not_owned_by_teacher_expect_not_found_exception() {
+            setupSession();
+            when(classRubricRepository.findByIdAndTeacherId(CLASS_RUBRIC_ID, TEACHER_ID))
+                    .thenReturn(Optional.empty());
+            when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
+            final ThrowingCallable callable = () -> classRubricService.removeRubricFromClass(CLASS_RUBRIC_ID);
+
+            assertThatThrownBy(callable).isInstanceOf(ClassRubricNotFoundException.class);
+        }
     }
 
-    @Test
-    void removeRubricFromClass_shouldThrowClassRubricNotFoundException_whenNotOwnedByTeacher() {
-        this.setupSession();
-        when(this.classRubricRepository.findByIdAndTeacherId(CLASS_RUBRIC_ID, TEACHER_ID))
-                .thenReturn(Optional.empty());
-        when(this.messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
+    @Nested
+    class GetAllStudentCriteriaByClassId {
 
-        assertThrows(ClassRubricNotFoundException.class,
-                () -> this.classRubricService.removeRubricFromClass(CLASS_RUBRIC_ID));
+        @Test
+        void when_class_belongs_to_teacher_expect_grouped_list() {
+            setupSession();
+            setupClassOwnership();
+            final List<StudentClassRubricCriteria> flatList = List.of(
+                    StudentClassRubricCriteria.builder()
+                            .id(1).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID)
+                            .rubricId(RUBRIC_ID).rubricTitle("Rubric A")
+                            .studentName("Juan").studentSurnames("Garcia")
+                            .criterionId(CRITERION_ID).criterionDescription("Good").qualification("Notable").gradeStart(5).gradeEnd(10)
+                            .build(),
+                    StudentClassRubricCriteria.builder()
+                            .id(2).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID)
+                            .rubricId(RUBRIC_ID).rubricTitle("Rubric B")
+                            .studentName("Juan").studentSurnames("Garcia")
+                            .criterionId(51).criterionDescription("Bad").qualification("Insuficiente").gradeStart(0).gradeEnd(4)
+                            .build());
+            when(studentClassRubricCriteriaRepository.findByClassId(CLASS_ID)).thenReturn(flatList);
+
+            final List<StudentCriteriaGroup> result = classRubricService.getAllStudentCriteriaByClassId(CLASS_ID);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getStudentId()).isEqualTo(STUDENT_ID);
+            assertThat(result.get(0).getStudentName()).isEqualTo("Juan");
+            assertThat(result.get(0).getStudentSurnames()).isEqualTo("Garcia");
+            assertThat(result.get(0).getRubricCriteria()).hasSize(2);
+            verify(studentClassRubricCriteriaRepository).findByClassId(CLASS_ID);
+        }
     }
 
-    @Test
-    void getAllStudentCriteriaByClassId_shouldReturnGroupedList_whenClassBelongsToTeacher() {
-        this.setupSession();
-        this.setupClassOwnership();
-        final List<StudentClassRubricCriteria> flatList = List.of(
-                StudentClassRubricCriteria.builder()
-                        .id(1).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID)
-                        .rubricId(RUBRIC_ID).rubricTitle("Rubric A")
-                        .studentName("Juan").studentSurnames("Garcia")
-                        .criterionId(CRITERION_ID).criterionDescription("Good").qualification("Notable").gradeStart(5).gradeEnd(10)
-                        .build(),
-                StudentClassRubricCriteria.builder()
-                        .id(2).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID)
-                        .rubricId(RUBRIC_ID).rubricTitle("Rubric B")
-                        .studentName("Juan").studentSurnames("Garcia")
-                        .criterionId(51).criterionDescription("Bad").qualification("Insuficiente").gradeStart(0).gradeEnd(4)
-                        .build());
-        when(this.studentClassRubricCriteriaRepository.findByClassId(CLASS_ID)).thenReturn(flatList);
+    @Nested
+    class GetStudentCriteriaByClassAndStudent {
 
-        final List<StudentCriteriaGroup> result = this.classRubricService.getAllStudentCriteriaByClassId(CLASS_ID);
+        @Test
+        void when_ownership_is_valid_expect_grouped_list() {
+            setupSession();
+            setupClassOwnership();
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(Student.builder().id(STUDENT_ID).teacherId(TEACHER_ID).build()));
+            when(studentClassRubricCriteriaRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID))
+                    .thenReturn(List.of());
 
-        assertEquals(1, result.size());
-        assertEquals(STUDENT_ID, result.get(0).getStudentId());
-        assertEquals("Juan", result.get(0).getStudentName());
-        assertEquals("Garcia", result.get(0).getStudentSurnames());
-        assertEquals(2, result.get(0).getRubricCriteria().size());
-        verify(this.studentClassRubricCriteriaRepository).findByClassId(CLASS_ID);
+            final List<StudentCriteriaGroup> result = classRubricService.getStudentCriteriaByClassAndStudent(CLASS_ID, STUDENT_ID);
+
+            assertThat(result).isNotNull();
+            verify(studentClassRubricCriteriaRepository).findByClassIdAndStudentId(CLASS_ID, STUDENT_ID);
+        }
     }
 
-    @Test
-    void getStudentCriteriaByClassAndStudent_shouldReturnGroupedList_whenOwnershipIsValid() {
-        this.setupSession();
-        this.setupClassOwnership();
-        when(this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
-                .thenReturn(Optional.of(Student.builder().id(STUDENT_ID).teacherId(TEACHER_ID).build()));
-        when(this.studentClassRubricCriteriaRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID))
-                .thenReturn(List.of());
+    @Nested
+    class AssignCriterionToStudent {
 
-        final List<StudentCriteriaGroup> result =
-                this.classRubricService.getStudentCriteriaByClassAndStudent(CLASS_ID, STUDENT_ID);
+        @Test
+        void when_all_validations_pass_expect_student_criterion_to_be_saved() {
+            setupSession();
+            setupClassRubricOwnership();
+            when(studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(Student.builder().id(STUDENT_ID).build()));
+            when(studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID))
+                    .thenReturn(Optional.of(StudentClass.builder().classId(CLASS_ID).studentId(STUDENT_ID).deletionDate(null).build()));
+            when(skillRubricCriteriaRepository.findActiveById(CRITERION_ID))
+                    .thenReturn(Optional.of(SkillRubricCriteria.builder().id(CRITERION_ID).rubricId(RUBRIC_ID).build()));
+            when(studentClassRubricCriteriaRepository.existsByClassRubricIdAndStudentIdAndDeletionDateIsNull(CLASS_RUBRIC_ID, STUDENT_ID))
+                    .thenReturn(false);
+            final StudentClassRubricCriteria saved = StudentClassRubricCriteria.builder()
+                    .id(CRITERIA_ID).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID).criterionId(CRITERION_ID).build();
+            when(studentClassRubricCriteriaRepository.save(any(StudentClassRubricCriteria.class))).thenReturn(saved);
 
-        assertNotNull(result);
-        verify(this.studentClassRubricCriteriaRepository).findByClassIdAndStudentId(CLASS_ID, STUDENT_ID);
-    }
+            final StudentClassRubricCriteria result = classRubricService.assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID);
 
-    @Test
-    void assignCriterionToStudent_shouldSave_whenAllValidationsPass() {
-        this.setupSession();
-        this.setupClassRubricOwnership();
-        when(this.studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(STUDENT_ID, TEACHER_ID))
-                .thenReturn(Optional.of(Student.builder().id(STUDENT_ID).build()));
-        when(this.studentClassRepository.findByClassIdAndStudentId(CLASS_ID, STUDENT_ID))
-                .thenReturn(Optional.of(StudentClass.builder().classId(CLASS_ID).studentId(STUDENT_ID).deletionDate(null).build()));
-        when(this.skillRubricCriteriaRepository.findActiveById(CRITERION_ID))
-                .thenReturn(Optional.of(SkillRubricCriteria.builder().id(CRITERION_ID).rubricId(RUBRIC_ID).build()));
-        when(this.studentClassRubricCriteriaRepository.existsByClassRubricIdAndStudentIdAndDeletionDateIsNull(CLASS_RUBRIC_ID, STUDENT_ID))
-                .thenReturn(false);
-        final StudentClassRubricCriteria saved = StudentClassRubricCriteria.builder()
-                .id(CRITERIA_ID).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID).criterionId(CRITERION_ID).build();
-        when(this.studentClassRubricCriteriaRepository.save(any(StudentClassRubricCriteria.class))).thenReturn(saved);
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(CRITERIA_ID);
+            verify(studentClassRubricCriteriaRepository).save(any(StudentClassRubricCriteria.class));
+        }
 
-        final StudentClassRubricCriteria result =
-                this.classRubricService.assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID);
+        @ParameterizedTest
+        @MethodSource("org.web.codefm.service.teachernotebook.ClassRubricServiceImplTest#assignCriterionToStudentValidationSetups")
+        void when_validation_fails_expect_student_class_rubric_criteria_validation_exception(Consumer<ClassRubricServiceImplTest> setup) {
+            setupSession();
+            when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
+            setup.accept(ClassRubricServiceImplTest.this);
+            final ThrowingCallable callable = () -> classRubricService.assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID);
 
-        assertNotNull(result);
-        assertEquals(CRITERIA_ID, result.getId());
-        verify(this.studentClassRubricCriteriaRepository).save(any(StudentClassRubricCriteria.class));
-    }
+            assertThatThrownBy(callable).isInstanceOf(StudentClassRubricCriteriaValidationException.class);
+        }
 
-    @ParameterizedTest
-    @MethodSource("assignCriterionToStudentValidationSetups")
-    void assignCriterionToStudent_shouldThrowValidationException_whenValidationFails(
-            Consumer<ClassRubricServiceImplTest> setup) {
-        this.setupSession();
-        when(this.messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
-        setup.accept(this);
+        @Test
+        void when_class_rubric_is_not_owned_by_teacher_expect_class_rubric_not_found_exception() {
+            setupSession();
+            when(classRubricRepository.findByIdAndTeacherId(CLASS_RUBRIC_ID, TEACHER_ID))
+                    .thenReturn(Optional.empty());
+            when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
+            final ThrowingCallable callable = () -> classRubricService.assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID);
 
-        assertThrows(StudentClassRubricCriteriaValidationException.class,
-                () -> this.classRubricService.assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID));
+            assertThatThrownBy(callable).isInstanceOf(ClassRubricNotFoundException.class);
+        }
     }
 
     static Stream<Consumer<ClassRubricServiceImplTest>> assignCriterionToStudentValidationSetups() {
@@ -327,67 +367,64 @@ class ClassRubricServiceImplTest {
         );
     }
 
-    @Test
-    void assignCriterionToStudent_shouldThrowClassRubricNotFoundException_whenClassRubricNotOwnedByTeacher() {
-        this.setupSession();
-        when(this.classRubricRepository.findByIdAndTeacherId(CLASS_RUBRIC_ID, TEACHER_ID))
-                .thenReturn(Optional.empty());
-        when(this.messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
+    @Nested
+    class UpdateStudentCriterion {
 
-        assertThrows(ClassRubricNotFoundException.class,
-                () -> this.classRubricService.assignCriterionToStudent(CLASS_RUBRIC_ID, STUDENT_ID, CRITERION_ID));
+        @Test
+        void when_all_validations_pass_expect_student_criterion_to_be_updated() {
+            setupSession();
+            when(studentClassRubricCriteriaRepository.findByIdAndTeacherId(CRITERIA_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(StudentClassRubricCriteria.builder()
+                            .id(CRITERIA_ID).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID).criterionId(CRITERION_ID).build()));
+            setupClassRubricOwnership();
+            when(skillRubricCriteriaRepository.findActiveById(CRITERION_ID))
+                    .thenReturn(Optional.of(SkillRubricCriteria.builder().id(CRITERION_ID).rubricId(RUBRIC_ID).build()));
+            final StudentClassRubricCriteria updated = StudentClassRubricCriteria.builder()
+                    .id(CRITERIA_ID).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID).criterionId(CRITERION_ID).build();
+            when(studentClassRubricCriteriaRepository.save(any(StudentClassRubricCriteria.class))).thenReturn(updated);
+
+            final StudentClassRubricCriteria result = classRubricService.updateStudentCriterion(CRITERIA_ID, CRITERION_ID);
+
+            assertThat(result).isNotNull();
+            verify(studentClassRubricCriteriaRepository).save(any(StudentClassRubricCriteria.class));
+        }
+
+        @Test
+        void when_not_owned_by_teacher_expect_student_class_rubric_criteria_not_found_exception() {
+            setupSession();
+            when(studentClassRubricCriteriaRepository.findByIdAndTeacherId(CRITERIA_ID, TEACHER_ID))
+                    .thenReturn(Optional.empty());
+            when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
+            final ThrowingCallable callable = () -> classRubricService.updateStudentCriterion(CRITERIA_ID, CRITERION_ID);
+
+            assertThatThrownBy(callable).isInstanceOf(StudentClassRubricCriteriaNotFoundException.class);
+        }
     }
 
-    @Test
-    void updateStudentCriterion_shouldUpdate_whenAllValidationsPass() {
-        this.setupSession();
-        when(this.studentClassRubricCriteriaRepository.findByIdAndTeacherId(CRITERIA_ID, TEACHER_ID))
-                .thenReturn(Optional.of(StudentClassRubricCriteria.builder()
-                        .id(CRITERIA_ID).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID).criterionId(CRITERION_ID).build()));
-        this.setupClassRubricOwnership();
-        when(this.skillRubricCriteriaRepository.findActiveById(CRITERION_ID))
-                .thenReturn(Optional.of(SkillRubricCriteria.builder().id(CRITERION_ID).rubricId(RUBRIC_ID).build()));
-        final StudentClassRubricCriteria updated = StudentClassRubricCriteria.builder()
-                .id(CRITERIA_ID).classRubricId(CLASS_RUBRIC_ID).studentId(STUDENT_ID).criterionId(CRITERION_ID).build();
-        when(this.studentClassRubricCriteriaRepository.save(any(StudentClassRubricCriteria.class))).thenReturn(updated);
+    @Nested
+    class RemoveStudentCriterion {
 
-        final StudentClassRubricCriteria result = this.classRubricService.updateStudentCriterion(CRITERIA_ID, CRITERION_ID);
+        @Test
+        void when_criterion_belongs_to_teacher_expect_soft_delete() {
+            setupSession();
+            when(studentClassRubricCriteriaRepository.findByIdAndTeacherId(CRITERIA_ID, TEACHER_ID))
+                    .thenReturn(Optional.of(StudentClassRubricCriteria.builder().id(CRITERIA_ID).build()));
 
-        assertNotNull(result);
-        verify(this.studentClassRubricCriteriaRepository).save(any(StudentClassRubricCriteria.class));
-    }
+            classRubricService.removeStudentCriterion(CRITERIA_ID);
 
-    @Test
-    void updateStudentCriterion_shouldThrowStudentClassRubricCriteriaNotFoundException_whenNotOwnedByTeacher() {
-        this.setupSession();
-        when(this.studentClassRubricCriteriaRepository.findByIdAndTeacherId(CRITERIA_ID, TEACHER_ID))
-                .thenReturn(Optional.empty());
-        when(this.messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
+            verify(studentClassRubricCriteriaRepository).softDeleteById(CRITERIA_ID);
+        }
 
-        assertThrows(StudentClassRubricCriteriaNotFoundException.class,
-                () -> this.classRubricService.updateStudentCriterion(CRITERIA_ID, CRITERION_ID));
-    }
+        @Test
+        void when_not_owned_by_teacher_expect_student_class_rubric_criteria_not_found_exception() {
+            setupSession();
+            when(studentClassRubricCriteriaRepository.findByIdAndTeacherId(CRITERIA_ID, TEACHER_ID))
+                    .thenReturn(Optional.empty());
+            when(messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
+            final ThrowingCallable callable = () -> classRubricService.removeStudentCriterion(CRITERIA_ID);
 
-    @Test
-    void removeStudentCriterion_shouldSoftDelete_whenCriterionBelongsToTeacher() {
-        this.setupSession();
-        when(this.studentClassRubricCriteriaRepository.findByIdAndTeacherId(CRITERIA_ID, TEACHER_ID))
-                .thenReturn(Optional.of(StudentClassRubricCriteria.builder().id(CRITERIA_ID).build()));
-
-        this.classRubricService.removeStudentCriterion(CRITERIA_ID);
-
-        verify(this.studentClassRubricCriteriaRepository).softDeleteById(CRITERIA_ID);
-    }
-
-    @Test
-    void removeStudentCriterion_shouldThrowStudentClassRubricCriteriaNotFoundException_whenNotOwnedByTeacher() {
-        this.setupSession();
-        when(this.studentClassRubricCriteriaRepository.findByIdAndTeacherId(CRITERIA_ID, TEACHER_ID))
-                .thenReturn(Optional.empty());
-        when(this.messageSource.getMessage(any(), any(), any(Locale.class))).thenReturn("error");
-
-        assertThrows(StudentClassRubricCriteriaNotFoundException.class,
-                () -> this.classRubricService.removeStudentCriterion(CRITERIA_ID));
+            assertThatThrownBy(callable).isInstanceOf(StudentClassRubricCriteriaNotFoundException.class);
+        }
     }
 }
 

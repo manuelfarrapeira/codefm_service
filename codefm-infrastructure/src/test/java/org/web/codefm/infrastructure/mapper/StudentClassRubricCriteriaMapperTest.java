@@ -1,5 +1,6 @@
 package org.web.codefm.infrastructure.mapper;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -10,155 +11,164 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class StudentClassRubricCriteriaMapperTest {
 
     private final StudentClassRubricCriteriaMapper mapper = new StudentClassRubricCriteriaMapperImpl();
 
-    @Test
-    void toModel_shouldMapPersistentFields_whenAllFieldsArePresent() {
-        final StudentClassRubricCriteriaEntity entity = new StudentClassRubricCriteriaEntity(1, 100, 200, 300, null);
+    @Nested
+    class ToModel {
 
-        final StudentClassRubricCriteria result = mapper.toModel(entity);
+        @Test
+        void when_all_fields_are_present_expect_persistent_fields_mapped() {
+            final StudentClassRubricCriteriaEntity entity = new StudentClassRubricCriteriaEntity(1, 100, 200, 300, null);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals(100, result.getClassRubricId());
-        assertEquals(200, result.getStudentId());
-        assertEquals(300, result.getCriterionId());
-        assertNull(result.getDeletionDate());
+            final StudentClassRubricCriteria result = mapper.toModel(entity);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            assertThat(result.getClassRubricId()).isEqualTo(100);
+            assertThat(result.getStudentId()).isEqualTo(200);
+            assertThat(result.getCriterionId()).isEqualTo(300);
+            assertThat(result.getDeletionDate()).isNull();
+        }
+
+        @Test
+        void when_deletion_date_is_present_expect_deletion_date_mapped() {
+            final LocalDate deletionDate = LocalDate.of(2026, 3, 15);
+            final StudentClassRubricCriteriaEntity entity = new StudentClassRubricCriteriaEntity(1, 100, 200, 300, deletionDate);
+
+            final StudentClassRubricCriteria result = mapper.toModel(entity);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getDeletionDate()).isEqualTo(deletionDate);
+        }
+
+        @Test
+        void when_entity_contains_only_persistent_fields_expect_enrichment_fields_ignored() {
+            final StudentClassRubricCriteriaEntity entity = new StudentClassRubricCriteriaEntity(1, 100, 200, 300, null);
+
+            final StudentClassRubricCriteria result = mapper.toModel(entity);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getRubricId()).isNull();
+            assertThat(result.getStudentName()).isNull();
+            assertThat(result.getStudentSurnames()).isNull();
+            assertThat(result.getCriterionDescription()).isNull();
+            assertThat(result.getQualification()).isNull();
+            assertThat(result.getGradeStart()).isNull();
+            assertThat(result.getGradeEnd()).isNull();
+        }
+
+        @Test
+        void when_entity_is_null_expect_null_returned() {
+            final StudentClassRubricCriteria result = mapper.toModel(null);
+
+            assertThat(result).isNull();
+        }
     }
 
-    @Test
-    void toModel_shouldMapDeletionDate_whenPresent() {
-        final LocalDate deletionDate = LocalDate.of(2026, 3, 15);
-        final StudentClassRubricCriteriaEntity entity = new StudentClassRubricCriteriaEntity(1, 100, 200, 300, deletionDate);
+    @Nested
+    class ToModelList {
 
-        final StudentClassRubricCriteria result = mapper.toModel(entity);
+        @Test
+        void when_entities_are_provided_expect_all_entities_mapped() {
+            final StudentClassRubricCriteriaEntity entity1 = new StudentClassRubricCriteriaEntity(1, 100, 200, 300, null);
+            final StudentClassRubricCriteriaEntity entity2 = new StudentClassRubricCriteriaEntity(2, 101, 201, 301, null);
 
-        assertNotNull(result);
-        assertEquals(deletionDate, result.getDeletionDate());
+            final List<StudentClassRubricCriteria> result = mapper.toModelList(Arrays.asList(entity1, entity2));
+
+            assertThat(result).isNotNull().hasSize(2);
+            assertThat(result.get(0).getId()).isEqualTo(1);
+            assertThat(result.get(0).getClassRubricId()).isEqualTo(100);
+            assertThat(result.get(1).getId()).isEqualTo(2);
+            assertThat(result.get(1).getClassRubricId()).isEqualTo(101);
+        }
+
+        @Test
+        void when_input_is_empty_expect_empty_list_returned() {
+            final List<StudentClassRubricCriteria> result = mapper.toModelList(List.of());
+
+            assertThat(result).isNotNull().isEmpty();
+        }
+
+        @Test
+        void when_input_is_null_expect_null_returned() {
+            final List<StudentClassRubricCriteria> result = mapper.toModelList(null);
+
+            assertThat(result).isNull();
+        }
     }
 
-    @Test
-    void toModel_shouldIgnoreEnrichmentFields() {
-        final StudentClassRubricCriteriaEntity entity = new StudentClassRubricCriteriaEntity(1, 100, 200, 300, null);
+    @Nested
+    class ToEntity {
 
-        final StudentClassRubricCriteria result = mapper.toModel(entity);
+        @Test
+        void when_persistent_fields_are_present_expect_persistent_fields_mapped() {
+            final StudentClassRubricCriteria model = StudentClassRubricCriteria.builder()
+                    .id(1).classRubricId(100).studentId(200).criterionId(300).deletionDate(null).build();
 
-        assertNotNull(result);
-        assertNull(result.getRubricId());
-        assertNull(result.getStudentName());
-        assertNull(result.getStudentSurnames());
-        assertNull(result.getCriterionDescription());
-        assertNull(result.getQualification());
-        assertNull(result.getGradeStart());
-        assertNull(result.getGradeEnd());
-    }
+            final StudentClassRubricCriteriaEntity result = mapper.toEntity(model);
 
-    @Test
-    void toModel_shouldReturnNull_whenEntityIsNull() {
-        final StudentClassRubricCriteria result = mapper.toModel(null);
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            assertThat(result.getClassRubricId()).isEqualTo(100);
+            assertThat(result.getStudentId()).isEqualTo(200);
+            assertThat(result.getCriterionId()).isEqualTo(300);
+            assertThat(result.getDeletionDate()).isNull();
+        }
 
-        assertNull(result);
-    }
+        @Test
+        void when_deletion_date_is_present_expect_deletion_date_mapped() {
+            final LocalDate deletionDate = LocalDate.of(2026, 3, 15);
+            final StudentClassRubricCriteria model = StudentClassRubricCriteria.builder()
+                    .id(1).classRubricId(100).studentId(200).criterionId(300).deletionDate(deletionDate).build();
 
-    @Test
-    void toModelList_shouldMapAllEntities() {
-        final StudentClassRubricCriteriaEntity entity1 = new StudentClassRubricCriteriaEntity(1, 100, 200, 300, null);
-        final StudentClassRubricCriteriaEntity entity2 = new StudentClassRubricCriteriaEntity(2, 101, 201, 301, null);
+            final StudentClassRubricCriteriaEntity result = mapper.toEntity(model);
 
-        final List<StudentClassRubricCriteria> result = mapper.toModelList(Arrays.asList(entity1, entity2));
+            assertThat(result).isNotNull();
+            assertThat(result.getDeletionDate()).isEqualTo(deletionDate);
+        }
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals(1, result.get(0).getId());
-        assertEquals(100, result.get(0).getClassRubricId());
-        assertEquals(2, result.get(1).getId());
-        assertEquals(101, result.get(1).getClassRubricId());
-    }
+        @Test
+        void when_model_is_null_expect_null_returned() {
+            final StudentClassRubricCriteriaEntity result = mapper.toEntity(null);
 
-    @Test
-    void toModelList_shouldReturnEmptyList_whenInputIsEmpty() {
-        final List<StudentClassRubricCriteria> result = mapper.toModelList(List.of());
+            assertThat(result).isNull();
+        }
 
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
+        @Test
+        void when_domain_enrichment_fields_are_set_expect_only_persistent_fields_mapped() {
+            final StudentClassRubricCriteria model = StudentClassRubricCriteria.builder()
+                    .id(1).classRubricId(100).studentId(200).criterionId(300)
+                    .rubricId(50).rubricTitle("Rubric").studentName("Juan").studentSurnames("García")
+                    .criterionDescription("Lo hace bien").qualification("Notable").gradeStart(7).gradeEnd(10)
+                    .build();
 
-    @Test
-    void toModelList_shouldReturnNull_whenInputIsNull() {
-        final List<StudentClassRubricCriteria> result = mapper.toModelList(null);
+            final StudentClassRubricCriteriaEntity result = mapper.toEntity(model);
 
-        assertNull(result);
-    }
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            assertThat(result.getClassRubricId()).isEqualTo(100);
+            assertThat(result.getStudentId()).isEqualTo(200);
+            assertThat(result.getCriterionId()).isEqualTo(300);
+        }
 
-    @Test
-    void toEntity_shouldMapPersistentFields() {
-        final StudentClassRubricCriteria model = StudentClassRubricCriteria.builder()
-                .id(1).classRubricId(100).studentId(200).criterionId(300).deletionDate(null).build();
+        @Test
+        void when_entity_is_mapped_to_model_and_back_expect_persistent_fields_preserved() {
+            final StudentClassRubricCriteriaEntity original =
+                    new StudentClassRubricCriteriaEntity(1, 100, 200, 300, LocalDate.of(2026, 1, 1));
 
-        final StudentClassRubricCriteriaEntity result = mapper.toEntity(model);
+            final StudentClassRubricCriteria model = mapper.toModel(original);
+            final StudentClassRubricCriteriaEntity roundTrip = mapper.toEntity(model);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals(100, result.getClassRubricId());
-        assertEquals(200, result.getStudentId());
-        assertEquals(300, result.getCriterionId());
-        assertNull(result.getDeletionDate());
-    }
-
-    @Test
-    void toEntity_shouldMapDeletionDate_whenPresent() {
-        final LocalDate deletionDate = LocalDate.of(2026, 3, 15);
-        final StudentClassRubricCriteria model = StudentClassRubricCriteria.builder()
-                .id(1).classRubricId(100).studentId(200).criterionId(300).deletionDate(deletionDate).build();
-
-        final StudentClassRubricCriteriaEntity result = mapper.toEntity(model);
-
-        assertNotNull(result);
-        assertEquals(deletionDate, result.getDeletionDate());
-    }
-
-    @Test
-    void toEntity_shouldReturnNull_whenModelIsNull() {
-        final StudentClassRubricCriteriaEntity result = mapper.toEntity(null);
-
-        assertNull(result);
-    }
-
-    @Test
-    void toEntity_shouldNotFailWhenDomainEnrichmentFieldsAreSet() {
-        final StudentClassRubricCriteria model = StudentClassRubricCriteria.builder()
-                .id(1).classRubricId(100).studentId(200).criterionId(300)
-                .rubricId(50).rubricTitle("Rubric").studentName("Juan").studentSurnames("García")
-                .criterionDescription("Lo hace bien").qualification("Notable").gradeStart(7).gradeEnd(10)
-                .build();
-
-        final StudentClassRubricCriteriaEntity result = mapper.toEntity(model);
-
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals(100, result.getClassRubricId());
-        assertEquals(200, result.getStudentId());
-        assertEquals(300, result.getCriterionId());
-    }
-
-    @Test
-    void toModelAndToEntity_shouldBeReversibleForPersistentFields() {
-        final StudentClassRubricCriteriaEntity original =
-                new StudentClassRubricCriteriaEntity(1, 100, 200, 300, LocalDate.of(2026, 1, 1));
-
-        final StudentClassRubricCriteria model = mapper.toModel(original);
-        final StudentClassRubricCriteriaEntity roundTrip = mapper.toEntity(model);
-
-        assertEquals(original.getId(), roundTrip.getId());
-        assertEquals(original.getClassRubricId(), roundTrip.getClassRubricId());
-        assertEquals(original.getStudentId(), roundTrip.getStudentId());
-        assertEquals(original.getCriterionId(), roundTrip.getCriterionId());
-        assertEquals(original.getDeletionDate(), roundTrip.getDeletionDate());
+            assertThat(roundTrip.getId()).isEqualTo(original.getId());
+            assertThat(roundTrip.getClassRubricId()).isEqualTo(original.getClassRubricId());
+            assertThat(roundTrip.getStudentId()).isEqualTo(original.getStudentId());
+            assertThat(roundTrip.getCriterionId()).isEqualTo(original.getCriterionId());
+            assertThat(roundTrip.getDeletionDate()).isEqualTo(original.getDeletionDate());
+        }
     }
 }
-

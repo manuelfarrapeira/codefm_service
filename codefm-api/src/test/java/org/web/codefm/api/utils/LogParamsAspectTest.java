@@ -3,15 +3,15 @@ package org.web.codefm.api.utils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.session.SessionUser;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,93 +29,101 @@ class LogParamsAspectTest {
     @Mock
     private MethodSignature methodSignature;
 
-    @InjectMocks
     private LogParamsAspect logParamsAspect;
 
     @BeforeEach
-    void setUp() {
-        logParamsAspect = new LogParamsAspect(sessionUser, request);
+    void beforeEach() {
+        this.logParamsAspect = new LogParamsAspect(this.sessionUser, this.request);
     }
 
-    @Test
-    void logsWithUserInfoWhenSessionUserPresent() throws Throwable {
-        when(sessionUser.getUsername()).thenReturn("user1");
-        when(sessionUser.getRoles()).thenReturn(java.util.List.of("ADMIN", "USER"));
-        when(sessionUser.getPermisos()).thenReturn(java.util.List.of("READ", "WRITE"));
-        when(request.getRequestURI()).thenReturn("/api/test");
-        when(request.getMethod()).thenReturn("GET");
-        when(joinPoint.getSignature()).thenReturn(methodSignature);
-        when(methodSignature.getParameterNames()).thenReturn(new String[]{"param1"});
-        when(joinPoint.getArgs()).thenReturn(new Object[]{"value1"});
-        when(joinPoint.proceed()).thenReturn("result");
+    @Nested
+    class PrintCustomLog {
 
-        Object result = logParamsAspect.printCustomLog(joinPoint, null);
+        @Test
+        void when_session_user_is_present_expect_result_returned() throws Throwable {
+            when(LogParamsAspectTest.this.sessionUser.getUsername()).thenReturn("user1");
+            when(LogParamsAspectTest.this.sessionUser.getRoles()).thenReturn(java.util.List.of("ADMIN", "USER"));
+            when(LogParamsAspectTest.this.sessionUser.getPermisos()).thenReturn(java.util.List.of("READ", "WRITE"));
+            when(LogParamsAspectTest.this.request.getRequestURI()).thenReturn("/api/test");
+            when(LogParamsAspectTest.this.request.getMethod()).thenReturn("GET");
+            when(LogParamsAspectTest.this.joinPoint.getSignature()).thenReturn(LogParamsAspectTest.this.methodSignature);
+            when(LogParamsAspectTest.this.methodSignature.getParameterNames()).thenReturn(new String[]{"param1"});
+            when(LogParamsAspectTest.this.joinPoint.getArgs()).thenReturn(new Object[]{"value1"});
+            when(LogParamsAspectTest.this.joinPoint.proceed()).thenReturn("result");
 
-        Assertions.assertEquals("result", result);
-    }
+            final Object result = LogParamsAspectTest.this.logParamsAspect.printCustomLog(LogParamsAspectTest.this.joinPoint,
+                    null);
 
-    @Test
-    void logsWithoutUserInfoWhenSessionUserNull() throws Throwable {
-        when(sessionUser.getUsername()).thenReturn(null);
-        when(request.getRequestURI()).thenReturn("/api/test");
-        when(request.getMethod()).thenReturn("POST");
-        when(joinPoint.getSignature()).thenReturn(methodSignature);
-        when(methodSignature.getParameterNames()).thenReturn(new String[]{"param1"});
-        when(joinPoint.getArgs()).thenReturn(new Object[]{"value1"});
-        when(joinPoint.proceed()).thenReturn("result");
+            assertThat(result).isEqualTo("result");
+        }
 
-        Object result = logParamsAspect.printCustomLog(joinPoint, null);
+        @Test
+        void when_session_user_is_missing_expect_result_returned() throws Throwable {
+            when(LogParamsAspectTest.this.sessionUser.getUsername()).thenReturn(null);
+            when(LogParamsAspectTest.this.request.getRequestURI()).thenReturn("/api/test");
+            when(LogParamsAspectTest.this.request.getMethod()).thenReturn("POST");
+            when(LogParamsAspectTest.this.joinPoint.getSignature()).thenReturn(LogParamsAspectTest.this.methodSignature);
+            when(LogParamsAspectTest.this.methodSignature.getParameterNames()).thenReturn(new String[]{"param1"});
+            when(LogParamsAspectTest.this.joinPoint.getArgs()).thenReturn(new Object[]{"value1"});
+            when(LogParamsAspectTest.this.joinPoint.proceed()).thenReturn("result");
 
-        Assertions.assertEquals("result", result);
-    }
+            final Object result = LogParamsAspectTest.this.logParamsAspect.printCustomLog(LogParamsAspectTest.this.joinPoint,
+                    null);
 
-    @Test
-    void handlesEmptyParameterNamesGracefully() throws Throwable {
-        when(sessionUser.getUsername()).thenReturn("user1");
-        when(sessionUser.getRoles()).thenReturn(java.util.List.of());
-        when(sessionUser.getPermisos()).thenReturn(java.util.List.of());
-        when(request.getRequestURI()).thenReturn("/api/empty");
-        when(request.getMethod()).thenReturn("PUT");
-        when(joinPoint.getSignature()).thenReturn(methodSignature);
-        when(methodSignature.getParameterNames()).thenReturn(new String[]{});
-        when(joinPoint.getArgs()).thenReturn(new Object[]{});
-        when(joinPoint.proceed()).thenReturn("result");
+            assertThat(result).isEqualTo("result");
+        }
 
-        Object result = logParamsAspect.printCustomLog(joinPoint, null);
+        @Test
+        void when_parameter_names_are_empty_expect_result_returned() throws Throwable {
+            when(LogParamsAspectTest.this.sessionUser.getUsername()).thenReturn("user1");
+            when(LogParamsAspectTest.this.sessionUser.getRoles()).thenReturn(java.util.List.of());
+            when(LogParamsAspectTest.this.sessionUser.getPermisos()).thenReturn(java.util.List.of());
+            when(LogParamsAspectTest.this.request.getRequestURI()).thenReturn("/api/empty");
+            when(LogParamsAspectTest.this.request.getMethod()).thenReturn("PUT");
+            when(LogParamsAspectTest.this.joinPoint.getSignature()).thenReturn(LogParamsAspectTest.this.methodSignature);
+            when(LogParamsAspectTest.this.methodSignature.getParameterNames()).thenReturn(new String[]{});
+            when(LogParamsAspectTest.this.joinPoint.getArgs()).thenReturn(new Object[]{});
+            when(LogParamsAspectTest.this.joinPoint.proceed()).thenReturn("result");
 
-        Assertions.assertEquals("result", result);
-    }
+            final Object result = LogParamsAspectTest.this.logParamsAspect.printCustomLog(LogParamsAspectTest.this.joinPoint,
+                    null);
 
-    @Test
-    void handlesNullRequestGracefully() throws Throwable {
-        logParamsAspect = new LogParamsAspect(sessionUser, null);
-        when(sessionUser.getUsername()).thenReturn("user1");
-        when(sessionUser.getRoles()).thenReturn(java.util.List.of("ADMIN"));
-        when(sessionUser.getPermisos()).thenReturn(java.util.List.of("READ"));
-        when(joinPoint.getSignature()).thenReturn(methodSignature);
-        when(methodSignature.getParameterNames()).thenReturn(new String[]{"param1"});
-        when(joinPoint.getArgs()).thenReturn(new Object[]{"value1"});
-        when(joinPoint.proceed()).thenReturn("result");
+            assertThat(result).isEqualTo("result");
+        }
 
-        Object result = logParamsAspect.printCustomLog(joinPoint, null);
+        @Test
+        void when_request_is_null_expect_result_returned() throws Throwable {
+            LogParamsAspectTest.this.logParamsAspect = new LogParamsAspect(LogParamsAspectTest.this.sessionUser, null);
+            when(LogParamsAspectTest.this.sessionUser.getUsername()).thenReturn("user1");
+            when(LogParamsAspectTest.this.sessionUser.getRoles()).thenReturn(java.util.List.of("ADMIN"));
+            when(LogParamsAspectTest.this.sessionUser.getPermisos()).thenReturn(java.util.List.of("READ"));
+            when(LogParamsAspectTest.this.joinPoint.getSignature()).thenReturn(LogParamsAspectTest.this.methodSignature);
+            when(LogParamsAspectTest.this.methodSignature.getParameterNames()).thenReturn(new String[]{"param1"});
+            when(LogParamsAspectTest.this.joinPoint.getArgs()).thenReturn(new Object[]{"value1"});
+            when(LogParamsAspectTest.this.joinPoint.proceed()).thenReturn("result");
 
-        Assertions.assertEquals("result", result);
-    }
+            final Object result = LogParamsAspectTest.this.logParamsAspect.printCustomLog(LogParamsAspectTest.this.joinPoint,
+                    null);
 
-    @Test
-    void printsNullForNullArgumentValues() throws Throwable {
-        when(sessionUser.getUsername()).thenReturn("user1");
-        when(sessionUser.getRoles()).thenReturn(java.util.List.of("ADMIN"));
-        when(sessionUser.getPermisos()).thenReturn(java.util.List.of("READ"));
-        when(request.getRequestURI()).thenReturn("/api/null");
-        when(request.getMethod()).thenReturn("PATCH");
-        when(joinPoint.getSignature()).thenReturn(methodSignature);
-        when(methodSignature.getParameterNames()).thenReturn(new String[]{"param1", "param2"});
-        when(joinPoint.getArgs()).thenReturn(new Object[]{null, "value2"});
-        when(joinPoint.proceed()).thenReturn("result");
+            assertThat(result).isEqualTo("result");
+        }
 
-        Object result = logParamsAspect.printCustomLog(joinPoint, null);
+        @Test
+        void when_argument_value_is_null_expect_result_returned() throws Throwable {
+            when(LogParamsAspectTest.this.sessionUser.getUsername()).thenReturn("user1");
+            when(LogParamsAspectTest.this.sessionUser.getRoles()).thenReturn(java.util.List.of("ADMIN"));
+            when(LogParamsAspectTest.this.sessionUser.getPermisos()).thenReturn(java.util.List.of("READ"));
+            when(LogParamsAspectTest.this.request.getRequestURI()).thenReturn("/api/null");
+            when(LogParamsAspectTest.this.request.getMethod()).thenReturn("PATCH");
+            when(LogParamsAspectTest.this.joinPoint.getSignature()).thenReturn(LogParamsAspectTest.this.methodSignature);
+            when(LogParamsAspectTest.this.methodSignature.getParameterNames()).thenReturn(new String[]{"param1", "param2"});
+            when(LogParamsAspectTest.this.joinPoint.getArgs()).thenReturn(new Object[]{null, "value2"});
+            when(LogParamsAspectTest.this.joinPoint.proceed()).thenReturn("result");
 
-        org.junit.jupiter.api.Assertions.assertEquals("result", result);
+            final Object result = LogParamsAspectTest.this.logParamsAspect.printCustomLog(LogParamsAspectTest.this.joinPoint,
+                    null);
+
+            assertThat(result).isEqualTo("result");
+        }
     }
 }

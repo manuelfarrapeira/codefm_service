@@ -1,8 +1,9 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.GroupAssignmentGrade;
@@ -13,11 +14,13 @@ import org.web.codefm.infrastructure.mapper.GroupAssignmentGradeMapper;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class GroupAssignmentGradeRepositoryImplTest {
+
+    private GroupAssignmentGradeRepositoryImpl groupAssignmentGradeRepository;
 
     @Mock
     private GroupAssignmentGradeJPARepository groupAssignmentGradeJPARepository;
@@ -25,169 +28,211 @@ class GroupAssignmentGradeRepositoryImplTest {
     @Mock
     private GroupAssignmentGradeMapper groupAssignmentGradeMapper;
 
-    @InjectMocks
-    private GroupAssignmentGradeRepositoryImpl groupAssignmentGradeRepository;
-
-    @Test
-    void findByAssignmentId_shouldReturnMappedGrades() {
-        final List<GroupAssignmentGradeEntity> entities = List.of(
-                new GroupAssignmentGradeEntity(1, 100, 10, 8.5, null),
-                new GroupAssignmentGradeEntity(2, 100, 20, 9.0, null));
-        final List<GroupAssignmentGrade> expected = List.of(
-                GroupAssignmentGrade.builder().id(1).groupAssignmentId(100).groupId(10).grade(8.5).build(),
-                GroupAssignmentGrade.builder().id(2).groupAssignmentId(100).groupId(20).grade(9.0).build());
-
-        when(this.groupAssignmentGradeJPARepository.findByGroupAssignmentIdAndDeletionDateIsNull(100)).thenReturn(entities);
-        when(this.groupAssignmentGradeMapper.toModelList(entities)).thenReturn(expected);
-
-        final List<GroupAssignmentGrade> result = this.groupAssignmentGradeRepository.findByAssignmentId(100);
-
-        assertEquals(2, result.size());
-        verify(this.groupAssignmentGradeJPARepository).findByGroupAssignmentIdAndDeletionDateIsNull(100);
+    @BeforeEach
+    void beforeEach() {
+        this.groupAssignmentGradeRepository = new GroupAssignmentGradeRepositoryImpl(this.groupAssignmentGradeJPARepository,
+                this.groupAssignmentGradeMapper);
     }
 
-    @Test
-    void findByAssignmentId_shouldReturnEmptyList_whenNoGradesExist() {
-        when(this.groupAssignmentGradeJPARepository.findByGroupAssignmentIdAndDeletionDateIsNull(999)).thenReturn(List.of());
-        when(this.groupAssignmentGradeMapper.toModelList(List.of())).thenReturn(List.of());
+    @Nested
+    class FindByAssignmentId {
 
-        final List<GroupAssignmentGrade> result = this.groupAssignmentGradeRepository.findByAssignmentId(999);
+        @Test
+        void when_grades_exist_expect_mapped_grades_returned() {
+            final List<GroupAssignmentGradeEntity> entities = List.of(
+                    new GroupAssignmentGradeEntity(1, 100, 10, 8.5, null),
+                    new GroupAssignmentGradeEntity(2, 100, 20, 9.0, null));
+            final List<GroupAssignmentGrade> expected = List.of(
+                    GroupAssignmentGrade.builder().id(1).groupAssignmentId(100).groupId(10).grade(8.5).build(),
+                    GroupAssignmentGrade.builder().id(2).groupAssignmentId(100).groupId(20).grade(9.0).build());
 
-        assertTrue(result.isEmpty());
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository.findByGroupAssignmentIdAndDeletionDateIsNull(100)).thenReturn(entities);
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeMapper.toModelList(entities)).thenReturn(expected);
+
+            final List<GroupAssignmentGrade> result = GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.findByAssignmentId(100);
+
+            assertThat(result).hasSize(2);
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository)
+                    .findByGroupAssignmentIdAndDeletionDateIsNull(100);
+        }
+
+        @Test
+        void when_no_grades_exist_expect_empty_list_returned() {
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository.findByGroupAssignmentIdAndDeletionDateIsNull(999)).thenReturn(List.of());
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeMapper.toModelList(List.of())).thenReturn(List.of());
+
+            final List<GroupAssignmentGrade> result = GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.findByAssignmentId(999);
+
+            assertThat(result).isEmpty();
+        }
     }
 
-    @Test
-    void findByAssignmentIdAndGroupId_shouldReturnMappedGrade_whenFound() {
-        final GroupAssignmentGradeEntity entity = new GroupAssignmentGradeEntity(1, 100, 10, 8.5, null);
-        final GroupAssignmentGrade expected = GroupAssignmentGrade.builder()
-                .id(1).groupAssignmentId(100).groupId(10).grade(8.5).build();
+    @Nested
+    class FindByAssignmentIdAndGroupId {
 
-        when(this.groupAssignmentGradeJPARepository.findByGroupAssignmentIdAndGroupIdAndDeletionDateIsNull(100, 10))
-                .thenReturn(Optional.of(entity));
-        when(this.groupAssignmentGradeMapper.toModel(entity)).thenReturn(expected);
+        @Test
+        void when_grade_is_found_expect_mapped_grade_returned() {
+            final GroupAssignmentGradeEntity entity = new GroupAssignmentGradeEntity(1, 100, 10, 8.5, null);
+            final GroupAssignmentGrade expected = GroupAssignmentGrade.builder()
+                    .id(1).groupAssignmentId(100).groupId(10).grade(8.5).build();
 
-        final Optional<GroupAssignmentGrade> result = this.groupAssignmentGradeRepository.findByAssignmentIdAndGroupId(100, 10);
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository.findByGroupAssignmentIdAndGroupIdAndDeletionDateIsNull(100, 10))
+                    .thenReturn(Optional.of(entity));
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeMapper.toModel(entity)).thenReturn(expected);
 
-        assertTrue(result.isPresent());
-        assertEquals(1, result.get().getId());
-        assertEquals(10, result.get().getGroupId());
+            final Optional<GroupAssignmentGrade> result = GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.findByAssignmentIdAndGroupId(100, 10);
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getId()).isEqualTo(1);
+            assertThat(result.get().getGroupId()).isEqualTo(10);
+        }
+
+        @Test
+        void when_grade_is_not_found_expect_empty_optional_returned() {
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository.findByGroupAssignmentIdAndGroupIdAndDeletionDateIsNull(100, 999))
+                    .thenReturn(Optional.empty());
+
+            final Optional<GroupAssignmentGrade> result = GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.findByAssignmentIdAndGroupId(100, 999);
+
+            assertThat(result).isNotPresent();
+        }
     }
 
-    @Test
-    void findByAssignmentIdAndGroupId_shouldReturnEmpty_whenNotFound() {
-        when(this.groupAssignmentGradeJPARepository.findByGroupAssignmentIdAndGroupIdAndDeletionDateIsNull(100, 999))
-                .thenReturn(Optional.empty());
+    @Nested
+    class Save {
 
-        final Optional<GroupAssignmentGrade> result = this.groupAssignmentGradeRepository.findByAssignmentIdAndGroupId(100, 999);
+        @Test
+        void when_valid_data_expect_entity_saved() {
+            final GroupAssignmentGrade input = GroupAssignmentGrade.builder()
+                    .groupAssignmentId(100).groupId(10).grade(8.5).build();
+            final GroupAssignmentGradeEntity entity = new GroupAssignmentGradeEntity(null, 100, 10, 8.5, null);
+            final GroupAssignmentGradeEntity savedEntity = new GroupAssignmentGradeEntity(1, 100, 10, 8.5, null);
+            final GroupAssignmentGrade expected = GroupAssignmentGrade.builder()
+                    .id(1).groupAssignmentId(100).groupId(10).grade(8.5).build();
 
-        assertFalse(result.isPresent());
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeMapper.toEntity(input)).thenReturn(entity);
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository.save(entity)).thenReturn(savedEntity);
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeMapper.toModel(savedEntity)).thenReturn(expected);
+
+            final GroupAssignmentGrade result = GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.save(input);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository).save(entity);
+        }
     }
 
-    @Test
-    void save_shouldMapAndSaveEntity() {
-        final GroupAssignmentGrade input = GroupAssignmentGrade.builder()
-                .groupAssignmentId(100).groupId(10).grade(8.5).build();
-        final GroupAssignmentGradeEntity entity = new GroupAssignmentGradeEntity(null, 100, 10, 8.5, null);
-        final GroupAssignmentGradeEntity savedEntity = new GroupAssignmentGradeEntity(1, 100, 10, 8.5, null);
-        final GroupAssignmentGrade expected = GroupAssignmentGrade.builder()
-                .id(1).groupAssignmentId(100).groupId(10).grade(8.5).build();
+    @Nested
+    class Update {
 
-        when(this.groupAssignmentGradeMapper.toEntity(input)).thenReturn(entity);
-        when(this.groupAssignmentGradeJPARepository.save(entity)).thenReturn(savedEntity);
-        when(this.groupAssignmentGradeMapper.toModel(savedEntity)).thenReturn(expected);
+        @Test
+        void when_valid_data_expect_entity_updated() {
+            final GroupAssignmentGrade input = GroupAssignmentGrade.builder()
+                    .id(1).groupAssignmentId(100).groupId(10).grade(9.5).build();
+            final GroupAssignmentGradeEntity entity = new GroupAssignmentGradeEntity(1, 100, 10, 9.5, null);
+            final GroupAssignmentGradeEntity savedEntity = new GroupAssignmentGradeEntity(1, 100, 10, 9.5, null);
+            final GroupAssignmentGrade expected = GroupAssignmentGrade.builder()
+                    .id(1).groupAssignmentId(100).groupId(10).grade(9.5).build();
 
-        final GroupAssignmentGrade result = this.groupAssignmentGradeRepository.save(input);
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeMapper.toEntity(input)).thenReturn(entity);
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository.save(entity)).thenReturn(savedEntity);
+            when(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeMapper.toModel(savedEntity)).thenReturn(expected);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        verify(this.groupAssignmentGradeJPARepository).save(entity);
+            final GroupAssignmentGrade result = GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.update(input);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getGrade()).isEqualTo(9.5);
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository).save(entity);
+        }
     }
 
-    @Test
-    void update_shouldMapAndSaveEntity() {
-        final GroupAssignmentGrade input = GroupAssignmentGrade.builder()
-                .id(1).groupAssignmentId(100).groupId(10).grade(9.5).build();
-        final GroupAssignmentGradeEntity entity = new GroupAssignmentGradeEntity(1, 100, 10, 9.5, null);
-        final GroupAssignmentGradeEntity savedEntity = new GroupAssignmentGradeEntity(1, 100, 10, 9.5, null);
-        final GroupAssignmentGrade expected = GroupAssignmentGrade.builder()
-                .id(1).groupAssignmentId(100).groupId(10).grade(9.5).build();
+    @Nested
+    class SoftDeleteById {
 
-        when(this.groupAssignmentGradeMapper.toEntity(input)).thenReturn(entity);
-        when(this.groupAssignmentGradeJPARepository.save(entity)).thenReturn(savedEntity);
-        when(this.groupAssignmentGradeMapper.toModel(savedEntity)).thenReturn(expected);
+        @Test
+        void when_called_expect_jpa_delegated() {
+            GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.softDeleteById(1);
 
-        final GroupAssignmentGrade result = this.groupAssignmentGradeRepository.update(input);
-
-        assertNotNull(result);
-        assertEquals(9.5, result.getGrade());
-        verify(this.groupAssignmentGradeJPARepository).save(entity);
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository).softDeleteById(1);
+        }
     }
 
-    @Test
-    void softDeleteById_shouldDelegateToJPARepository() {
-        this.groupAssignmentGradeRepository.softDeleteById(1);
+    @Nested
+    class SoftDeleteByGroupAssignmentId {
 
-        verify(this.groupAssignmentGradeJPARepository).softDeleteById(1);
+        @Test
+        void when_called_expect_jpa_delegated() {
+            GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.softDeleteByGroupAssignmentId(100);
+
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository).softDeleteByGroupAssignmentId(100);
+        }
     }
 
-    @Test
-    void softDeleteByGroupAssignmentId_shouldDelegateToJPARepository() {
-        this.groupAssignmentGradeRepository.softDeleteByGroupAssignmentId(100);
+    @Nested
+    class SoftDeleteByGroupAssignmentIds {
 
-        verify(this.groupAssignmentGradeJPARepository).softDeleteByGroupAssignmentId(100);
+        @Test
+        void when_ids_exist_expect_jpa_delegated() {
+            final List<Integer> ids = List.of(100, 200);
+
+            GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.softDeleteByGroupAssignmentIds(ids);
+
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository).softDeleteByGroupAssignmentIds(ids);
+        }
+
+        @Test
+        void when_list_is_null_expect_no_jpa_call() {
+            GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.softDeleteByGroupAssignmentIds(null);
+
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository, never())
+                    .softDeleteByGroupAssignmentIds(any());
+        }
+
+        @Test
+        void when_list_is_empty_expect_no_jpa_call() {
+            GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.softDeleteByGroupAssignmentIds(List.of());
+
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository, never())
+                    .softDeleteByGroupAssignmentIds(any());
+        }
     }
 
-    @Test
-    void softDeleteByGroupAssignmentIds_shouldDelegateToJPARepository() {
-        final List<Integer> ids = List.of(100, 200);
+    @Nested
+    class SoftDeleteByGroupId {
 
-        this.groupAssignmentGradeRepository.softDeleteByGroupAssignmentIds(ids);
+        @Test
+        void when_called_expect_jpa_delegated() {
+            GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.softDeleteByGroupId(50);
 
-        verify(this.groupAssignmentGradeJPARepository).softDeleteByGroupAssignmentIds(ids);
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository).softDeleteByGroupId(50);
+        }
     }
 
-    @Test
-    void softDeleteByGroupAssignmentIds_shouldDoNothing_whenListIsNull() {
-        this.groupAssignmentGradeRepository.softDeleteByGroupAssignmentIds(null);
+    @Nested
+    class SoftDeleteByGroupIds {
 
-        verify(this.groupAssignmentGradeJPARepository, never()).softDeleteByGroupAssignmentIds(any());
-    }
+        @Test
+        void when_ids_exist_expect_jpa_delegated() {
+            final List<Integer> ids = List.of(50, 60);
 
-    @Test
-    void softDeleteByGroupAssignmentIds_shouldDoNothing_whenListIsEmpty() {
-        this.groupAssignmentGradeRepository.softDeleteByGroupAssignmentIds(List.of());
+            GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.softDeleteByGroupIds(ids);
 
-        verify(this.groupAssignmentGradeJPARepository, never()).softDeleteByGroupAssignmentIds(any());
-    }
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository).softDeleteByGroupIds(ids);
+        }
 
-    @Test
-    void softDeleteByGroupId_shouldDelegateToJPARepository() {
-        this.groupAssignmentGradeRepository.softDeleteByGroupId(50);
+        @Test
+        void when_list_is_null_expect_no_jpa_call() {
+            GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.softDeleteByGroupIds(null);
 
-        verify(this.groupAssignmentGradeJPARepository).softDeleteByGroupId(50);
-    }
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository, never()).softDeleteByGroupIds(any());
+        }
 
-    @Test
-    void softDeleteByGroupIds_shouldDelegateToJPARepository() {
-        final List<Integer> ids = List.of(50, 60);
+        @Test
+        void when_list_is_empty_expect_no_jpa_call() {
+            GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeRepository.softDeleteByGroupIds(List.of());
 
-        this.groupAssignmentGradeRepository.softDeleteByGroupIds(ids);
-
-        verify(this.groupAssignmentGradeJPARepository).softDeleteByGroupIds(ids);
-    }
-
-    @Test
-    void softDeleteByGroupIds_shouldDoNothing_whenListIsNull() {
-        this.groupAssignmentGradeRepository.softDeleteByGroupIds(null);
-
-        verify(this.groupAssignmentGradeJPARepository, never()).softDeleteByGroupIds(any());
-    }
-
-    @Test
-    void softDeleteByGroupIds_shouldDoNothing_whenListIsEmpty() {
-        this.groupAssignmentGradeRepository.softDeleteByGroupIds(List.of());
-
-        verify(this.groupAssignmentGradeJPARepository, never()).softDeleteByGroupIds(any());
+            verify(GroupAssignmentGradeRepositoryImplTest.this.groupAssignmentGradeJPARepository, never()).softDeleteByGroupIds(any());
+        }
     }
 }
 
