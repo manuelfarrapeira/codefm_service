@@ -6,6 +6,7 @@ Feature: Teacher Notebook - Get All Classes With Subjects
     Given url baseHttpsUrl
 
   Scenario: Get all classes with their subjects successfully
+    * def subjectClassDetailSchema = { subjectClassId: '#number', subjectId: '#number', subjectName: '#string' }
     * def classWithSubjectsSchema =
     """
     {
@@ -15,7 +16,7 @@ Feature: Teacher Notebook - Get All Classes With Subjects
         name: '#string',
         schoolYear: '#string'
       },
-      subjects: '#array'
+      subjects: '#[] subjectClassDetailSchema'
     }
     """
 

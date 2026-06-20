@@ -2,6 +2,48 @@
 
 Este documento proporciona las directrices que debo seguir cada vez que trabajes conmigo en el proyecto CodeFM.
 
+## Tech Stack
+
+- **Java 17** / **Spring Boot 3.2.3** / **Maven** (multi-module)
+- **MariaDB** (JPA/Hibernate) / **Keycloak** (OAuth2 JWT) / **Apache Kafka** (Avro + Schema Registry)
+- **Lombok** / **MapStruct** / **OpenAPI 3** (code generation)
+- **JUnit 5** + **Mockito** (unit) / **Karate** (integration) / **Gatling** (stress)
+- **JaCoCo** (coverage) / **SonarQube** (static analysis)
+
+## Build, Test & Compile Commands
+
+```bash
+# Compile all modules (required after creating/modifying MapStruct mappers or OpenAPI specs)
+mvn clean compile
+
+# Run all unit tests
+mvn test
+
+# Run tests + generate coverage report
+mvn clean verify jacoco:report
+
+# Run tests for a single module
+mvn test -pl codefm-application
+mvn test -pl codefm-infrastructure
+mvn test -pl codefm-api
+
+# Run a single test class
+mvn test -pl codefm-application -Dtest=SchoolServiceImplTest
+
+# Run a single test method
+mvn test -pl codefm-application -Dtest=SchoolServiceImplTest#softDeleteSchool_shouldCallRepository_whenSchoolExistsAndOwnedByTeacher
+
+# Run Karate integration tests (requires running application)
+cd karate-test
+mvn test -Dkarate.options="classpath:features/teacher-notebook/schools/getschools.feature"
+
+# Run Gatling stress tests
+cd gatling-test
+mvn gatling:test -DbaseUrl=http://localhost:8081 -Dusername=user -Dpassword=pass
+```
+
+---
+
 ## Reglas Generales de Código
 
 **CRÍTICO - PROHIBICIÓN ABSOLUTA DE COMENTARIOS EN EL CÓDIGO**:
@@ -16,6 +58,26 @@ Este documento proporciona las directrices que debo seguir cada vez que trabajes
   especifica más adelante
 - Si necesitas separar lógicamente bloques de código, usa líneas en blanco, NO comentarios
 - Los tests deben ser legibles por su estructura y nombres de métodos, NO por comentarios
+
+**OBLIGATORIO - USO DE `this.` EN ACCESOS A INSTANCIA**:
+
+- **SIEMPRE** usar `this.` para acceder a campos de instancia (ej: `this.schoolRepository`, `this.sessionUser`,
+  `this.messageSource`)
+- **SIEMPRE** usar `this.` para invocar métodos privados de la misma clase (ej: `this.validateClassOwnership(...)`,
+  `this.getTeacherId()`)
+- Esto mejora la legibilidad al distinguir claramente entre variables locales y campos de instancia
+
+**OBLIGATORIO - USO DEL MODIFICADOR `final` EN VARIABLES LOCALES**:
+
+- **SIEMPRE** declarar las variables locales como `final` cuando no se reasignan después de su inicialización
+- Esto incluye: variables de método, variables dentro de bloques `if`/`else`, variables en lambdas, etc.
+- Ejemplo: `final Integer teacherId = this.sessionUser.getParameter(SessionParameter.TEACHER_ID);`
+- Ejemplo: `final Locale locale = this.sessionUser.getLocale();`
+- Ejemplo: `final List<ErrorMessage> errors = new ArrayList<>();`
+- Ejemplo: `final String message = this.messageSource.getMessage(MessageKeys.SCHOOL_NOT_FOUND, null, locale);`
+- Si una variable se reasigna condicionalmente (ej: en ramas `if`/`else`), se declara `final` sin inicializar y se
+  asigna en cada rama
+- Los parámetros de métodos NO llevan `final` (Lombok `@RequiredArgsConstructor` ya gestiona la inmutabilidad de campos)
 
 ---
 
@@ -56,7 +118,7 @@ El flujo debe seguir estrictamente este patrón:
 Aplicar estas convenciones de forma consistente:
 
 | Concepto              | Ejemplo                |
-|-----------------------|------------------------|
+||---|---|---|---|---|--------||---|---|---|---|---|---------|
 | Domain entity         | `School`               |
 | JPA entity            | `SchoolEntity`         |
 | DTO                   | `SchoolDTO`            |
@@ -619,11 +681,13 @@ spring:
 
 - `codefm-boot/src/main/resources/messages_en.properties` (Inglés)
 - `codefm-boot/src/main/resources/messages_es.properties` (Español)
+- `codefm-boot/src/main/resources/messages_ga.properties` (Gallego)
 
 **OBLIGATORIO**:
 
-- Archivos en Spanish DEBEN estar en ASCII con escape Unicode
-- Caracteres españoles: `ñ` → `\u00f1`, `á` → `\u00e1`, `é` → `\u00e9`, `í` → `\u00ed`, `ó` → `\u00f3`, `ú` → `\u00fa`
+- Archivos en Spanish y Gallego DEBEN estar en ASCII con escape Unicode
+- Caracteres españoles/gallegos: `ñ` → `\u00f1`, `á` → `\u00e1`, `é` → `\u00e9`, `í` → `\u00ed`, `ó` → `\u00f3`, `ú` →
+  `\u00fa`
 
 Ejemplo:
 
@@ -679,111 +743,292 @@ public School softDeleteSchool(Integer schoolId, Integer teacherId) {
 **OBLIGATORIO**: Cada vez que se realice un soft delete de una entidad, se DEBEN dar de baja en cascada **todas las
 entidades dependientes** y las dependientes de estas, recursivamente, hasta el final de la cadena.
 
-**La cascada se gestiona SIEMPRE desde Java (ServiceImpl), NUNCA con triggers de base de datos.**
+**La cascada se gestiona SIEMPRE a través del servicio centralizado `CascadeSoftDeleteService`, NUNCA en los
+ServiceImpl de cada entidad ni con triggers de base de datos.**
+
+#### Arquitectura de la cascada
+
+La cascada está centralizada en un único servicio:
+
+- **Interfaz**: `org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService` (en `codefm-domain`)
+- **Implementación**: `org.web.codefm.service.teachernotebook.CascadeSoftDeleteServiceImpl` (en `codefm-application`)
 
 #### Cadena de dependencias actual
+
+**IMPORTANTE**: Cada vez que se añada una nueva entidad dependiente, se DEBE actualizar esta cadena de dependencias
+para reflejar la nueva relación y actualizar `CascadeSoftDeleteServiceImpl` con el nuevo paso de cascada.
 
 ```
 School
   └── Classes (school_id)
-        ├── StudentClasses (id_class)
-        ├── SubjectClasses (id_class)
-        │     └── Exercises (id_subject_class)
-        └── Schedules (class_id)
+        ├── StudentClasses (id_class) [soft delete]
+        │     └── StudentAbsences (student_class_id) [hard delete]
+        ├── SubjectClasses (id_class) [soft delete]
+        │     └── Exercises (id_subject_class) [soft delete]
+        │           ├── ExerciseStudentGrades (id_exercise) [soft delete]
+        │           │     └── ExerciseStudentDocuments (class_subject_exercise_student) [hard delete + borrar archivo]
+        │           └── ExerciseDocuments (class_subject_exercise) [hard delete + borrar archivo]
+        ├── Schedules (class_id) [soft delete]
+        ├── ClassRubrics (id_class) [soft delete]
+        │     └── StudentClassRubricCriteria (id_class_rubric) [soft delete]
+        ├── SavedStudentGroups (class_id) [soft delete]
+        │     ├── SavedStudentGroupMembers (student_group_id) [hard delete]
+        │     ├── GroupAssignmentGrades (group_id) [soft delete]
+        │     └── GroupAssignmentDocuments (group_id) [hard delete + borrar archivo]
+        └── GroupAssignments (class_id) [soft delete]
+              ├── GroupAssignmentGrades (group_assignment_id) [soft delete]
+              └── GroupAssignmentDocuments (group_assignment_id) [hard delete + borrar archivo]
 
 Subject
-  ├── SubjectClasses (id_subject)
-  │     └── Exercises (id_subject_class)
-  └── Schedules (subject_id)
+  ├── SubjectClasses (id_subject) [soft delete]
+  │     └── Exercises (id_subject_class) [soft delete]
+  │           ├── ExerciseStudentGrades (id_exercise) [soft delete]
+  │           │     └── ExerciseStudentDocuments (class_subject_exercise_student) [hard delete + borrar archivo]
+  │           └── ExerciseDocuments (class_subject_exercise) [hard delete + borrar archivo]
+  └── Schedules (subject_id) [soft delete]
 
 Student
-  └── StudentClasses (student_id)
+  ├── ExerciseStudentGrades (id_student) [soft delete]
+  │     └── ExerciseStudentDocuments [hard delete + borrar archivo]
+  ├── StudentAbsences (vía student_class_id) [hard delete]
+  └── StudentClasses (student_id) [soft delete]
+
+Skill
+  └── SkillRubrics (id_skill) [soft delete]
+        └── SkillRubricCriteria (id_rubric) [soft delete]
+              └── StudentClassRubricCriteria (id_criterion) [soft delete]
+
+SkillRubric
+  ├── SkillRubricCriteria (id_rubric) [soft delete]
+  ├── ClassRubrics (id_rubric) [soft delete]
+  │     └── StudentClassRubricCriteria (id_class_rubric) [soft delete]
+  └── StudentClassRubricCriteria (vía criterion) [soft delete]
+
+GroupAssignment
+  ├── GroupAssignmentGrades (group_assignment_id) [soft delete]
+  └── GroupAssignmentDocuments (group_assignment_id) [hard delete + borrar archivo]
 ```
 
-#### Implementación obligatoria
+#### Métodos disponibles en CascadeSoftDeleteService
 
-La cascada se implementa en el método `softDelete` del **ServiceImpl** con `@Transactional`:
+| Método                                                            | Descripción                                                                                                                    |
+||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|-------||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|--------|
+| `cascadeDeleteChildrenOfSchool(Integer schoolId)`                 | Elimina en cascada clases → subjectClasses → exercises → grades/docs + schedules + classRubrics + groups + assignments         |
+| `cascadeDeleteChildrenOfClass(Integer classId)`                   | Elimina en cascada subjectClasses → exercises → grades/docs + studentClasses + schedules + classRubrics + groups + assignments |
+| `cascadeDeleteChildrenOfSubjectClass(Integer subjectClassId)`     | Elimina en cascada exercises → grades + docs + absences                                                                        |
+| `cascadeDeleteChildrenOfSubject(Integer subjectId)`               | Elimina en cascada subjectClasses → exercises + schedules                                                                      |
+| `cascadeDeleteChildrenOfExercise(Integer exerciseId)`             | Elimina grades + exerciseStudentDocuments + exerciseDocuments del ejercicio                                                    |
+| `cascadeDeleteChildrenOfStudent(Integer studentId)`               | Elimina exerciseStudentDocuments + grades + absences + studentClasses del alumno                                               |
+| `cascadeDeleteChildrenOfStudentClass(Integer studentClassId)`     | Elimina exerciseStudentDocuments + grades vinculados al alumno en la clase + absences                                          |
+| `cascadeDeleteChildrenOfSkill(Integer skillId)`                   | Elimina en cascada rubrics → criteria                                                                                          |
+| `cascadeDeleteChildrenOfRubric(Integer rubricId)`                 | Elimina criteria + classRubrics → studentClassRubricCriteria                                                                   |
+| `cascadeDeleteChildrenOfClassRubric(Integer classRubricId)`       | Elimina studentClassRubricCriteria del classRubric                                                                             |
+| `cascadeDeleteChildrenOfSkillRubricCriteria(Integer criterionId)` | Elimina studentClassRubricCriteria que referencian al criterion                                                                |
+| `cascadeDeleteChildrenOfGroupAssignment(Integer assignmentId)`    | Elimina grades + documents del group assignment                                                                                |
+
+#### Implementación obligatoria en el UseCase
+
+La cascada se llama desde el **UseCaseImpl** con `@Transactional`, **antes** de llamar al Service principal:
 
 ```java
 
+@Service
+@RequiredArgsConstructor
+public class SchoolUseCaseImpl implements SchoolUseCase {
+
+    private final SchoolService schoolService;
+    private final CascadeSoftDeleteService cascadeSoftDeleteService;
+    private final SessionUser sessionUser;
+
+    @Override
+    @Transactional
+    public void softDeleteSchool(Integer schoolId) {
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
+        cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(schoolId);
+        schoolService.softDeleteSchool(schoolId, teacherId);
+    }
+}
+```
+
+**Otros ejemplos de UseCases:**
+
+```java
+// ClassUseCaseImpl
 @Override
 @Transactional
-public void softDeleteSchool(Integer schoolId, Integer teacherId) {
-    Locale locale = sessionUser.getLocale();
-    SchoolValidationUtil.validateSchoolOwnership(schoolId, teacherId, this, messageSource, locale);
-
-    List<Integer> classIds = classRepository.findActiveIdsBySchoolId(schoolId);
-
-    for (Integer classId : classIds) {
-        cascadeDeleteClass(classId);
-    }
-
-    classRepository.softDeleteBySchoolId(schoolId);
-    schoolRepository.softDeleteSchool(schoolId, teacherId);
+public void softDeleteClass(Integer classId) {
+    Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
+    cascadeSoftDeleteService.cascadeDeleteChildrenOfClass(classId);
+    classService.softDeleteClass(classId, teacherId);
 }
 
-private void cascadeDeleteClass(Integer classId) {
-    List<Integer> subjectClassIds = subjectClassRepository.findActiveIdsByClassId(classId);
+// SubjectUseCaseImpl
+@Override
+@Transactional
+public void softDeleteSubject(Integer subjectId) {
+    cascadeSoftDeleteService.cascadeDeleteChildrenOfSubject(subjectId);
+    subjectService.softDeleteSubject(subjectId);
+}
 
-    if (!subjectClassIds.isEmpty()) {
-        exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);
-    }
+// ExerciseUseCaseImpl
+@Override
+@Transactional
+public void deleteExercise(Integer exerciseId) {
+    cascadeSoftDeleteService.cascadeDeleteChildrenOfExercise(exerciseId);
+    exerciseService.deleteExercise(exerciseId);
+}
 
-    studentClassRepository.softDeleteByClassId(classId);
-    subjectClassRepository.softDeleteByClassId(classId);
-    scheduleRepository.softDeleteByClassId(classId);
+// StudentUseCaseImpl
+@Override
+@Transactional
+public void softDeleteStudent(Integer studentId) {
+    cascadeSoftDeleteService.cascadeDeleteChildrenOfStudent(studentId);
+    studentService.softDeleteStudent(studentId);
 }
 ```
 
 #### Reglas de la cascada
 
-1. **El Service que hace el soft delete** inyecta los repositories de las entidades dependientes
-2. **Primero** se dan de baja las entidades más profundas de la cadena (exercises), **después** las intermedias
-   (subjectClasses, schedules, studentClasses), y **por último** la entidad principal
-3. **`@Transactional`** en el método del Service garantiza que toda la cascada es atómica
-4. **Los RepositoryImpl de cascada NO necesitan `@Transactional`** porque participan de la transacción del Service
-5. **Cada Repository** debe exponer métodos de soft delete masivo (`softDeleteByClassId`, `softDeleteBySubjectId`, etc.)
+1. **La cascada se llama SIEMPRE desde el UseCase**, nunca desde el Service ni el Repository
+2. **El orden es**: primero `cascadeSoftDeleteService.cascadeDeleteChildrenOfX(id)`, después `xService.softDeleteX(id)`
+3. **`@Transactional`** en el método del UseCase garantiza atomicidad de toda la operación
+4. **Los Services** solo eliminan su propia entidad, sin conocer dependencias
+5. **Los RepositoryImpl de cascada NO necesitan `@Transactional`** porque participan de la transacción del UseCase
+6. **Cada Repository** debe exponer métodos de soft delete masivo (`softDeleteByClassId`, `softDeleteBySubjectId`, etc.)
    implementados con queries `@Modifying` en el JPA Repository
-6. **Siempre que se añada una nueva entidad dependiente**, actualizar la cascada de la entidad padre
+7. **Siempre que se añada una nueva entidad dependiente**, actualizar `CascadeSoftDeleteServiceImpl` con el nuevo paso
+   de cascada en el método correspondiente
 
-#### Métodos necesarios en cada capa
+#### Métodos necesarios en cada capa para soporte de cascada
 
 | Capa              | Método                                                                      | Ejemplo                                                  |
-|-------------------|-----------------------------------------------------------------------------|----------------------------------------------------------|
+||---|---|---|---|---|----||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|--||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|-------------|
 | JPA Repository    | `@Modifying @Query("UPDATE ... SET deletionDate = CURRENT_DATE WHERE ...")` | `softDeleteByClassId(Integer classId)`                   |
 | Domain Repository | Interfaz con JavaDoc                                                        | `void softDeleteByClassId(Integer classId)`              |
 | RepositoryImpl    | Delegación al JPA                                                           | `subjectClassJPARepository.softDeleteByClassId(classId)` |
 | Domain Repository | Método para obtener IDs activos                                             | `List<Integer> findActiveIdsByClassId(Integer classId)`  |
 
-#### Tests de cascada
+#### Tests de UseCase con cascada
 
-Cada test de soft delete DEBE verificar que se llama a los métodos de cascada de todas las dependencias:
+Los tests de UseCase DEBEN verificar que se llama a `CascadeSoftDeleteService` antes que al Service:
 
 ```java
 
-@Test
-void softDeleteSchool_shouldCascadeDeleteAllDependencies() {
-    when(classRepository.findActiveIdsBySchoolId(schoolId)).thenReturn(Arrays.asList(classId1, classId2));
-    when(subjectClassRepository.findActiveIdsByClassId(classId1)).thenReturn(Arrays.asList(100, 101));
-    when(subjectClassRepository.findActiveIdsByClassId(classId2)).thenReturn(Collections.emptyList());
+@ExtendWith(MockitoExtension.class)
+class SchoolUseCaseImplTest {
 
-    schoolService.softDeleteSchool(schoolId, teacherId);
+    @Mock
+    private SchoolService schoolService;
 
-    verify(exerciseRepository).softDeleteBySubjectClassIds(Arrays.asList(100, 101));
-    verify(studentClassRepository).softDeleteByClassId(classId1);
-    verify(subjectClassRepository).softDeleteByClassId(classId1);
-    verify(scheduleRepository).softDeleteByClassId(classId1);
-    verify(studentClassRepository).softDeleteByClassId(classId2);
-    verify(subjectClassRepository).softDeleteByClassId(classId2);
-    verify(scheduleRepository).softDeleteByClassId(classId2);
-    verify(classRepository).softDeleteBySchoolId(schoolId);
-    verify(schoolRepository).softDeleteSchool(schoolId, teacherId);
+    @Mock
+    private CascadeSoftDeleteService cascadeSoftDeleteService;
+
+    @Mock
+    private SessionUser sessionUser;
+
+    @InjectMocks
+    private SchoolUseCaseImpl schoolUseCase;
+
+    @Test
+    void softDeleteSchool_shouldCallCascadeBeforeService() {
+        Integer schoolId = 1;
+        Integer teacherId = 1;
+
+        when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(teacherId);
+        doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfSchool(schoolId);
+        doNothing().when(schoolService).softDeleteSchool(schoolId, teacherId);
+
+        schoolUseCase.softDeleteSchool(schoolId);
+
+        var order = inOrder(cascadeSoftDeleteService, schoolService);
+        order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfSchool(schoolId);
+        order.verify(schoolService).softDeleteSchool(schoolId, teacherId);
+    }
+}
+```
+
+#### Tests de Service con soft delete
+
+Los tests de Service solo verifican la eliminación de **su propia entidad** y la validación de ownership, sin mocks de
+cascada:
+
+```java
+
+@ExtendWith(MockitoExtension.class)
+class SchoolServiceImplTest {
+
+    @Mock
+    private SchoolRepository schoolRepository;
+
+    @Mock
+    private MessageSource messageSource;
+
+    @Mock
+    private SessionUser sessionUser;
+
+    @InjectMocks
+    private SchoolServiceImpl schoolService;
+
+    @Test
+    void softDeleteSchool_shouldCallRepository_whenSchoolExistsAndOwnedByTeacher() {
+        Integer schoolId = 1;
+        Integer teacherId = 1;
+        School school = School.builder().id(schoolId).teacherId(teacherId).name("School A").build();
+
+        when(schoolRepository.findById(schoolId)).thenReturn(Optional.of(school));
+        when(schoolRepository.softDeleteSchool(schoolId, teacherId)).thenReturn(school);
+
+        schoolService.softDeleteSchool(schoolId, teacherId);
+
+        verify(schoolRepository).findById(schoolId);
+        verify(schoolRepository).softDeleteSchool(schoolId, teacherId);
+    }
+}
+```
+
+#### Tests de CascadeSoftDeleteServiceImpl
+
+Los tests del servicio de cascada verifican que cada método llama a los repositories en el orden correcto:
+
+```java
+
+@ExtendWith(MockitoExtension.class)
+class CascadeSoftDeleteServiceImplTest {
+
+    @Mock
+    private ClassRepository classRepository;
+    @Mock
+    private SubjectClassRepository subjectClassRepository;
+    @Mock
+    private ExerciseRepository exerciseRepository;
+    @Mock
+    private ExerciseStudentGradeRepository exerciseStudentGradeRepository;
+    @Mock
+    private ExerciseDocumentService exerciseDocumentService;
+
+    @InjectMocks
+    private CascadeSoftDeleteServiceImpl cascadeSoftDeleteService;
+
+    @Test
+    void cascadeDeleteChildrenOfSchool_shouldCascadeToClassesAndSoftDeleteThem() {
+        when(classRepository.findActiveIdsBySchoolId(1)).thenReturn(Arrays.asList(10, 20));
+        when(subjectClassRepository.findActiveIdsByClassId(10)).thenReturn(Collections.emptyList());
+        when(subjectClassRepository.findActiveIdsByClassId(20)).thenReturn(Collections.emptyList());
+
+        cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(1);
+
+        verify(subjectClassRepository).softDeleteByClassId(10);
+        verify(subjectClassRepository).softDeleteByClassId(20);
+        verify(classRepository).softDeleteBySchoolId(1);
+    }
 }
 ```
 
 ---
 
 ## Testing
+
+> **IMPORTANTE**: Para crear tests unitarios, usar **siempre** el skill `probatio-java-unit`. Invocar con `/probatio-java-unit` antes de escribir cualquier test unitario nuevo.
 
 ### Estructura
 
@@ -807,6 +1052,141 @@ void getSchoolsByTeacherId_shouldReturnSchools_whenTeacherExists() { }
 @Test
 void createSchool_shouldThrowValidationException_whenNameIsEmpty() { }
 ```
+
+### Tests Parametrizados (`@ParameterizedTest`)
+
+**OBLIGATORIO**: Siempre que varios tests ejecuten la misma lógica con distintos valores de entrada o distintas
+configuraciones de mocks, se DEBE usar `@ParameterizedTest` en lugar de múltiples `@Test` individuales. Esto reduce
+duplicación y mejora la legibilidad.
+
+**Cuándo usar `@ParameterizedTest`:**
+
+- Validaciones con múltiples valores inválidos (fechas, formatos, rangos, etc.)
+- Misma aserción con distintos inputs que producen el mismo tipo de resultado
+- Misma excepción esperada con distintas causas (ej. recurso no encontrado, recurso de otro profesor, recurso eliminado)
+- Misma validación de ownership aplicada a múltiples métodos del servicio
+- Cualquier caso donde el cuerpo del test sería idéntico salvo el valor de entrada o la configuración de mocks
+
+**`@ValueSource` — para valores primitivos o strings:**
+
+```java
+@ParameterizedTest
+@ValueSource(strings = {"2026-03-15", "32/03/2026", "15/13/2026", "not-a-date"})
+void toDomain_shouldThrowValidationException_whenDateIsInvalid(String invalidDate) {
+    CalendarAlertRequestDTO dto = new CalendarAlertRequestDTO();
+    dto.setDate(invalidDate);
+
+    CalendarAlertValidationException exception = assertThrows(CalendarAlertValidationException.class, () ->
+            mapper.toDomain(dto));
+
+    assertFalse(exception.getErrors().isEmpty());
+    assertEquals("date", exception.getErrors().get(0).getParam());
+}
+```
+
+**`@CsvSource` — para múltiples parámetros por fila:**
+
+```java
+@ParameterizedTest
+@CsvSource({
+        "null,  name is required",
+        "'',   name is required",
+        "' ',  name is required"
+})
+void createSchool_shouldThrowValidationException_whenNameIsInvalid(String name, String expectedMessage) {
+    ...
+}
+```
+
+**`@MethodSource` con `Stream<Consumer<T>>` — para distintas configuraciones de mocks:**
+
+Usar este patrón cuando la misma excepción/comportamiento se puede producir por distintas causas que requieren
+configuraciones de mocks diferentes. Los métodos source deben ser `static` y recibir la instancia del test mediante
+`Consumer<NombreDelTest>`, configurando los mocks al ejecutar `setup.accept(this)` dentro del propio test.
+
+```java
+@ParameterizedTest
+@MethodSource("subjectValidationSetups")
+void createAbsences_shouldThrowValidationException_whenSubjectIsInvalid(
+        Consumer<StudentAbsenceServiceImplTest> setup) {
+    // setup comunes (clase, alumno, etc.)
+    setup.accept(this);
+
+    final StudentAbsenceValidationException exception = assertThrows(StudentAbsenceValidationException.class,
+            () -> this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE));
+
+    assertFalse(exception.getErrors().isEmpty());
+    assertEquals("subjectId", exception.getErrors().get(0).getParam());
+}
+
+static Stream<Consumer<StudentAbsenceServiceImplTest>> subjectValidationSetups() {
+    return Stream.of(
+            t -> when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
+                    .thenReturn(Optional.empty()),
+            t -> {
+                when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
+                        .thenReturn(Optional.of(Subject.builder().id(SUBJECT_ID).build()));
+                when(t.subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID))
+                        .thenReturn(false);
+            },
+            t -> {
+                when(t.subjectRepository.findByIdAndTeacherId(SUBJECT_ID, TEACHER_ID))
+                        .thenReturn(Optional.of(Subject.builder().id(SUBJECT_ID).build()));
+                when(t.subjectClassRepository.existsBySubjectIdAndClassIdAndDeletionDateIsNull(SUBJECT_ID, CLASS_ID))
+                        .thenReturn(true);
+                when(t.scheduleRepository.existsByClassIdAndSubjectIdAndDay(CLASS_ID, SUBJECT_ID,
+                        DATE.getDayOfWeek().getValue())).thenReturn(false);
+            }
+    );
+}
+```
+
+**Ventajas de este patrón frente a `@TestInstance(PER_CLASS)` + `Runnable`:**
+- Los métodos source son `static` → compatible con el ciclo de vida por defecto de JUnit (`PER_METHOD`)
+- Cada test recibe mocks frescos → no hay contaminación entre tests
+- No se necesita `reset(...)` manual en `@BeforeEach`
+
+**Cuándo reutilizar el mismo `@MethodSource` en múltiples tests:** Si la misma configuración de mocks aplica a varios
+métodos del servicio (ej. `ClassNotFoundException` en `create`, `get` y `delete`), se define un único método `static`
+de setups y se referencia en todos los tests con el mismo `@MethodSource`.
+
+```java
+@ParameterizedTest
+@MethodSource("classNotFoundSetups")
+void createAbsences_shouldThrowClassNotFoundException_whenClassNotExists(
+        Consumer<StudentAbsenceServiceImplTest> setup) {
+    setup.accept(this);
+    assertThrows(ClassNotFoundException.class,
+            () -> this.studentAbsenceService.createAbsences(CLASS_ID, STUDENT_ID, SUBJECT_ID, DATE));
+}
+
+@ParameterizedTest
+@MethodSource("classNotFoundSetups")
+void getAbsences_shouldThrowClassNotFoundException_whenClassNotExists(
+        Consumer<StudentAbsenceServiceImplTest> setup) {
+    setup.accept(this);
+    assertThrows(ClassNotFoundException.class,
+            () -> this.studentAbsenceService.getAbsences(CLASS_ID, STUDENT_ID, DATE));
+}
+
+@ParameterizedTest
+@MethodSource("classNotFoundSetups")
+void deleteAbsencesByStudentAndDate_shouldThrowClassNotFoundException_whenClassNotExists(
+        Consumer<StudentAbsenceServiceImplTest> setup) {
+    setup.accept(this);
+    assertThrows(ClassNotFoundException.class,
+            () -> this.studentAbsenceService.deleteAbsencesByStudentAndDate(CLASS_ID, STUDENT_ID, DATE));
+}
+
+static Stream<Consumer<StudentAbsenceServiceImplTest>> classNotFoundSetups() {
+    return Stream.of(
+            t -> when(t.classRepository.findById(CLASS_ID)).thenReturn(Optional.empty())
+    );
+}
+```
+
+**NUNCA** crear tests individuales repetitivos cuando se puede usar `@ParameterizedTest`. SonarQube detecta y penaliza
+este patrón como código duplicado.
 
 ### Test de Service
 
@@ -832,7 +1212,7 @@ class SchoolServiceImplTest {
         
         assertNotNull(result);
         assertEquals(1, result.size());
-        verify(schoolRepository, times(1)).findByTeacherId(teacherId);
+        verify(this.schoolRepository, times(1)).findByTeacherId(teacherId);
     }
 }
 ```
@@ -880,7 +1260,7 @@ Scenario: Get schools by teacher
     - [ ] Mapear DTO request → Domain → DTO response
 17. [ ] Crear excepciones personalizadas si es necesario (siguiendo pasos de Manejo de Errores)
 18. [ ] Crear claves i18n en MessageKeys
-19. [ ] Agregar mensajes en messages_en.properties y messages_es.properties
+19. [ ] Agregar mensajes en messages_en.properties, messages_es.properties y messages_ga.properties
 20. [ ] Crear Test de Karate
 21. [ ] Crear o actualizar colección de Postman en `postman/`
 22. [ ] Ejecutar `mvn clean compile`
@@ -888,28 +1268,235 @@ Scenario: Get schools by teacher
 
 ---
 
-## Comandos Frecuentes
+## Validaciones de Ownership y Permisos del Profesor (CRÍTICO)
 
-```bash
-# Compilar y generar código desde OpenAPI y Mappers
-mvn clean compile
+**OBLIGATORIO**: Todas las operaciones CRUD deben validar que el profesor autenticado tiene permisos sobre los recursos
+que está manipulando. **NUNCA** permitir que un profesor acceda, modifique o elimine recursos de otro profesor.
 
-# Ejecutar todos los tests unitarios
-mvn test
+### Principio General
 
-# Ejecutar tests de un módulo específico
-mvn test -pl codefm-application
+Cada operación debe verificar que **toda la cadena de pertenencia** del recurso lleva al `teacherId` del profesor
+autenticado. Si en cualquier punto de la cadena la validación falla, se debe lanzar una excepción
+`NotFoundException` o `ForbiddenException`.
 
-# Ejecutar un test específico
-mvn test -Dtest=SchoolServiceImplTest
+### Cadena de Pertenencia
 
-# Ejecutar tests de integración Karate
-mvn test -pl karate-test
+**IMPORTANTE**: Cada vez que se cree una nueva entidad, se DEBE revisar y actualizar esta cadena de pertenencia
+para reflejar dónde encaja la nueva entidad en la jerarquía del profesor.
 
-# Compilar todo el proyecto
-mvn clean install
+```
+Teacher (teacherId de SessionUser)
+  ├── Schools (teacher_id)
+  │     └── Classes (school_id → school.teacher_id)
+  │           ├── StudentClasses (id_class + id_student)
+  │           │     └── StudentAbsences (student_class_id + subject_id)
+  │           ├── SubjectClasses (id_class + id_subject)
+  │           │     └── Exercises (id_subject_class)
+  │           │           ├── ExerciseStudentGrades (id_exercise + id_student)
+  │           │           │     └── ExerciseStudentDocuments (class_subject_exercise_student)
+  │           │           └── ExerciseDocuments (class_subject_exercise)
+  │           ├── Schedules (class_id + subject_id)
+  │           ├── ClassRubrics (id_class + id_rubric)
+  │           │     └── StudentClassRubricCriteria (id_class_rubric + id_student + id_criterion)
+  │           ├── SavedStudentGroups (class_id)
+  │           │     └── SavedStudentGroupMembers (student_group_id + student_id)
+  │           └── GroupAssignments (class_id)
+  │                 ├── GroupAssignmentGrades (group_assignment_id + group_id)
+  │                 └── GroupAssignmentDocuments (group_assignment_id + group_id)
+  ├── Subjects (id_teacher)
+  │     ├── SubjectClasses (id_subject) → ver rama Classes
+  │     └── Schedules (subject_id) → ver rama Classes
+  ├── Students (teacher_id)
+  │     ├── StudentClasses (id_student) → ver rama Classes
+  │     ├── ExerciseStudentGrades (id_student) → ver rama Exercises
+  │     ├── StudentAbsences (vía student_class_id) → ver rama StudentClasses
+  │     ├── SavedStudentGroupMembers (student_id) → ver rama SavedStudentGroups
+  │     └── StudentClassRubricCriteria (id_student) → ver rama ClassRubrics
+  ├── Skills (id_teacher)
+  │     └── SkillRubrics (id_skill)
+  │           └── SkillRubricCriteria (id_rubric)
+  │                 └── StudentClassRubricCriteria (id_criterion) → ver rama ClassRubrics
+  └── CalendarAlerts (teacher_id)
 ```
 
+### Validaciones Obligatorias por Entidad
+
+**IMPORTANTE**: Cada vez que se cree una nueva entidad, se DEBE añadir su validación de ownership a esta tabla.
+
+| Entidad                    | Validación de Ownership                                                                                                     |
+||---|---|---|---|---|-------------||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|-----|
+| School                     | `schoolRepository.findByIdAndTeacherIdAndDeletionDateIsNull(schoolId, teacherId)`                                           |
+| Class                      | `classRepository.findByIdAndTeacherIdAndDeletionDateIsNull(classId, teacherId)`                                             |
+| Subject                    | `subjectRepository.findByIdAndTeacherId(subjectId, teacherId)`                                                              |
+| Student                    | `studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId)`                                         |
+| Skill                      | `skillRepository.findByIdAndTeacherIdAndDeletionDateIsNull(skillId, teacherId)`                                             |
+| CalendarAlert              | `calendarAlertRepository.findByIdAndTeacherId(alertId, teacherId)`                                                          |
+| SubjectClass               | Validar que la **clase** y la **asignatura** pertenecen al profesor                                                         |
+| StudentClass               | Validar que la **clase** y el **estudiante** pertenecen al profesor                                                         |
+| Schedule                   | Validar que la **clase** pertenece al profesor                                                                              |
+| Exercise                   | `exerciseRepository.findByIdAndTeacherId(exerciseId, teacherId)` (valida cadena exercise→subjectClass→class→school→teacher) |
+| ExerciseStudentGrade       | `exerciseStudentGradeRepository.findByIdAndTeacherId(gradeId, teacherId)` (valida cadena completa)                          |
+| ExerciseDocument           | Validar que el **exercise** pertenece al profesor                                                                           |
+| ExerciseStudentDocument    | Validar que el **grade** (exercise student) pertenece al profesor                                                           |
+| SkillRubric                | Validar que el **skill** pertenece al profesor                                                                              |
+| SkillRubricCriteria        | Validar que la **rúbrica** pertenece al profesor (vía skill)                                                                |
+| ClassRubric                | Validar que la **clase** y la **rúbrica** pertenecen al profesor                                                            |
+| StudentClassRubricCriteria | Validar que el **classRubric**, el **student** y el **criterion** pertenecen al profesor                                    |
+| SavedStudentGroup          | Validar que la **clase** pertenece al profesor                                                                              |
+| SavedStudentGroupMember    | Validar que el **grupo guardado** y el **estudiante** pertenecen al profesor                                                |
+| GroupAssignment            | Validar que la **clase** pertenece al profesor                                                                              |
+| GroupAssignmentGrade       | Validar que el **group assignment** pertenece al profesor (vía clase)                                                       |
+| GroupAssignmentDocument    | Validar que el **group assignment** pertenece al profesor (vía clase)                                                       |
+| StudentAbsence             | Validar que la **clase** y el **estudiante** pertenecen al profesor                                                         |
+
+### Reglas de Validación por Tipo de Operación
+
+#### Consultas (GET)
+
+- **Siempre** filtrar por `teacherId` en la query o validar ownership antes de devolver resultados
+- Si se recibe un `classId` como parámetro, validar que la clase pertenece al profesor ANTES de consultar
+- Si se recibe un `studentId` como parámetro, validar que el estudiante pertenece al profesor
+
+#### Creación (POST/PUT)
+
+- Validar que **todos los IDs referenciados** en el body pertenecen al profesor:
+    - Si se recibe `classId` → validar que la clase es del profesor
+    - Si se recibe `subjectId` → validar que la asignatura es del profesor
+    - Si se recibe `studentId` → validar que el estudiante es del profesor
+    - Si se recibe `exerciseId` → validar que el ejercicio es del profesor
+- Validar que las **asociaciones intermedias** existen:
+    - Para crear un grade: validar que el **estudiante está matriculado en la clase** del ejercicio
+    - Para crear un schedule: validar que la **asignatura está asignada a la clase** (existe en `subject_classes`)
+    - Para crear un exercise: validar que la **subjectClass existe y está activa**
+
+#### Modificación (PUT/PATCH)
+
+- Validar ownership del recurso que se está modificando (buscar con `findByIdAndTeacherId`)
+- Si se modifican IDs referenciados, validar ownership de los nuevos IDs
+
+#### Eliminación (DELETE)
+
+- Validar ownership del recurso que se está eliminando (buscar con `findByIdAndTeacherId`)
+- Aplicar cascada de soft delete según la cadena de dependencias
+
+### Ejemplo de Validación Completa en Service
+
+```java
+
+@Override
+public ExerciseStudentGrade createGrade(Integer exerciseId, ExerciseStudentGrade grade) {
+    Integer teacherId = getTeacherId();
+    Locale locale = sessionUser.getLocale();
+
+    Exercise exercise = exerciseRepository.findByIdAndTeacherId(exerciseId, teacherId)
+            .orElseThrow(() -> new ExerciseStudentGradeNotFoundException(
+                    messageSource.getMessage(MessageKeys.EXERCISE_NOT_FOUND, null, locale)));
+
+    this.validateStudentId(grade.getStudentId(), teacherId, errors, locale);
+    validateGrade(grade, exercise, errors, locale);
+    validateStudentInExerciseClass(grade.getStudentId(), exercise, teacherId, errors, locale);
+    validateNoDuplicate(grade.getStudentId(), exerciseId, teacherId, errors, locale);
+
+    ...
+}
+
+private void validateStudentId(Integer studentId, Integer teacherId, List<ErrorMessage> errors, Locale locale) {
+    if (studentId == null) {
+        errors.add(new ErrorMessage("studentId", messageSource.getMessage(
+                MessageKeys.STUDENT_REQUIRED, null, locale)));
+        return;
+    }
+
+    final Optional<Student> student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId);
+    if (student.isEmpty()) {
+        errors.add(new ErrorMessage("studentId", messageSource.getMessage(
+                MessageKeys.STUDENT_NOT_FOUND, null, locale)));
+    }
+}
+```
+
+### Patrón `findByIdAndTeacherId` en Repository
+
+Para validar ownership en queries complejas (entidades que no tienen `teacher_id` directo), usar JOINs en el JPA
+Repository:
+
+```java
+
+@Query("SELECT g FROM ExerciseStudentGradeEntity g " +
+        "JOIN ExerciseEntity e ON g.exerciseId = e.id " +
+        "JOIN SubjectClassEntity sc ON e.subjectClassId = sc.id " +
+        "JOIN ClassEntity c ON sc.classId = c.id " +
+        "JOIN SchoolEntity s ON c.schoolId = s.id " +
+        "WHERE g.id = :id AND s.teacherId = :teacherId AND g.deletionDate IS NULL")
+Optional<ExerciseStudentGradeEntity> findByIdAndTeacherId(@Param("id") Integer id, @Param("teacherId") Integer teacherId);
+```
+
+### Validaciones de Asociaciones entre Entidades
+
+**IMPORTANTE**: Cada vez que se cree una nueva entidad con asociaciones, se DEBE añadir su validación a esta tabla.
+
+| Operación                             | Validación requerida                                                                                                         |
+||---|---|---|---|---||---|---|---|---|---|---------||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|------|
+| Asignar asignatura a clase            | Clase pertenece al profesor + Asignatura pertenece al profesor + No existe duplicado                                         |
+| Crear schedule                        | Clase pertenece al profesor + Asignatura asignada a la clase (`subject_classes`)                                             |
+| Crear exercise                        | SubjectClass existe y pertenece al profesor (vía clase)                                                                      |
+| Crear grade de alumno                 | Exercise pertenece al profesor + Student pertenece al profesor + Student está en la clase del exercise + No existe duplicado |
+| Subir documento a exercise            | Exercise pertenece al profesor                                                                                               |
+| Subir documento de alumno a exercise  | Grade (exercise student) pertenece al profesor                                                                               |
+| Matricular alumno en clase            | Clase pertenece al profesor + Alumno pertenece al profesor                                                                   |
+| Registrar ausencia de alumno          | Clase pertenece al profesor + Alumno pertenece al profesor + Alumno matriculado en la clase + Asignatura asignada a la clase |
+| Asignar rúbrica a clase (ClassRubric) | Clase pertenece al profesor + Rúbrica pertenece al profesor (vía skill) + No existe duplicado                                |
+| Evaluar alumno con rúbrica            | ClassRubric pertenece al profesor + Student pertenece al profesor + Criterion pertenece a la rúbrica                         |
+| Crear grupo guardado de alumnos       | Clase pertenece al profesor                                                                                                  |
+| Añadir miembro a grupo guardado       | Grupo guardado pertenece al profesor (vía clase) + Alumno pertenece al profesor                                              |
+| Crear group assignment                | Clase pertenece al profesor                                                                                                  |
+| Evaluar grupo en assignment           | GroupAssignment pertenece al profesor (vía clase) + Grupo pertenece al profesor (vía clase)                                  |
+| Subir documento a group assignment    | GroupAssignment pertenece al profesor (vía clase)                                                                            |
+
+### Tests Obligatorios de Ownership
+
+Para cada operación CRUD, SIEMPRE crear tests que verifiquen:
+
+1. ✅ **Happy path**: recurso pertenece al profesor → operación exitosa
+2. ✅ **Recurso no encontrado**: ID no existe → `NotFoundException`
+3. ✅ **Recurso de otro profesor**: recurso existe pero pertenece a otro profesor → `NotFoundException` o
+   `ForbiddenException`
+4. ✅ **Entidades asociadas inválidas**: IDs referenciados no pertenecen al profesor → `ValidationException`
+
+---
+
+## Cache Redis (codefm-infrastructure)
+
+La cache se implementa con `@Cacheable` de Spring sobre **Redis** y se gestiona SOLO en los **RepositoryImpl**.
+
+### Archivos clave
+
+- **`CacheName`** (`codefm-infrastructure/cache/teachernotebook/CacheName.java`): `@UtilityClass` con constantes `public static final String`. Se usan tanto en `@Cacheable(value = ...)` como en `cacheEvictionService.evict(...)`. NUNCA usar strings literales ni enums con `getValue()`.
+- **`CacheEvictionService`** (`codefm-infrastructure/cache/teachernotebook/CacheEvictionService.java`): Servicio con metodos `evict(cacheName, key)`, `evictAll(cacheName)` y `evictByTeacher(cacheName)`.
+- **`RedisConfig`** (`codefm-infrastructure/config/RedisConfig.java`): Lee TTLs por cache desde `application.yml`.
+- **TTLs** en `codefm-boot/src/main/resources/application.yml` bajo `spring.cache.redis.ttl`.
+
+### Pasos para crear una nueva cache
+
+1. Anadir constante en `CacheName` (ej: `public static final String X = "x";`)
+2. Anadir TTL en `application.yml` bajo `spring.cache.redis.ttl`
+3. Anadir `@Cacheable(value = CacheName.X, key = "#classId")` en el metodo de lectura del RepositoryImpl
+4. Inyectar `CacheEvictionService` en el RepositoryImpl
+5. En CADA metodo de mutacion (`save`, `update`, `softDelete`, `softDeleteByXxx`), llamar a `this.cacheEvictionService.evict(CacheName.X, classId)`
+6. Si no se tiene el `classId` directamente, resolverlo con query batch `findDistinctClassIdsByXxx` (NUNCA N queries individuales)
+7. Si el resultado cacheado incluye datos de OTRAS entidades, los RepositoryImpl de esas entidades TAMBIEN deben invalidar esta cache
+8. En tests: `@Mock CacheEvictionService` y `verify(cacheEvictionService).evict(CacheName.X, id)` en cada mutacion
+
+### Caches activas actualmente
+
+| Cache | Constante | Key | Donde se cachea | Quien invalida |
+|---|---|---|---|---|
+| `studentsByTeacher` | `STUDENTS_BY_TEACHER` | teacherId | `StudentRepositoryImpl` | `StudentRepositoryImpl` |
+| `studentClassRubricCriteriaByClass` | `STUDENT_CLASS_RUBRIC_CRITERIA_BY_CLASS` | classId | `StudentClassRubricCriteriaRepositoryImpl` | `StudentClassRubricCriteriaRepositoryImpl` |
+| `exerciseStudentGradesByClass` | `EXERCISE_STUDENT_GRADES_BY_CLASS` | classId | `ExerciseStudentGradeRepositoryImpl` | `ExerciseStudentGradeRepositoryImpl`, `ExerciseStudentDocumentRepositoryImpl` |
+| `exercisesByClass` | `EXERCISES_BY_CLASS` | classId | `ExerciseRepositoryImpl` | `ExerciseRepositoryImpl`, `ExerciseDocumentRepositoryImpl` |
+
+**IMPORTANTE**: Actualizar esta tabla cada vez que se anada una nueva cache.
 ---
 
 ## Notas Importantes
@@ -930,6 +1517,13 @@ mvn clean install
     asignada a la clase en la tabla `subject_classes`
 14. **Colecciones Postman**: SIEMPRE actualizar la colección de Postman correspondiente en `postman/` al crear o
     modificar endpoints
+15. **Ownership del Profesor**: SIEMPRE validar que TODOS los recursos y entidades referenciadas pertenecen al profesor
+    autenticado. NUNCA permitir operaciones sobre recursos de otro profesor. Validar también que las asociaciones
+    intermedias existen (alumno en clase, asignatura asignada a clase, etc.)
+16. **Soft Delete en Cascada**: SIEMPRE usar `CascadeSoftDeleteService` para la cascada. La cascada se invoca desde el
+    **UseCaseImpl** con `@Transactional`, llamando primero a `cascadeSoftDeleteService.cascadeDeleteChildrenOfX(id)` y
+    después a `xService.softDeleteX(id)`. Los Services solo eliminan su propia entidad. NUNCA implementar la lógica de
+    cascada dentro de un ServiceImpl.
 
 ---
 
@@ -948,7 +1542,7 @@ aplican:
 ### Endpoints de SubjectClass
 
 | Método | Endpoint                                          | Descripción                                              |
-|--------|---------------------------------------------------|----------------------------------------------------------|
+|--------||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|------||---|---|---|---|---||---|---|---|---|---||---|---|---|---|---|-------------|
 | GET    | `/teacher-notebook/v1/classes/{classId}/subjects` | Obtener asignaturas de una clase                         |
 | GET    | `/teacher-notebook/v1/classes-subjects`           | Obtener todas las clases con sus asignaturas             |
 | PUT    | `/teacher-notebook/v1/classes/{classId}/subjects` | Asignar asignaturas a una clase (body: `subjectIds[]`)   |
@@ -960,8 +1554,8 @@ Los mensajes de error de validación de asignaturas deben mostrar el **nombre de
 
 ```java
 var subject = subjectRepository.findById(subjectId);
-String subjectName = subject.map(Subject::getName).orElse(String.valueOf(subjectId));
-String message = messageSource.getMessage(MessageKeys.SUBJECT_CLASS_ALREADY_EXISTS, new Object[]{subjectName}, locale);
+String subjectName = this.subject.map(Subject::getName).orElse(String.valueOf(subjectId));
+String message = messageSource.getMessage(MessageKeys.SUBJECT_CLASS_ALREADY_EXISTS, new Object[]{this.subjectName}, locale);
 ```
 
 ### Tests de Karate para SubjectClass
@@ -986,7 +1580,7 @@ Ubicación: `karate-test/src/test/resources/features/teacher-notebook/subject-cl
 
 @Karate.Test
 Karate testNombreDescriptivo() {
-    return Karate.run("features/ruta/al/archivo").relativeTo(getClass());
+    return Karate.run("features/ruta/al/archivo").relativeTo(this.getClass());
 }
 ```
 
@@ -999,7 +1593,7 @@ debes añadir el siguiente método a `IndividualKarateTestRunner`:
 
 @Karate.Test
 Karate testTeacherNotebookCreateGrades() {
-    return Karate.run("features/teacher-notebook/grades/creategrades").relativeTo(getClass());
+    return Karate.run("features/teacher-notebook/grades/creategrades").relativeTo(this.getClass());
 }
 ```
 

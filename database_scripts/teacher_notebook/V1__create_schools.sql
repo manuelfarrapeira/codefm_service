@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS schools
     teacher_id    INT          NOT NULL,
     name          VARCHAR(200) NOT NULL,
     town          VARCHAR(200) NULL,
-    tlf           INT          NOT NULL,
+    tlf INT NULL,
     deletion_date DATE         NULL
 );
 

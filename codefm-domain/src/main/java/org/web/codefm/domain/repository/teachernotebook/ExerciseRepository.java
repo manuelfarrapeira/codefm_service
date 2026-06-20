@@ -66,4 +66,33 @@ public interface ExerciseRepository {
      * @param subjectClassIds The list of subject-class association IDs
      */
     void softDeleteBySubjectClassIds(List<Integer> subjectClassIds);
+
+    /**
+     * Finds all active exercise IDs for the given subject-class association IDs.
+     *
+     * @param subjectClassIds The list of subject-class association IDs
+     * @return List of active exercise IDs
+     */
+    List<Integer> findActiveIdsBySubjectClassIds(List<Integer> subjectClassIds);
+
+    /**
+     * Calculates the sum of percentage grades for all active exercises
+     * in a given subject-class association and quarter.
+     *
+     * @param subjectClassId The unique identifier of the subject-class association
+     * @param quarter        The quarter number (1, 2 or 3)
+     * @return The sum of percentage grades, or 0 if no exercises exist
+     */
+    Integer sumPercentageGradeBySubjectClassIdAndQuarter(Integer subjectClassId, Integer quarter);
+
+    /**
+     * Calculates the sum of percentage grades for all active exercises
+     * in a given subject-class association and quarter, excluding a specific exercise.
+     *
+     * @param subjectClassId The unique identifier of the subject-class association
+     * @param quarter        The quarter number (1, 2 or 3)
+     * @param excludeId      The ID of the exercise to exclude from the sum
+     * @return The sum of percentage grades excluding the specified exercise, or 0 if no exercises exist
+     */
+    Integer sumPercentageGradeBySubjectClassIdAndQuarterExcludingId(Integer subjectClassId, Integer quarter, Integer excludeId);
 }

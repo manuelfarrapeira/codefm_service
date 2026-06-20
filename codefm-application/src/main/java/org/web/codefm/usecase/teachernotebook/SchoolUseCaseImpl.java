@@ -1,19 +1,21 @@
 package org.web.codefm.usecase.teachernotebook;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.teachernotebook.School;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionParameter;
 import org.web.codefm.domain.session.SessionUser;
 import org.web.codefm.domain.usecase.teachernotebook.SchoolUseCase;
 import org.web.codefm.domain.util.SchoolYearUtil;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -21,11 +23,12 @@ import org.web.codefm.domain.util.SchoolYearUtil;
 public class SchoolUseCaseImpl implements SchoolUseCase {
 
     private final SchoolService schoolService;
+    private final CascadeSoftDeleteService cascadeSoftDeleteService;
     private final SessionUser sessionUser;
 
     @Override
     public List<School> getSchoolsByTeacher() {
-      Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         List<School> schools = schoolService.getSchoolsByTeacherId(teacherId);
 
         schools.forEach(school ->
@@ -41,20 +44,22 @@ public class SchoolUseCaseImpl implements SchoolUseCase {
 
     @Override
     public School createSchool(School school) {
-      Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         school.setTeacherId(teacherId);
         return schoolService.createSchool(school);
     }
 
     @Override
+    @Transactional
     public void softDeleteSchool(Integer schoolId) {
-      Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
+        cascadeSoftDeleteService.cascadeDeleteChildrenOfSchool(schoolId);
         schoolService.softDeleteSchool(schoolId, teacherId);
     }
 
     @Override
     public School updateSchool(Integer schoolId, School school) {
-      Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         return schoolService.updateSchool(schoolId, school, teacherId);
     }
 

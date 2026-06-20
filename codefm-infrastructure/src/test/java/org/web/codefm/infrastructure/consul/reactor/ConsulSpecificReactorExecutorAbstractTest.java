@@ -1,10 +1,9 @@
 package org.web.codefm.infrastructure.consul.reactor;
 
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ConsulSpecificReactorExecutorAbstractTest {
 
@@ -18,45 +17,49 @@ class ConsulSpecificReactorExecutorAbstractTest {
         }
     }
 
-    @Test
-    @DisplayName("Returns own values when all properties are set")
-    void returnsOwnValuesWhenPropertiesSet() {
-        DummyExecutor exec = new DummyExecutor(10, 2, 5, 1000L);
-        assertEquals(10, exec.getPartitionLimit());
-        assertEquals(2, exec.getRetries());
-        assertEquals(5, exec.getFlatMapConcurrency());
-        assertEquals(1000L, exec.getBlockTimeout());
-    }
+    @Nested
+    class GetProperties {
 
-    @Test
-    @DisplayName("Falls back to default when own value is null")
-    void fallsBackToDefaultWhenOwnValueIsNull() {
-        DummyExecutor def = new DummyExecutor(20, 3, 7, 2000L);
-        DummyExecutor exec = new DummyExecutor(null, null, null, null, def);
-        assertEquals(20, exec.getPartitionLimit());
-        assertEquals(3, exec.getRetries());
-        assertEquals(7, exec.getFlatMapConcurrency());
-        assertEquals(2000L, exec.getBlockTimeout());
-    }
+        @Test
+        void when_all_properties_set_expect_own_values_returned() {
+            final DummyExecutor exec = new DummyExecutor(10, 2, 5, 1000L);
 
-    @Test
-    @DisplayName("Returns null when value and default are null")
-    void returnsNullWhenValueAndDefaultAreNull() {
-        DummyExecutor exec = new DummyExecutor(null, null, null, null, null);
-        assertNull(exec.getPartitionLimit());
-        assertNull(exec.getRetries());
-        assertNull(exec.getFlatMapConcurrency());
-        assertNull(exec.getBlockTimeout());
-    }
+            assertThat(exec.getPartitionLimit()).isEqualTo(10);
+            assertThat(exec.getRetries()).isEqualTo(2);
+            assertThat(exec.getFlatMapConcurrency()).isEqualTo(5);
+            assertThat(exec.getBlockTimeout()).isEqualTo(1000L);
+        }
 
-    @Test
-    @DisplayName("Returns own value even if default is present")
-    void returnsOwnValueEvenIfDefaultPresent() {
-        DummyExecutor def = new DummyExecutor(30, 4, 8, 3000L);
-        DummyExecutor exec = new DummyExecutor(15, 5, 9, 1500L, def);
-        assertEquals(15, exec.getPartitionLimit());
-        assertEquals(5, exec.getRetries());
-        assertEquals(9, exec.getFlatMapConcurrency());
-        assertEquals(1500L, exec.getBlockTimeout());
+        @Test
+        void when_own_value_is_null_expect_default_returned() {
+            final DummyExecutor def = new DummyExecutor(20, 3, 7, 2000L);
+            final DummyExecutor exec = new DummyExecutor(null, null, null, null, def);
+
+            assertThat(exec.getPartitionLimit()).isEqualTo(20);
+            assertThat(exec.getRetries()).isEqualTo(3);
+            assertThat(exec.getFlatMapConcurrency()).isEqualTo(7);
+            assertThat(exec.getBlockTimeout()).isEqualTo(2000L);
+        }
+
+        @Test
+        void when_both_null_expect_null_returned() {
+            final DummyExecutor exec = new DummyExecutor(null, null, null, null, null);
+
+            assertThat(exec.getPartitionLimit()).isNull();
+            assertThat(exec.getRetries()).isNull();
+            assertThat(exec.getFlatMapConcurrency()).isNull();
+            assertThat(exec.getBlockTimeout()).isNull();
+        }
+
+        @Test
+        void when_own_value_set_expect_own_value_returned_despite_default() {
+            final DummyExecutor def = new DummyExecutor(30, 4, 8, 3000L);
+            final DummyExecutor exec = new DummyExecutor(15, 5, 9, 1500L, def);
+
+            assertThat(exec.getPartitionLimit()).isEqualTo(15);
+            assertThat(exec.getRetries()).isEqualTo(5);
+            assertThat(exec.getFlatMapConcurrency()).isEqualTo(9);
+            assertThat(exec.getBlockTimeout()).isEqualTo(1500L);
+        }
     }
 }

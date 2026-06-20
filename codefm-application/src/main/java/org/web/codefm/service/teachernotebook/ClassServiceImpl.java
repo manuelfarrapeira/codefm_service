@@ -9,7 +9,7 @@ import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.exception.teachernotebook.ClassValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.*;
+import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
 import org.web.codefm.domain.service.teachernotebook.ClassService;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionUser;
@@ -32,10 +32,6 @@ public class ClassServiceImpl implements ClassService {
 
     private final ClassRepository classRepository;
     private final SchoolService schoolService;
-    private final SubjectClassRepository subjectClassRepository;
-    private final ScheduleRepository scheduleRepository;
-    private final StudentClassRepository studentClassRepository;
-    private final ExerciseRepository exerciseRepository;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -72,16 +68,6 @@ public class ClassServiceImpl implements ClassService {
     public void softDeleteClass(Integer classId, Integer teacherId) {
         Locale locale = sessionUser.getLocale();
         ClassValidationUtil.validateClassOwnership(classId, teacherId, this, schoolService, messageSource, locale);
-
-        List<Integer> subjectClassIds = subjectClassRepository.findActiveIdsByClassId(classId);
-
-        if (!subjectClassIds.isEmpty()) {
-            exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);
-        }
-
-        studentClassRepository.softDeleteByClassId(classId);
-        subjectClassRepository.softDeleteByClassId(classId);
-        scheduleRepository.softDeleteByClassId(classId);
 
         classRepository.softDeleteClass(classId, teacherId);
     }

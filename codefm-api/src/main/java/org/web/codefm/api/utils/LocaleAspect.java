@@ -28,20 +28,22 @@ public class LocaleAspect implements Ordered {
     public void setLocale(final JoinPoint joinPoint, final Locale localeAnnotation) {
 
         try {
-            int localeId = localeAnnotation.value();
-            sessionUser.setLocale(getLocale((String) joinPoint.getArgs()[localeId]));
-        } catch (Exception e) {
+            final int localeId = localeAnnotation.value();
+            this.sessionUser.setLocale(this.getLocale((String) joinPoint.getArgs()[localeId]));
+        } catch (final Exception e) {
             log.error("Error get Locale", e);
-            sessionUser.setLocale(java.util.Locale.ENGLISH);
+            this.sessionUser.setLocale(java.util.Locale.ENGLISH);
         }
 
-        log.info("Locale user: ", sessionUser.getLocale());
+        log.info("Locale user: {}", this.sessionUser.getLocale());
 
     }
 
-    private java.util.Locale getLocale(String acceptLanguage) {
+    private java.util.Locale getLocale(final String acceptLanguage) {
         if ("es".equalsIgnoreCase(acceptLanguage)) {
             return new java.util.Locale("es");
+        } else if ("ga".equalsIgnoreCase(acceptLanguage)) {
+            return new java.util.Locale("ga");
         } else {
             return java.util.Locale.ENGLISH;
         }

@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {ExerciseDocumentDTOMapper.class})
 public interface ExerciseDTOMapper {
 
     ExerciseDTO toDTO(Exercise exercise);

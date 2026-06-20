@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.repository.teachernotebook.ClassRepository;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ClassEntity;
 import org.web.codefm.infrastructure.jpa.teachernotebook.ClassJPARepository;
 import org.web.codefm.infrastructure.mapper.ClassMapper;
@@ -20,6 +22,7 @@ public class ClassRepositoryImpl implements ClassRepository {
 
     private final ClassJPARepository classJPARepository;
     private final ClassMapper classMapper;
+    private final CacheEvictionService cacheEvictionService;
 
     @Override
     public List<Class> findActiveClassesBySchoolIdAndTeacherId(Integer schoolId, Integer teacherId) {
@@ -30,7 +33,8 @@ public class ClassRepositoryImpl implements ClassRepository {
 
     @Override
     public Class save(Class clazz) {
-      ClassEntity savedEntity = classJPARepository.save(classMapper.toEntity(clazz));
+        ClassEntity savedEntity = classJPARepository.save(classMapper.toEntity(clazz));
+        this.cacheEvictionService.evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
         return classMapper.toModel(savedEntity);
     }
 
@@ -53,6 +57,7 @@ public class ClassRepositoryImpl implements ClassRepository {
 
         classEntity.setDeletionDate(LocalDate.now());
         ClassEntity updatedEntity = classJPARepository.save(classEntity);
+        this.cacheEvictionService.evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
         return classMapper.toModel(updatedEntity);
     }
 
@@ -64,5 +69,6 @@ public class ClassRepositoryImpl implements ClassRepository {
     @Override
     public void softDeleteBySchoolId(Integer schoolId) {
         classJPARepository.softDeleteBySchoolId(schoolId);
+        this.cacheEvictionService.evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 }

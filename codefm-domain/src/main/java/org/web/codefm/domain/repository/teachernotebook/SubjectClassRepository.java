@@ -1,8 +1,8 @@
 package org.web.codefm.domain.repository.teachernotebook;
 
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
-import org.web.codefm.domain.entity.teachernotebook.Subject;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClass;
+import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,12 +14,12 @@ import java.util.Optional;
 public interface SubjectClassRepository {
 
     /**
-     * Finds all subjects associated with a specific class.
+     * Finds all subjects associated with a specific class, including the subject-class association ID.
      *
      * @param classId The unique identifier of the class
-     * @return List of subjects belonging to the specified class
+     * @return List of subject-class details belonging to the specified class
      */
-    List<Subject> findSubjectsByClassId(Integer classId);
+    List<SubjectClassDetail> findSubjectsByClassId(Integer classId);
 
     /**
      * Saves multiple subject-class associations.
@@ -92,4 +92,12 @@ public interface SubjectClassRepository {
      * @return Optional with the subject-class association ID if found and active
      */
     Optional<Integer> findIdBySubjectIdAndClassId(Integer subjectId, Integer classId);
+
+    /**
+     * Finds a subject-class association by its ID.
+     *
+     * @param id The unique identifier of the subject-class association
+     * @return Optional containing the subject-class association if found
+     */
+    Optional<SubjectClass> findById(Integer id);
 }

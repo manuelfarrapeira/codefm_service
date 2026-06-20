@@ -1,0 +1,223 @@
+{
+  "info": {
+    "_postman_id": "exercise-student-grades",
+    "name": "ExerciseStudentGrades",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get grades by class",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/grades",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "grades"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Obtiene todas las notas de estudiantes para los ejercicios de una clase, agrupadas por estudiante, trimestre y asignatura."
+      }
+    },
+    {
+      "name": "Get grades by class and student",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/students/:studentId/grades",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "students",
+            ":studentId",
+            "grades"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            },
+            {
+              "key": "studentId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Obtiene todas las notas de un estudiante concreto en una clase, agrupadas por trimestre y asignatura."
+      }
+    },
+    {
+      "name": "Create grade",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"studentId\": 1,\n    \"grade\": 8.5,\n    \"description\": \"Buen rendimiento\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/exercises/:exerciseId/grades",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "exercises",
+            ":exerciseId",
+            "grades"
+          ],
+          "variable": [
+            {
+              "key": "exerciseId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Crea una nota para un estudiante en un ejercicio. La nota no puede superar la nota máxima del ejercicio. El estudiante debe estar matriculado en la clase del ejercicio."
+      }
+    },
+    {
+      "name": "Update grade",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"grade\": 9.25,\n    \"description\": \"Nota actualizada tras revisión\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/grades/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "grades",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Actualiza la nota y/o descripción de una nota de estudiante existente."
+      }
+    },
+    {
+      "name": "Delete grade",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/grades/:id",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "grades",
+            ":id"
+          ],
+          "variable": [
+            {
+              "key": "id",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) una nota de estudiante."
+      }
+    },
+    {
+      "name": "Export grades by class",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/classes/:classId/grades/export",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "classes",
+            ":classId",
+            "grades",
+            "export"
+          ],
+          "variable": [
+            {
+              "key": "classId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Exporta las notas de los estudiantes de una clase en formato Excel (.xlsx). Se genera una hoja por cada asignatura que tenga al menos una nota."
+      }
+    }
+  ]
+}
+

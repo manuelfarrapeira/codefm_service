@@ -1,102 +1,126 @@
 package org.web.codefm.usecase.teachernotebook;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
-import org.web.codefm.domain.entity.teachernotebook.Subject;
+import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.SubjectClassService;
 
-import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SubjectClassUseCaseImplTest {
 
+    private SubjectClassUseCaseImpl subjectClassUseCase;
+
     @Mock
     private SubjectClassService subjectClassService;
 
-    @InjectMocks
-    private SubjectClassUseCaseImpl subjectClassUseCase;
+    @Mock
+    private CascadeSoftDeleteService cascadeSoftDeleteService;
 
     private static final Integer CLASS_ID = 10;
     private static final Integer SUBJECT_ID_1 = 100;
     private static final Integer SUBJECT_ID_2 = 101;
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        subjectClassUseCase = new SubjectClassUseCaseImpl(subjectClassService);
+    void beforeEach() {
+        subjectClassUseCase = new SubjectClassUseCaseImpl(subjectClassService, cascadeSoftDeleteService);
     }
 
-    @Test
-    void getSubjectsByClassId_shouldDelegateToService() {
-        List<Subject> expectedSubjects = Arrays.asList(
-                Subject.builder().id(SUBJECT_ID_1).name("Math").build(),
-                Subject.builder().id(SUBJECT_ID_2).name("Science").build()
-        );
+    @Nested
+    class GetSubjectsByClassId {
 
-        when(subjectClassService.getSubjectsByClassId(CLASS_ID)).thenReturn(expectedSubjects);
+        @Test
+        void when_subjects_found_expect_delegated_to_service() {
+            final List<SubjectClassDetail> expected = List.of(
+                    SubjectClassDetail.builder().subjectClassId(200).subjectId(SUBJECT_ID_1).subjectName("Math").build(),
+                    SubjectClassDetail.builder().subjectClassId(201).subjectId(SUBJECT_ID_2).subjectName("Science").build());
+            when(subjectClassService.getSubjectsByClassId(CLASS_ID)).thenReturn(expected);
 
-        List<Subject> result = subjectClassUseCase.getSubjectsByClassId(CLASS_ID);
+            final List<SubjectClassDetail> result = subjectClassUseCase.getSubjectsByClassId(CLASS_ID);
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        verify(subjectClassService).getSubjectsByClassId(CLASS_ID);
+            assertThat(result).isNotNull().hasSize(2);
+            verify(subjectClassService).getSubjectsByClassId(CLASS_ID);
+        }
     }
 
-    @Test
-    void getAllClassesWithSubjects_shouldDelegateToService() {
-        List<ClassWithSubjects> expectedResult = Arrays.asList(
-                ClassWithSubjects.builder()
-                        .classData(Class.builder().id(CLASS_ID).name("1A").build())
-                        .subjects(Arrays.asList(Subject.builder().id(SUBJECT_ID_1).name("Math").build()))
-                        .build()
-        );
+    @Nested
+    class GetAllClassesWithSubjects {
 
-        when(subjectClassService.getAllClassesWithSubjects()).thenReturn(expectedResult);
+        @Test
+        void when_fetching_all_classes_expect_delegated_to_service() {
+            final List<ClassWithSubjects> expected = List.of(
+                    ClassWithSubjects.builder()
+                            .classData(Class.builder().id(CLASS_ID).name("1A").build())
+                            .subjects(List.of(SubjectClassDetail.builder().subjectClassId(200).subjectId(SUBJECT_ID_1).subjectName("Math").build()))
+                            .build());
+            when(subjectClassService.getAllClassesWithSubjects()).thenReturn(expected);
 
-        List<ClassWithSubjects> result = subjectClassUseCase.getAllClassesWithSubjects();
+            final List<ClassWithSubjects> result = subjectClassUseCase.getAllClassesWithSubjects();
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(subjectClassService).getAllClassesWithSubjects();
+            assertThat(result).isNotNull().hasSize(1);
+            verify(subjectClassService).getAllClassesWithSubjects();
+        }
     }
 
-    @Test
-    void assignSubjectsToClass_shouldDelegateToService() {
-        List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2);
-        List<Subject> expectedSubjects = Arrays.asList(
-                Subject.builder().id(SUBJECT_ID_1).name("Math").build(),
-                Subject.builder().id(SUBJECT_ID_2).name("Science").build()
-        );
+    @Nested
+    class AssignSubjectsToClass {
 
-        when(subjectClassService.assignSubjectsToClass(CLASS_ID, subjectIds)).thenReturn(expectedSubjects);
+        @Test
+        void when_assigning_subjects_expect_delegated_to_service() {
+            final List<Integer> subjectIds = List.of(SUBJECT_ID_1, SUBJECT_ID_2);
+            final List<SubjectClassDetail> expected = List.of(
+                    SubjectClassDetail.builder().subjectClassId(200).subjectId(SUBJECT_ID_1).subjectName("Math").build(),
+                    SubjectClassDetail.builder().subjectClassId(201).subjectId(SUBJECT_ID_2).subjectName("Science").build());
+            when(subjectClassService.assignSubjectsToClass(CLASS_ID, subjectIds)).thenReturn(expected);
 
-        List<Subject> result = subjectClassUseCase.assignSubjectsToClass(CLASS_ID, subjectIds);
+            final List<SubjectClassDetail> result = subjectClassUseCase.assignSubjectsToClass(CLASS_ID, subjectIds);
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        verify(subjectClassService).assignSubjectsToClass(CLASS_ID, subjectIds);
+            assertThat(result).isNotNull().hasSize(2);
+            verify(subjectClassService).assignSubjectsToClass(CLASS_ID, subjectIds);
+        }
     }
 
-    @Test
-    void removeSubjectsFromClass_shouldDelegateToService() {
-        List<Integer> subjectIds = Arrays.asList(SUBJECT_ID_1, SUBJECT_ID_2);
+    @Nested
+    class RemoveSubjectsFromClass {
 
-        doNothing().when(subjectClassService).removeSubjectsFromClass(CLASS_ID, subjectIds);
+        @Test
+        void when_removing_subjects_expect_cascade_before_service() {
+            final List<Integer> subjectIds = List.of(SUBJECT_ID_1, SUBJECT_ID_2);
+            final List<Integer> subjectClassIds = List.of(200, 201);
+            when(subjectClassService.findActiveSubjectClassIds(CLASS_ID, subjectIds)).thenReturn(subjectClassIds);
+            doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfSubjectClass(anyInt());
+            doNothing().when(subjectClassService).removeSubjectsFromClass(CLASS_ID, subjectIds);
 
-        assertDoesNotThrow(() -> subjectClassUseCase.removeSubjectsFromClass(CLASS_ID, subjectIds));
+            subjectClassUseCase.removeSubjectsFromClass(CLASS_ID, subjectIds);
 
-        verify(subjectClassService).removeSubjectsFromClass(CLASS_ID, subjectIds);
+            final var order = inOrder(cascadeSoftDeleteService, subjectClassService);
+            order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfSubjectClass(200);
+            order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfSubjectClass(201);
+            order.verify(subjectClassService).removeSubjectsFromClass(CLASS_ID, subjectIds);
+        }
+
+        @Test
+        void when_removing_subjects_expect_find_active_ids_called_first() {
+            final List<Integer> subjectIds = List.of(SUBJECT_ID_1, SUBJECT_ID_2);
+            final List<Integer> subjectClassIds = List.of(200, 201);
+            when(subjectClassService.findActiveSubjectClassIds(CLASS_ID, subjectIds)).thenReturn(subjectClassIds);
+
+            subjectClassUseCase.removeSubjectsFromClass(CLASS_ID, subjectIds);
+
+            verify(subjectClassService).findActiveSubjectClassIds(CLASS_ID, subjectIds);
+            verify(cascadeSoftDeleteService, times(2)).cascadeDeleteChildrenOfSubjectClass(anyInt());
+            verify(subjectClassService).removeSubjectsFromClass(CLASS_ID, subjectIds);
+        }
     }
 }
-

@@ -2,13 +2,16 @@ package org.web.codefm.infrastructure.teachernotebook;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 import org.web.codefm.domain.entity.teachernotebook.ClassWithSubjects;
-import org.web.codefm.domain.entity.teachernotebook.Subject;
 import org.web.codefm.domain.entity.teachernotebook.SubjectClass;
+import org.web.codefm.domain.entity.teachernotebook.SubjectClassDetail;
 import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheEvictionService;
+import org.web.codefm.infrastructure.cache.teachernotebook.CacheName;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.ClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectClassEntity;
 import org.web.codefm.infrastructure.entity.mariadb.teachernotebook.SubjectEntity;
@@ -17,12 +20,9 @@ import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectClassJPAReposito
 import org.web.codefm.infrastructure.jpa.teachernotebook.SubjectJPARepository;
 import org.web.codefm.infrastructure.mapper.ClassMapper;
 import org.web.codefm.infrastructure.mapper.SubjectClassMapper;
-import org.web.codefm.infrastructure.mapper.SubjectMapper;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Repository
@@ -34,31 +34,49 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
     private final SubjectJPARepository subjectJPARepository;
     private final ClassJPARepository classJPARepository;
     private final SubjectClassMapper subjectClassMapper;
-    private final SubjectMapper subjectMapper;
     private final ClassMapper classMapper;
+    private final CacheEvictionService cacheEvictionService;
 
     @Override
-    public List<Subject> findSubjectsByClassId(Integer classId) {
+    @Cacheable(value = CacheName.SUBJECT_CLASSES_BY_CLASS, key = "#classId")
+    public List<SubjectClassDetail> findSubjectsByClassId(Integer classId) {
         List<SubjectClassEntity> subjectClassEntities = subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(classId);
+
+        if (subjectClassEntities.isEmpty()) {
+            return new ArrayList<>();
+        }
+
         List<Integer> subjectIds = subjectClassEntities.stream()
                 .map(SubjectClassEntity::getSubjectId)
                 .toList();
 
-        if (subjectIds.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        List<SubjectEntity> subjectEntities = subjectJPARepository.findAllById(subjectIds).stream()
+        Map<Integer, SubjectEntity> subjectMap = subjectJPARepository.findAllById(subjectIds).stream()
                 .filter(s -> s.getDeletionDate() == null)
-                .toList();
+                .collect(Collectors.toMap(SubjectEntity::getId, Function.identity()));
 
-        return subjectMapper.toModelList(subjectEntities);
+        return subjectClassEntities.stream()
+                .filter(sc -> subjectMap.containsKey(sc.getSubjectId()))
+                .map(sc -> {
+                    SubjectEntity subject = subjectMap.get(sc.getSubjectId());
+                    return SubjectClassDetail.builder()
+                            .subjectClassId(sc.getId())
+                            .subjectId(subject.getId())
+                            .subjectName(subject.getName())
+                            .build();
+                })
+                .sorted(Comparator.comparing(SubjectClassDetail::getSubjectName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
     }
 
     @Override
     public List<SubjectClass> saveAll(List<SubjectClass> subjectClasses) {
         List<SubjectClassEntity> entities = subjectClassMapper.toEntityList(subjectClasses);
         List<SubjectClassEntity> savedEntities = subjectClassJPARepository.saveAll(entities);
+        subjectClasses.stream()
+                .map(SubjectClass::getClassId)
+                .distinct()
+                .forEach(classId -> this.cacheEvictionService.evict(CacheName.SUBJECT_CLASSES_BY_CLASS, classId));
+        this.cacheEvictionService.evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
         return subjectClassMapper.toModelList(savedEntities);
     }
 
@@ -66,6 +84,8 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
     @Transactional
     public void softDeleteAll(Integer classId, List<Integer> subjectIds) {
         subjectClassJPARepository.softDeleteByClassIdAndSubjectIds(classId, subjectIds);
+        this.cacheEvictionService.evict(CacheName.SUBJECT_CLASSES_BY_CLASS, classId);
+        this.cacheEvictionService.evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Override
@@ -74,6 +94,7 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
     }
 
     @Override
+    @Cacheable(value = CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER, key = "#teacherId")
     public List<ClassWithSubjects> findAllClassesWithSubjectsByTeacherId(Integer teacherId) {
         List<Integer> classIds = subjectClassJPARepository.findClassIdsByTeacherId(teacherId);
 
@@ -85,7 +106,7 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
                 .filter(c -> c.getDeletionDate() == null)
                 .toList();
 
-        Map<Integer, List<Subject>> subjectsByClassId = classIds.stream()
+        Map<Integer, List<SubjectClassDetail>> subjectsByClassId = classIds.stream()
                 .collect(Collectors.toMap(
                         classId -> classId,
                         this::findSubjectsByClassId
@@ -94,7 +115,7 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
         return classEntities.stream()
                 .map(classEntity -> {
                     Class classData = classMapper.toModel(classEntity);
-                    List<Subject> subjects = subjectsByClassId.getOrDefault(classEntity.getId(), new ArrayList<>());
+                    List<SubjectClassDetail> subjects = subjectsByClassId.getOrDefault(classEntity.getId(), new ArrayList<>());
                     return ClassWithSubjects.builder()
                             .classData(classData)
                             .subjects(subjects)
@@ -106,11 +127,16 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
     @Override
     public void softDeleteByClassId(Integer classId) {
         subjectClassJPARepository.softDeleteByClassId(classId);
+        this.cacheEvictionService.evict(CacheName.SUBJECT_CLASSES_BY_CLASS, classId);
+        this.cacheEvictionService.evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Override
     public void softDeleteBySubjectId(Integer subjectId) {
+        List<Integer> classIds = subjectClassJPARepository.findDistinctClassIdsBySubjectIdAndDeletionDateIsNull(subjectId);
         subjectClassJPARepository.softDeleteBySubjectId(subjectId);
+        classIds.forEach(classId -> this.cacheEvictionService.evict(CacheName.SUBJECT_CLASSES_BY_CLASS, classId));
+        this.cacheEvictionService.evictByTeacher(CacheName.CLASSES_WITH_SUBJECTS_BY_TEACHER);
     }
 
     @Override
@@ -127,5 +153,11 @@ public class SubjectClassRepositoryImpl implements SubjectClassRepository {
     public Optional<Integer> findIdBySubjectIdAndClassId(Integer subjectId, Integer classId) {
         return subjectClassJPARepository.findBySubjectIdAndClassIdAndDeletionDateIsNull(subjectId, classId)
                 .map(SubjectClassEntity::getId);
+    }
+
+    @Override
+    public Optional<SubjectClass> findById(Integer id) {
+        return subjectClassJPARepository.findById(id)
+                .map(subjectClassMapper::toModel);
     }
 }

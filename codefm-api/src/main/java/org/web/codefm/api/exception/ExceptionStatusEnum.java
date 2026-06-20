@@ -36,15 +36,43 @@ public enum ExceptionStatusEnum {
     SUBJECT_CLASS_VALIDATION_ERROR(SubjectClassValidationException.class, HttpStatus.BAD_REQUEST),
     SUBJECT_CLASS_DUPLICATE(SubjectClassDuplicateException.class, HttpStatus.CONFLICT),
     EXERCISE_NOT_FOUND(ExerciseNotFoundException.class, HttpStatus.NOT_FOUND),
-    EXERCISE_VALIDATION_ERROR(ExerciseValidationException.class, HttpStatus.BAD_REQUEST);
+    EXERCISE_VALIDATION_ERROR(ExerciseValidationException.class, HttpStatus.BAD_REQUEST),
+    EXERCISE_DOCUMENT_NOT_FOUND(ExerciseDocumentNotFoundException.class, HttpStatus.NOT_FOUND),
+    EXERCISE_DOCUMENT_UPLOAD_ERROR(ExerciseDocumentUploadException.class, HttpStatus.INTERNAL_SERVER_ERROR),
+    EXERCISE_DOCUMENT_VALIDATION_ERROR(ExerciseDocumentValidationException.class, HttpStatus.BAD_REQUEST),
+    EXERCISE_STUDENT_DOCUMENT_NOT_FOUND(ExerciseStudentDocumentNotFoundException.class, HttpStatus.NOT_FOUND),
+    EXERCISE_STUDENT_DOCUMENT_UPLOAD_ERROR(ExerciseStudentDocumentUploadException.class, HttpStatus.INTERNAL_SERVER_ERROR),
+    EXERCISE_STUDENT_GRADE_NOT_FOUND(ExerciseStudentGradeNotFoundException.class, HttpStatus.NOT_FOUND),
+    EXERCISE_STUDENT_GRADE_VALIDATION_ERROR(ExerciseStudentGradeValidationException.class, HttpStatus.BAD_REQUEST),
+    CALENDAR_ALERT_NOT_FOUND(CalendarAlertNotFoundException.class, HttpStatus.NOT_FOUND),
+    CALENDAR_ALERT_VALIDATION_ERROR(CalendarAlertValidationException.class, HttpStatus.BAD_REQUEST),
+    GRADE_EXPORT_ERROR(GradeExportException.class, HttpStatus.INTERNAL_SERVER_ERROR),
+    STUDENT_ABSENCE_NOT_FOUND(StudentAbsenceNotFoundException.class, HttpStatus.NOT_FOUND),
+    STUDENT_ABSENCE_VALIDATION_ERROR(StudentAbsenceValidationException.class, HttpStatus.BAD_REQUEST),
+    SKILL_VALIDATION_ERROR(SkillValidationException.class, HttpStatus.BAD_REQUEST),
+    SKILL_NOT_FOUND(SkillNotFoundException.class, HttpStatus.NOT_FOUND),
+    SKILL_FORBIDDEN(SkillForbiddenException.class, HttpStatus.FORBIDDEN),
+    SKILL_RUBRIC_VALIDATION_ERROR(SkillRubricValidationException.class, HttpStatus.BAD_REQUEST),
+    SKILL_RUBRIC_NOT_FOUND(SkillRubricNotFoundException.class, HttpStatus.NOT_FOUND),
+    CLASS_RUBRIC_NOT_FOUND(ClassRubricNotFoundException.class, HttpStatus.NOT_FOUND),
+    CLASS_RUBRIC_VALIDATION_ERROR(ClassRubricValidationException.class, HttpStatus.BAD_REQUEST),
+    STUDENT_CLASS_RUBRIC_CRITERIA_NOT_FOUND(StudentClassRubricCriteriaNotFoundException.class, HttpStatus.NOT_FOUND),
+    STUDENT_CLASS_RUBRIC_CRITERIA_VALIDATION_ERROR(StudentClassRubricCriteriaValidationException.class, HttpStatus.BAD_REQUEST),
+    STUDENT_GROUP_VALIDATION_ERROR(StudentGroupValidationException.class, HttpStatus.BAD_REQUEST),
+    SAVED_STUDENT_GROUP_NOT_FOUND(SavedStudentGroupNotFoundException.class, HttpStatus.NOT_FOUND),
+    SAVED_STUDENT_GROUP_VALIDATION_ERROR(SavedStudentGroupValidationException.class, HttpStatus.BAD_REQUEST),
+    GROUP_ASSIGNMENT_NOT_FOUND(GroupAssignmentNotFoundException.class, HttpStatus.NOT_FOUND),
+    GROUP_ASSIGNMENT_VALIDATION_ERROR(GroupAssignmentValidationException.class, HttpStatus.BAD_REQUEST),
+    GROUP_ASSIGNMENT_DOCUMENT_NOT_FOUND(GroupAssignmentDocumentNotFoundException.class, HttpStatus.NOT_FOUND),
+    GROUP_ASSIGNMENT_DOCUMENT_UPLOAD_ERROR(GroupAssignmentDocumentUploadException.class, HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final Class<?> exceptionClazz;
 
     private final HttpStatus status;
 
     public static <T extends Throwable> ExceptionStatusEnum getExceptionEnum(final Class<T> obj) {
-        return Arrays.stream(ExceptionStatusEnum.values())
-                .filter(ex -> (obj.equals(ex.getExceptionClazz()))).findFirst().orElse(null);
+        return Arrays.stream(ExceptionStatusEnum.values()).filter(ex -> (obj.equals(ex.getExceptionClazz())))
+                .findFirst().orElse(null);
     }
 
 }

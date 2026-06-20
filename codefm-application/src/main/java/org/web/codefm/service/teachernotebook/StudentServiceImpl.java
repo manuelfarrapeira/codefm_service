@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.Student;
+import org.web.codefm.domain.enums.StudentShape;
 import org.web.codefm.domain.exception.teachernotebook.*;
 import org.web.codefm.domain.i18n.MessageKeys;
 import org.web.codefm.domain.repository.teachernotebook.StudentClassRepository;
@@ -41,7 +42,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public Student createStudent(Student student) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         validateStudent(student);
         student.setTeacherId(teacherId);
         return studentRepository.save(student);
@@ -49,7 +50,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public Student updateStudent(Integer id, Student student) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         validateStudent(student);
 
         Student existingStudent = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(id, teacherId)
@@ -62,13 +63,14 @@ public class StudentServiceImpl implements StudentService {
         existingStudent.setDateOfBirth(student.getDateOfBirth());
         existingStudent.setGender(student.getGender());
         existingStudent.setAdditionalInfo(student.getAdditionalInfo());
+        existingStudent.setShape(student.getShape());
 
         return studentRepository.update(existingStudent);
     }
 
     @Override
     public void softDeleteStudent(Integer id) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
         Optional<Student> student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(id, teacherId);
 
@@ -77,15 +79,12 @@ public class StudentServiceImpl implements StudentService {
                     messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
             );
         }
-
-        studentClassRepository.softDeleteByStudentId(id);
-
         studentRepository.softDelete(id, teacherId);
     }
 
     @Override
     public String saveStudentPhoto(Integer studentId, MultipartFile file) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Student student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId)
                 .orElseThrow(() -> new StudentNotFoundException(
                         messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
@@ -150,7 +149,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public List<Student> searchStudents(Integer id, String name, String surnames) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
 
         if (id == null && (name == null || name.trim().isEmpty()) &&
                 (surnames == null || surnames.trim().isEmpty())) {
@@ -198,6 +197,20 @@ public class StudentServiceImpl implements StudentService {
             ));
         }
 
+        if (student.getShape() != null && !student.getShape().trim().isEmpty()) {
+            student.setShape(student.getShape().trim().toUpperCase());
+            try {
+                StudentShape.valueOf(student.getShape());
+            } catch (IllegalArgumentException e) {
+                final Locale locale = this.sessionUser.getLocale();
+                final String squareName = this.messageSource.getMessage(MessageKeys.SHAPE_NAME_SQUARE, null, locale);
+                final String circleName = this.messageSource.getMessage(MessageKeys.SHAPE_NAME_CIRCLE, null, locale);
+                final String triangleName = this.messageSource.getMessage(MessageKeys.SHAPE_NAME_TRIANGLE, null, locale);
+                errors.add(new ErrorMessage("shape",
+                        this.messageSource.getMessage(MessageKeys.STUDENT_VALIDATION_SHAPE_INVALID, new Object[]{squareName, circleName, triangleName}, locale)
+                ));
+            }
+        }
 
         if (!errors.isEmpty()) {
             throw new StudentValidationException(errors);
@@ -206,7 +219,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public byte[] getStudentPhoto(Integer studentId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Student student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId)
                 .orElseThrow(() -> new StudentNotFoundException(
                         messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
@@ -236,7 +249,7 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public void deleteStudentPhoto(Integer studentId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Student student = studentRepository.findByIdAndTeacherIdAndDeletionDateIsNull(studentId, teacherId)
                 .orElseThrow(() -> new StudentNotFoundException(
                         messageSource.getMessage(MessageKeys.STUDENT_NOT_FOUND, null, sessionUser.getLocale())
@@ -264,15 +277,9 @@ public class StudentServiceImpl implements StudentService {
         }
     }
 
-    private Integer getTeacherId() {
-        return Integer.valueOf(
-                sessionUser.getParameters().get(SessionParameter.TEACHER_ID.getClaimName())
-        );
-    }
-
     @Override
     public List<Student> getAllStudents() {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         List<Student> students = studentRepository.findAllByTeacherId(teacherId);
 
         Map<Integer, List<Integer>> studentClassMap = studentClassRepository.findClassIdsByTeacherId(teacherId);

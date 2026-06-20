@@ -1,0 +1,305 @@
+{
+  "info": {
+    "_postman_id": "skill-rubrics-collection",
+    "name": "Teacher Notebook - Skill Rubrics",
+    "description": "Colección para gestionar rúbricas y criterios de evaluación de competencias del profesor",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Rubrics by Skill",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/skills/:skillId/rubrics",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "skills",
+            ":skillId",
+            "rubrics"
+          ],
+          "variable": [
+            {
+              "key": "skillId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Obtiene todas las rúbricas activas de una competencia, incluyendo sus criterios."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Rubric",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Rúbrica de pensamiento crítico\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/skills/:skillId/rubrics",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "skills",
+            ":skillId",
+            "rubrics"
+          ],
+          "variable": [
+            {
+              "key": "skillId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Crea una nueva rúbrica (solo título). Los criterios se añaden en un endpoint separado."
+      },
+      "response": []
+    },
+    {
+      "name": "Update Rubric",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Rúbrica actualizada\"\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/rubrics/:rubricId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "rubrics",
+            ":rubricId"
+          ],
+          "variable": [
+            {
+              "key": "rubricId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Actualiza el título de una rúbrica."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Rubric",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/rubrics/:rubricId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "rubrics",
+            ":rubricId"
+          ],
+          "variable": [
+            {
+              "key": "rubricId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Elimina una rúbrica (soft delete) y todos sus criterios (hard delete)."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Criteria by Rubric",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/rubrics/:rubricId/criteria",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "rubrics",
+            ":rubricId",
+            "criteria"
+          ],
+          "variable": [
+            {
+              "key": "rubricId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Obtiene todos los criterios de evaluación de una rúbrica."
+      },
+      "response": []
+    },
+    {
+      "name": "Create Criterion",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"description\": \"Lo hace mal\",\n    \"qualification\": \"Insuficiente\",\n    \"gradeStart\": 0,\n    \"gradeEnd\": 4\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/rubrics/:rubricId/criteria",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "rubrics",
+            ":rubricId",
+            "criteria"
+          ],
+          "variable": [
+            {
+              "key": "rubricId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Crea un criterio de evaluación individual. Valida que el rango de notas no se solape con criterios activos existentes."
+      },
+      "response": []
+    },
+    {
+      "name": "Update Criterion",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"description\": \"Lo hace regular\",\n    \"qualification\": \"Suficiente\",\n    \"gradeStart\": 5,\n    \"gradeEnd\": 6\n}"
+        },
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/rubrics/:rubricId/criteria/:criterionId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "rubrics",
+            ":rubricId",
+            "criteria",
+            ":criterionId"
+          ],
+          "variable": [
+            {
+              "key": "rubricId",
+              "value": "1"
+            },
+            {
+              "key": "criterionId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Actualiza un criterio de evaluación individual. Valida que el nuevo rango de notas no se solape con otros criterios activos (excluyendo el que se actualiza)."
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Criterion",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Accept-Language",
+            "value": "es"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/teacher-notebook/v1/rubrics/:rubricId/criteria/:criterionId",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "teacher-notebook",
+            "v1",
+            "rubrics",
+            ":rubricId",
+            "criteria",
+            ":criterionId"
+          ],
+          "variable": [
+            {
+              "key": "rubricId",
+              "value": "1"
+            },
+            {
+              "key": "criterionId",
+              "value": "1"
+            }
+          ]
+        },
+        "description": "Elimina (soft delete) un criterio de evaluación individual."
+      },
+      "response": []
+    }
+  ]
+}
+

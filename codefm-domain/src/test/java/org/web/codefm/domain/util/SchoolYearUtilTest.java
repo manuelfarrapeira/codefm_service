@@ -1,46 +1,38 @@
 package org.web.codefm.domain.util;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.web.codefm.domain.entity.teachernotebook.Class;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class SchoolYearUtilTest {
 
-    @ParameterizedTest
-    @CsvSource({"24/25, 2425", "2425, 2425", "invalid, 0"})
-    void parseSchoolYear_shouldReturnExpectedValue(String schoolYear, int expectedResult) {
-        // Given
-        Class clazz = Class.builder().schoolYear(schoolYear).build();
+    @Nested
+    class ParseSchoolYear {
 
-        // When
-        Integer result = SchoolYearUtil.parseSchoolYear(clazz);
+        @ParameterizedTest
+        @CsvSource({"24/25, 2425", "2425, 2425", "invalid, 0"})
+        void when_school_year_is_parsed_expect_expected_value(final String schoolYear, final int expectedResult) {
+            final Class clazz = Class.builder().schoolYear(schoolYear).build();
 
-        // Then
-        assertEquals(expectedResult, result);
-    }
+            final Integer result = SchoolYearUtil.parseSchoolYear(clazz);
 
-    @Test
-    void parseSchoolYear_shouldHandleDifferentYearFormats() {
-        // Given
-        Class clazz1 = Class.builder().schoolYear("22/23").build();
-        Class clazz2 = Class.builder().schoolYear("23/24").build();
-        Class clazz3 = Class.builder().schoolYear("24/25").build();
+            assertThat(result).isEqualTo(expectedResult);
+        }
 
-        // When
-        Integer result1 = SchoolYearUtil.parseSchoolYear(clazz1);
-        Integer result2 = SchoolYearUtil.parseSchoolYear(clazz2);
-        Integer result3 = SchoolYearUtil.parseSchoolYear(clazz3);
+        @ParameterizedTest
+        @CsvSource({"22/23, 23/24", "23/24, 24/25"})
+        void when_school_years_are_compared_expect_ascending_values(final String lowerSchoolYear,
+                                                                    final String higherSchoolYear) {
+            final Class lowerClass = Class.builder().schoolYear(lowerSchoolYear).build();
+            final Class higherClass = Class.builder().schoolYear(higherSchoolYear).build();
 
-        // Then
-        assertEquals(2223, result1);
-        assertEquals(2324, result2);
-        assertEquals(2425, result3);
-        assertTrue(result3 > result2);
-        assertTrue(result2 > result1);
+            final Integer lowerResult = SchoolYearUtil.parseSchoolYear(lowerClass);
+            final Integer higherResult = SchoolYearUtil.parseSchoolYear(higherClass);
+
+            assertThat(higherResult).isGreaterThan(lowerResult);
+        }
     }
 }
-

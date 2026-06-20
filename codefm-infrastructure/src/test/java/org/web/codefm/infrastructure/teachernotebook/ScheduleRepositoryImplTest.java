@@ -1,8 +1,9 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.Schedule;
@@ -14,11 +15,13 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ScheduleRepositoryImplTest {
+
+    private ScheduleRepositoryImpl scheduleRepository;
 
     @Mock
     private ScheduleJPARepository scheduleJPARepository;
@@ -26,149 +29,305 @@ class ScheduleRepositoryImplTest {
     @Mock
     private ScheduleMapper scheduleMapper;
 
-    @InjectMocks
-    private ScheduleRepositoryImpl scheduleRepository;
-
-    @Test
-    void findByClassId_shouldReturnSchedules() {
-        Integer classId = 1;
-        ScheduleEntity entity = new ScheduleEntity(1, classId, 1, 1, LocalTime.of(8, 30), LocalTime.of(9, 30), null);
-        Schedule schedule = Schedule.builder().id(1).classId(classId).build();
-
-        when(scheduleJPARepository.findByClassIdAndDeletionDateIsNullOrderByDayAscStartAsc(classId)).thenReturn(List.of(entity));
-        when(scheduleMapper.toModelList(List.of(entity))).thenReturn(List.of(schedule));
-
-        List<Schedule> result = scheduleRepository.findByClassId(classId);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(scheduleJPARepository, times(1)).findByClassIdAndDeletionDateIsNullOrderByDayAscStartAsc(classId);
+    @BeforeEach
+    void beforeEach() {
+        this.scheduleRepository = new ScheduleRepositoryImpl(this.scheduleJPARepository, this.scheduleMapper);
     }
 
-    @Test
-    void findById_shouldReturnSchedule_whenFound() {
-        Integer id = 1;
-        ScheduleEntity entity = new ScheduleEntity(id, 1, 1, 1, LocalTime.of(8, 30), LocalTime.of(9, 30), null);
-        Schedule schedule = Schedule.builder().id(id).build();
+    @Nested
+    class FindByClassId {
 
-        when(scheduleJPARepository.findByIdAndDeletionDateIsNull(id)).thenReturn(Optional.of(entity));
-        when(scheduleMapper.toModel(entity)).thenReturn(schedule);
+        @Test
+        void when_schedules_exist_expect_schedules_returned() {
+            final Integer classId = 1;
+            final ScheduleEntity entity = new ScheduleEntity(1, classId, 1, 1, LocalTime.of(8, 30), LocalTime.of(9, 30), null);
+            final Schedule schedule = Schedule.builder().id(1).classId(classId).build();
 
-        Optional<Schedule> result = scheduleRepository.findById(id);
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.findByClassIdAndDeletionDateIsNullOrderByDayAscStartAsc(classId)).thenReturn(List.of(entity));
+            when(ScheduleRepositoryImplTest.this.scheduleMapper.toModelList(List.of(entity))).thenReturn(List.of(schedule));
 
-        assertTrue(result.isPresent());
-        assertEquals(id, result.get().getId());
+            final List<Schedule> result = ScheduleRepositoryImplTest.this.scheduleRepository.findByClassId(classId);
+
+            assertThat(result).isNotNull().hasSize(1);
+            verify(ScheduleRepositoryImplTest.this.scheduleJPARepository, times(1))
+                    .findByClassIdAndDeletionDateIsNullOrderByDayAscStartAsc(classId);
+        }
     }
 
-    @Test
-    void findById_shouldReturnEmpty_whenNotFound() {
-        Integer id = 99;
+    @Nested
+    class FindById {
 
-        when(scheduleJPARepository.findByIdAndDeletionDateIsNull(id)).thenReturn(Optional.empty());
+        @Test
+        void when_schedule_is_found_expect_schedule_returned() {
+            final Integer id = 1;
+            final ScheduleEntity entity = new ScheduleEntity(id, 1, 1, 1, LocalTime.of(8, 30), LocalTime.of(9, 30), null);
+            final Schedule schedule = Schedule.builder().id(id).build();
 
-        Optional<Schedule> result = scheduleRepository.findById(id);
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.findByIdAndDeletionDateIsNull(id)).thenReturn(Optional.of(entity));
+            when(ScheduleRepositoryImplTest.this.scheduleMapper.toModel(entity)).thenReturn(schedule);
 
-        assertFalse(result.isPresent());
+            final Optional<Schedule> result = ScheduleRepositoryImplTest.this.scheduleRepository.findById(id);
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getId()).isEqualTo(id);
+        }
+
+        @Test
+        void when_schedule_is_not_found_expect_empty_optional_returned() {
+            final Integer id = 99;
+
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.findByIdAndDeletionDateIsNull(id)).thenReturn(Optional.empty());
+
+            final Optional<Schedule> result = ScheduleRepositoryImplTest.this.scheduleRepository.findById(id);
+
+            assertThat(result).isNotPresent();
+        }
     }
 
-    @Test
-    void findByIdAndTeacherId_shouldReturnSchedule_whenFoundAndOwned() {
-        Integer id = 1;
-        Integer teacherId = 1;
-        ScheduleEntity entity = new ScheduleEntity(id, 1, 1, 1, LocalTime.of(8, 30), LocalTime.of(9, 30), null);
-        Schedule schedule = Schedule.builder().id(id).build();
+    @Nested
+    class FindByIdAndTeacherId {
 
-        when(scheduleJPARepository.findByIdAndTeacherId(id, teacherId)).thenReturn(Optional.of(entity));
-        when(scheduleMapper.toModel(entity)).thenReturn(schedule);
+        @Test
+        void when_schedule_is_found_and_owned_expect_schedule_returned() {
+            final Integer id = 1;
+            final Integer teacherId = 1;
+            final ScheduleEntity entity = new ScheduleEntity(id, 1, 1, 1, LocalTime.of(8, 30), LocalTime.of(9, 30), null);
+            final Schedule schedule = Schedule.builder().id(id).build();
 
-        Optional<Schedule> result = scheduleRepository.findByIdAndTeacherId(id, teacherId);
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.findByIdAndTeacherId(id, teacherId)).thenReturn(Optional.of(entity));
+            when(ScheduleRepositoryImplTest.this.scheduleMapper.toModel(entity)).thenReturn(schedule);
 
-        assertTrue(result.isPresent());
-        assertEquals(id, result.get().getId());
+            final Optional<Schedule> result = ScheduleRepositoryImplTest.this.scheduleRepository.findByIdAndTeacherId(id, teacherId);
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getId()).isEqualTo(id);
+        }
     }
 
-    @Test
-    void saveAll_shouldSaveAndReturnSchedules() {
-        Schedule schedule = Schedule.builder().subjectId(1).day(1).start(LocalTime.of(8, 30)).end(LocalTime.of(9, 30)).build();
-        ScheduleEntity entity = new ScheduleEntity();
-        ScheduleEntity savedEntity = new ScheduleEntity(1, 1, 1, 1, LocalTime.of(8, 30), LocalTime.of(9, 30), null);
-        Schedule savedSchedule = Schedule.builder().id(1).build();
+    @Nested
+    class SaveAll {
 
-        when(scheduleMapper.toEntityList(List.of(schedule))).thenReturn(List.of(entity));
-        when(scheduleJPARepository.saveAll(List.of(entity))).thenReturn(List.of(savedEntity));
-        when(scheduleMapper.toModelList(List.of(savedEntity))).thenReturn(List.of(savedSchedule));
+        @Test
+        void when_valid_schedules_expect_schedules_saved() {
+            final Schedule schedule = Schedule.builder().subjectId(1).day(1).start(LocalTime.of(8, 30)).end(LocalTime.of(9, 30)).build();
+            final ScheduleEntity entity = new ScheduleEntity();
+            final ScheduleEntity savedEntity = new ScheduleEntity(1, 1, 1, 1, LocalTime.of(8, 30), LocalTime.of(9, 30), null);
+            final Schedule savedSchedule = Schedule.builder().id(1).build();
 
-        List<Schedule> result = scheduleRepository.saveAll(List.of(schedule));
+            when(ScheduleRepositoryImplTest.this.scheduleMapper.toEntityList(List.of(schedule))).thenReturn(List.of(entity));
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.saveAll(List.of(entity))).thenReturn(List.of(savedEntity));
+            when(ScheduleRepositoryImplTest.this.scheduleMapper.toModelList(List.of(savedEntity))).thenReturn(List.of(savedSchedule));
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(1, result.get(0).getId());
+            final List<Schedule> result = ScheduleRepositoryImplTest.this.scheduleRepository.saveAll(List.of(schedule));
+
+            assertThat(result).isNotNull().hasSize(1);
+            assertThat(result.get(0).getId()).isEqualTo(1);
+        }
     }
 
-    @Test
-    void save_shouldSaveAndReturnSchedule() {
-        Schedule schedule = Schedule.builder().subjectId(1).day(1).start(LocalTime.of(8, 30)).end(LocalTime.of(9, 30)).build();
-        ScheduleEntity entity = new ScheduleEntity();
-        ScheduleEntity savedEntity = new ScheduleEntity(1, 1, 1, 1, LocalTime.of(8, 30), LocalTime.of(9, 30), null);
-        Schedule savedSchedule = Schedule.builder().id(1).build();
+    @Nested
+    class Save {
 
-        when(scheduleMapper.toEntity(schedule)).thenReturn(entity);
-        when(scheduleJPARepository.save(entity)).thenReturn(savedEntity);
-        when(scheduleMapper.toModel(savedEntity)).thenReturn(savedSchedule);
+        @Test
+        void when_valid_schedule_expect_schedule_saved() {
+            final Schedule schedule = Schedule.builder().subjectId(1).day(1).start(LocalTime.of(8, 30)).end(LocalTime.of(9, 30)).build();
+            final ScheduleEntity entity = new ScheduleEntity();
+            final ScheduleEntity savedEntity = new ScheduleEntity(1, 1, 1, 1, LocalTime.of(8, 30), LocalTime.of(9, 30), null);
+            final Schedule savedSchedule = Schedule.builder().id(1).build();
 
-        Schedule result = scheduleRepository.save(schedule);
+            when(ScheduleRepositoryImplTest.this.scheduleMapper.toEntity(schedule)).thenReturn(entity);
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.save(entity)).thenReturn(savedEntity);
+            when(ScheduleRepositoryImplTest.this.scheduleMapper.toModel(savedEntity)).thenReturn(savedSchedule);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
+            final Schedule result = ScheduleRepositoryImplTest.this.scheduleRepository.save(schedule);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+        }
     }
 
-    @Test
-    void update_shouldUpdateAndReturnSchedule() {
-        Schedule schedule = Schedule.builder().id(1).subjectId(1).day(2).start(LocalTime.of(9, 0)).end(LocalTime.of(10, 0)).build();
-        ScheduleEntity entity = new ScheduleEntity(1, 1, 1, 2, LocalTime.of(9, 0), LocalTime.of(10, 0), null);
-        Schedule updatedSchedule = Schedule.builder().id(1).day(2).build();
+    @Nested
+    class Update {
 
-        when(scheduleMapper.toEntity(schedule)).thenReturn(entity);
-        when(scheduleJPARepository.save(entity)).thenReturn(entity);
-        when(scheduleMapper.toModel(entity)).thenReturn(updatedSchedule);
+        @Test
+        void when_valid_schedule_expect_schedule_updated() {
+            final Schedule schedule = Schedule.builder().id(1).subjectId(1).day(2).start(LocalTime.of(9, 0)).end(LocalTime.of(10, 0)).build();
+            final ScheduleEntity entity = new ScheduleEntity(1, 1, 1, 2, LocalTime.of(9, 0), LocalTime.of(10, 0), null);
+            final Schedule updatedSchedule = Schedule.builder().id(1).day(2).build();
 
-        Schedule result = scheduleRepository.update(schedule);
+            when(ScheduleRepositoryImplTest.this.scheduleMapper.toEntity(schedule)).thenReturn(entity);
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.save(entity)).thenReturn(entity);
+            when(ScheduleRepositoryImplTest.this.scheduleMapper.toModel(entity)).thenReturn(updatedSchedule);
 
-        assertNotNull(result);
-        assertEquals(2, result.getDay());
+            final Schedule result = ScheduleRepositoryImplTest.this.scheduleRepository.update(schedule);
+
+            assertThat(result).isNotNull();
+            assertThat(result.getDay()).isEqualTo(2);
+        }
     }
 
-    @Test
-    void allSchedulesBelongToTeacher_shouldReturnTrue_whenAllBelong() {
-        List<Integer> ids = List.of(1, 2, 3);
-        Integer teacherId = 1;
+    @Nested
+    class AllSchedulesBelongToTeacher {
 
-        when(scheduleJPARepository.countByIdsAndTeacherId(ids, teacherId)).thenReturn(3L);
+        @Test
+        void when_all_schedules_belong_expect_true() {
+            final List<Integer> ids = List.of(1, 2, 3);
+            final Integer teacherId = 1;
 
-        boolean result = scheduleRepository.allSchedulesBelongToTeacher(ids, teacherId);
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.countByIdsAndTeacherId(ids, teacherId)).thenReturn(3L);
 
-        assertTrue(result);
+            final boolean result = ScheduleRepositoryImplTest.this.scheduleRepository.allSchedulesBelongToTeacher(ids, teacherId);
+
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        void when_not_all_schedules_belong_expect_false() {
+            final List<Integer> ids = List.of(1, 2, 3);
+            final Integer teacherId = 1;
+
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.countByIdsAndTeacherId(ids, teacherId)).thenReturn(2L);
+
+            final boolean result = ScheduleRepositoryImplTest.this.scheduleRepository.allSchedulesBelongToTeacher(ids, teacherId);
+
+            assertThat(result).isFalse();
+        }
     }
 
-    @Test
-    void allSchedulesBelongToTeacher_shouldReturnFalse_whenNotAllBelong() {
-        List<Integer> ids = List.of(1, 2, 3);
-        Integer teacherId = 1;
+    @Nested
+    class SoftDeleteSchedules {
 
-        when(scheduleJPARepository.countByIdsAndTeacherId(ids, teacherId)).thenReturn(2L);
+        @Test
+        void when_called_expect_soft_delete_executed() {
+            final List<Integer> ids = List.of(1, 2, 3);
+            final Integer teacherId = 1;
 
-        boolean result = scheduleRepository.allSchedulesBelongToTeacher(ids, teacherId);
+            ScheduleRepositoryImplTest.this.scheduleRepository.softDeleteSchedules(ids, teacherId);
 
-        assertFalse(result);
+            verify(ScheduleRepositoryImplTest.this.scheduleJPARepository, times(1)).softDeleteByIds(ids);
+        }
     }
 
-    @Test
-    void softDeleteSchedules_shouldCallSoftDelete() {
-        List<Integer> ids = List.of(1, 2, 3);
-        Integer teacherId = 1;
+    @Nested
+    class ExistsOverlappingSchedule {
 
-        scheduleRepository.softDeleteSchedules(ids, teacherId);
+        @Test
+        void when_exclude_id_is_not_null_expect_repository_called_with_exclusion() {
+            final Integer classId = 1;
+            final Integer day = 2;
+            final LocalTime start = LocalTime.of(8, 30);
+            final LocalTime end = LocalTime.of(9, 30);
+            final Integer excludeId = 10;
 
-        verify(scheduleJPARepository, times(1)).softDeleteByIds(ids);
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.existsOverlappingScheduleExcluding(classId, day, start, end, excludeId)).thenReturn(true);
+
+            final boolean result = ScheduleRepositoryImplTest.this.scheduleRepository.existsOverlappingSchedule(classId, day, start, end, excludeId);
+
+            assertThat(result).isTrue();
+            verify(ScheduleRepositoryImplTest.this.scheduleJPARepository)
+                    .existsOverlappingScheduleExcluding(classId, day, start, end, excludeId);
+            verify(ScheduleRepositoryImplTest.this.scheduleJPARepository, never()).existsOverlappingSchedule(any(), any(), any(), any());
+        }
+
+        @Test
+        void when_exclude_id_is_null_expect_repository_called_without_exclusion() {
+            final Integer classId = 1;
+            final Integer day = 2;
+            final LocalTime start = LocalTime.of(8, 30);
+            final LocalTime end = LocalTime.of(9, 30);
+
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.existsOverlappingSchedule(classId, day, start, end)).thenReturn(false);
+
+            final boolean result = ScheduleRepositoryImplTest.this.scheduleRepository.existsOverlappingSchedule(classId, day, start, end, null);
+
+            assertThat(result).isFalse();
+            verify(ScheduleRepositoryImplTest.this.scheduleJPARepository).existsOverlappingSchedule(classId, day, start, end);
+            verify(ScheduleRepositoryImplTest.this.scheduleJPARepository, never())
+                    .existsOverlappingScheduleExcluding(any(), any(), any(), any(), any());
+        }
+
+        @Test
+        void when_no_overlap_exists_expect_false() {
+            final Integer classId = 1;
+            final Integer day = 3;
+            final LocalTime start = LocalTime.of(10, 0);
+            final LocalTime end = LocalTime.of(11, 0);
+
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.existsOverlappingSchedule(classId, day, start, end)).thenReturn(false);
+
+            final boolean result = ScheduleRepositoryImplTest.this.scheduleRepository.existsOverlappingSchedule(classId, day, start, end, null);
+
+            assertThat(result).isFalse();
+        }
+    }
+
+    @Nested
+    class SoftDeleteByClassId {
+
+        @Test
+        void when_called_expect_repository_delegated() {
+            ScheduleRepositoryImplTest.this.scheduleRepository.softDeleteByClassId(10);
+
+            verify(ScheduleRepositoryImplTest.this.scheduleJPARepository).softDeleteByClassId(10);
+        }
+    }
+
+    @Nested
+    class SoftDeleteBySubjectId {
+
+        @Test
+        void when_called_expect_repository_delegated() {
+            ScheduleRepositoryImplTest.this.scheduleRepository.softDeleteBySubjectId(5);
+
+            verify(ScheduleRepositoryImplTest.this.scheduleJPARepository).softDeleteBySubjectId(5);
+        }
+    }
+
+    @Nested
+    class FindSubjectIdsByClassIdAndDay {
+
+        @Test
+        void when_subject_ids_exist_expect_subject_ids_returned() {
+            final Integer classId = 1;
+            final Integer day = 2;
+
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.findDistinctSubjectIdsByClassIdAndDay(classId, day))
+                    .thenReturn(List.of(10, 20, 30));
+
+            final List<Integer> result = ScheduleRepositoryImplTest.this.scheduleRepository.findSubjectIdsByClassIdAndDay(classId, day);
+
+            assertThat(result).isNotNull().hasSize(3).isEqualTo(List.of(10, 20, 30));
+        }
+
+        @Test
+        void when_no_subject_ids_exist_expect_empty_list_returned() {
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.findDistinctSubjectIdsByClassIdAndDay(1, 5)).thenReturn(List.of());
+
+            final List<Integer> result = ScheduleRepositoryImplTest.this.scheduleRepository.findSubjectIdsByClassIdAndDay(1, 5);
+
+            assertThat(result).isNotNull().isEmpty();
+        }
+    }
+
+    @Nested
+    class ExistsByClassIdAndSubjectIdAndDay {
+
+        @Test
+        void when_schedule_exists_expect_true() {
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.existsByClassIdAndSubjectIdAndDay(1, 10, 2)).thenReturn(true);
+
+            final boolean result = ScheduleRepositoryImplTest.this.scheduleRepository.existsByClassIdAndSubjectIdAndDay(1, 10, 2);
+
+            assertThat(result).isTrue();
+        }
+
+        @Test
+        void when_schedule_does_not_exist_expect_false() {
+            when(ScheduleRepositoryImplTest.this.scheduleJPARepository.existsByClassIdAndSubjectIdAndDay(1, 10, 2)).thenReturn(false);
+
+            final boolean result = ScheduleRepositoryImplTest.this.scheduleRepository.existsByClassIdAndSubjectIdAndDay(1, 10, 2);
+
+            assertThat(result).isFalse();
+        }
     }
 }

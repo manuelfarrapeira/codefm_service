@@ -1,8 +1,10 @@
 package org.web.codefm.infrastructure.teachernotebook;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.web.codefm.domain.entity.teachernotebook.StudentClass;
@@ -13,12 +15,15 @@ import org.web.codefm.infrastructure.mapper.StudentClassMapper;
 import java.time.LocalDate;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class StudentClassRepositoryImplTest {
+
+    private StudentClassRepositoryImpl studentClassRepository;
 
     @Mock
     private StudentClassJPARepository studentClassJPARepository;
@@ -26,223 +31,321 @@ class StudentClassRepositoryImplTest {
     @Mock
     private StudentClassMapper studentClassMapper;
 
-    @InjectMocks
-    private StudentClassRepositoryImpl studentClassRepository;
-
     private final Integer classId = 10;
     private final Integer studentId = 20;
 
-    @Test
-    void findByClassIdAndStudentId_shouldReturnStudentClass_whenExists() {
-        StudentClassEntity entity = new StudentClassEntity(1, classId, studentId, null);
-        StudentClass studentClass = StudentClass.builder()
-                .id(1)
-                .classId(classId)
-                .studentId(studentId)
-                .build();
-
-        when(studentClassJPARepository.findByClassIdAndStudentId(classId, studentId))
-                .thenReturn(Optional.of(entity));
-        when(studentClassMapper.toModel(entity)).thenReturn(studentClass);
-
-        Optional<StudentClass> result = studentClassRepository.findByClassIdAndStudentId(classId, studentId);
-
-        assertTrue(result.isPresent());
-        assertEquals(classId, result.get().getClassId());
-        assertEquals(studentId, result.get().getStudentId());
-        verify(studentClassJPARepository).findByClassIdAndStudentId(classId, studentId);
-        verify(studentClassMapper).toModel(entity);
+    @BeforeEach
+    void beforeEach() {
+        this.studentClassRepository = new StudentClassRepositoryImpl(this.studentClassJPARepository,
+                this.studentClassMapper);
     }
 
-    @Test
-    void findByClassIdAndStudentId_shouldReturnEmpty_whenNotExists() {
-        when(studentClassJPARepository.findByClassIdAndStudentId(classId, studentId))
-                .thenReturn(Optional.empty());
+    @Nested
+    class FindByClassIdAndStudentId {
 
-        Optional<StudentClass> result = studentClassRepository.findByClassIdAndStudentId(classId, studentId);
+        @Test
+        void when_association_exists_expect_student_class_returned() {
+            final StudentClassEntity entity = new StudentClassEntity(1, classId, studentId, null);
+            final StudentClass studentClass = StudentClass.builder().id(1).classId(classId).studentId(studentId)
+                    .build();
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository.findByClassIdAndStudentId(classId,
+                    studentId)).thenReturn(Optional.of(entity));
+            when(StudentClassRepositoryImplTest.this.studentClassMapper.toModel(entity)).thenReturn(studentClass);
 
-        assertFalse(result.isPresent());
-        verify(studentClassJPARepository).findByClassIdAndStudentId(classId, studentId);
-        verify(studentClassMapper, never()).toModel(any());
+            final Optional<StudentClass> result = StudentClassRepositoryImplTest.this.studentClassRepository
+                    .findByClassIdAndStudentId(classId, studentId);
+
+            assertThat(result).isPresent();
+            assertThat(result.get().getClassId()).isEqualTo(classId);
+            assertThat(result.get().getStudentId()).isEqualTo(studentId);
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).findByClassIdAndStudentId(classId,
+                    studentId);
+            verify(StudentClassRepositoryImplTest.this.studentClassMapper).toModel(entity);
+        }
+
+        @Test
+        void when_association_does_not_exist_expect_empty_optional_returned() {
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository.findByClassIdAndStudentId(classId,
+                    studentId)).thenReturn(Optional.empty());
+
+            final Optional<StudentClass> result = StudentClassRepositoryImplTest.this.studentClassRepository
+                    .findByClassIdAndStudentId(classId, studentId);
+
+            assertThat(result).isNotPresent();
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).findByClassIdAndStudentId(classId,
+                    studentId);
+            verify(StudentClassRepositoryImplTest.this.studentClassMapper, never()).toModel(any());
+        }
     }
 
-    @Test
-    void save_shouldSaveAndReturnStudentClass() {
-        StudentClass studentClass = StudentClass.builder()
-                .classId(classId)
-                .studentId(studentId)
-                .build();
-        StudentClassEntity entity = new StudentClassEntity(null, classId, studentId, null);
-        StudentClassEntity savedEntity = new StudentClassEntity(1, classId, studentId, null);
-        StudentClass savedStudentClass = StudentClass.builder()
-                .id(1)
-                .classId(classId)
-                .studentId(studentId)
-                .build();
+    @Nested
+    class Save {
 
-        when(studentClassMapper.toEntity(studentClass)).thenReturn(entity);
-        when(studentClassJPARepository.save(entity)).thenReturn(savedEntity);
-        when(studentClassMapper.toModel(savedEntity)).thenReturn(savedStudentClass);
+        @Test
+        void when_student_class_is_saved_expect_student_class_returned() {
+            final StudentClass studentClass = StudentClass.builder().classId(classId).studentId(studentId).build();
+            final StudentClassEntity entity = new StudentClassEntity(null, classId, studentId, null);
+            final StudentClassEntity savedEntity = new StudentClassEntity(1, classId, studentId, null);
+            final StudentClass savedStudentClass = StudentClass.builder().id(1).classId(classId).studentId(studentId)
+                    .build();
+            when(StudentClassRepositoryImplTest.this.studentClassMapper.toEntity(studentClass)).thenReturn(entity);
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository.save(entity)).thenReturn(savedEntity);
+            when(StudentClassRepositoryImplTest.this.studentClassMapper.toModel(savedEntity))
+                    .thenReturn(savedStudentClass);
 
-        StudentClass result = studentClassRepository.save(studentClass);
+            final StudentClass result = StudentClassRepositoryImplTest.this.studentClassRepository.save(studentClass);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertEquals(classId, result.getClassId());
-        assertEquals(studentId, result.getStudentId());
-        verify(studentClassMapper).toEntity(studentClass);
-        verify(studentClassJPARepository).save(entity);
-        verify(studentClassMapper).toModel(savedEntity);
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            assertThat(result.getClassId()).isEqualTo(classId);
+            assertThat(result.getStudentId()).isEqualTo(studentId);
+            verify(StudentClassRepositoryImplTest.this.studentClassMapper).toEntity(studentClass);
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).save(entity);
+            verify(StudentClassRepositoryImplTest.this.studentClassMapper).toModel(savedEntity);
+        }
     }
 
-    @Test
-    void update_shouldUpdateAndReturnStudentClass() {
-        StudentClass studentClass = StudentClass.builder()
-                .id(1)
-                .classId(classId)
-                .studentId(studentId)
-                .deletionDate(null)
-                .build();
-        StudentClassEntity entity = new StudentClassEntity(1, classId, studentId, null);
-        StudentClassEntity updatedEntity = new StudentClassEntity(1, classId, studentId, null);
-        StudentClass updatedStudentClass = StudentClass.builder()
-                .id(1)
-                .classId(classId)
-                .studentId(studentId)
-                .deletionDate(null)
-                .build();
+    @Nested
+    class Update {
 
-        when(studentClassMapper.toEntity(studentClass)).thenReturn(entity);
-        when(studentClassJPARepository.save(entity)).thenReturn(updatedEntity);
-        when(studentClassMapper.toModel(updatedEntity)).thenReturn(updatedStudentClass);
+        @Test
+        void when_student_class_is_updated_expect_student_class_returned() {
+            final StudentClass studentClass = StudentClass.builder().id(1).classId(classId).studentId(studentId)
+                    .deletionDate(null).build();
+            final StudentClassEntity entity = new StudentClassEntity(1, classId, studentId, null);
+            final StudentClassEntity updatedEntity = new StudentClassEntity(1, classId, studentId, null);
+            final StudentClass updatedStudentClass = StudentClass.builder().id(1).classId(classId).studentId(studentId)
+                    .deletionDate(null).build();
+            when(StudentClassRepositoryImplTest.this.studentClassMapper.toEntity(studentClass)).thenReturn(entity);
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository.save(entity)).thenReturn(updatedEntity);
+            when(StudentClassRepositoryImplTest.this.studentClassMapper.toModel(updatedEntity))
+                    .thenReturn(updatedStudentClass);
 
-        StudentClass result = studentClassRepository.update(studentClass);
+            final StudentClass result = StudentClassRepositoryImplTest.this.studentClassRepository.update(studentClass);
 
-        assertNotNull(result);
-        assertEquals(1, result.getId());
-        assertNull(result.getDeletionDate());
-        verify(studentClassMapper).toEntity(studentClass);
-        verify(studentClassJPARepository).save(entity);
-        verify(studentClassMapper).toModel(updatedEntity);
+            assertThat(result).isNotNull();
+            assertThat(result.getId()).isEqualTo(1);
+            assertThat(result.getDeletionDate()).isNull();
+            verify(StudentClassRepositoryImplTest.this.studentClassMapper).toEntity(studentClass);
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).save(entity);
+            verify(StudentClassRepositoryImplTest.this.studentClassMapper).toModel(updatedEntity);
+        }
     }
 
-    @Test
-    void softDelete_shouldSetDeletionDate_whenAssociationExists() {
-        StudentClassEntity entity = new StudentClassEntity(1, classId, studentId, null);
+    @Nested
+    class SoftDelete {
 
-        when(studentClassJPARepository.findByClassIdAndStudentId(classId, studentId))
-                .thenReturn(Optional.of(entity));
-        when(studentClassJPARepository.save(any(StudentClassEntity.class))).thenReturn(entity);
+        @Test
+        void when_association_exists_expect_deletion_date_set() {
+            final StudentClassEntity entity = new StudentClassEntity(1, classId, studentId, null);
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository.findByClassIdAndStudentId(classId,
+                    studentId)).thenReturn(Optional.of(entity));
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository.save(any(StudentClassEntity.class)))
+                    .thenReturn(entity);
 
-        studentClassRepository.softDelete(classId, studentId);
+            StudentClassRepositoryImplTest.this.studentClassRepository.softDelete(classId, studentId);
 
-        assertNotNull(entity.getDeletionDate());
-        assertEquals(LocalDate.now(), entity.getDeletionDate());
-        verify(studentClassJPARepository).findByClassIdAndStudentId(classId, studentId);
-        verify(studentClassJPARepository).save(entity);
+            assertThat(entity.getDeletionDate()).isNotNull();
+            assertThat(entity.getDeletionDate()).isEqualTo(LocalDate.now());
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).findByClassIdAndStudentId(classId,
+                    studentId);
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).save(entity);
+        }
+
+        @Test
+        void when_association_does_not_exist_expect_exception_thrown() {
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository.findByClassIdAndStudentId(classId,
+                    studentId)).thenReturn(Optional.empty());
+            final ThrowingCallable callable = () -> StudentClassRepositoryImplTest.this.studentClassRepository
+                    .softDelete(classId, studentId);
+
+            assertThatThrownBy(callable).isInstanceOf(IllegalArgumentException.class);
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).findByClassIdAndStudentId(classId,
+                    studentId);
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository, never()).save(any());
+        }
     }
 
-    @Test
-    void findClassIdsByStudentId_shouldReturnListOfClassIds() {
-        Integer studentId = 1;
-        List<Integer> expectedClassIds = Arrays.asList(10, 20, 30);
+    @Nested
+    class FindClassIdsByStudentId {
 
-        when(studentClassJPARepository.findClassIdsByStudentIdAndDeletionDateIsNull(studentId))
-                .thenReturn(expectedClassIds);
+        @Test
+        void when_classes_exist_expect_class_ids_returned() {
+            final Integer requestedStudentId = 1;
+            final List<Integer> expectedClassIds = Arrays.asList(10, 20, 30);
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository
+                    .findClassIdsByStudentIdAndDeletionDateIsNull(requestedStudentId)).thenReturn(expectedClassIds);
 
-        List<Integer> result = studentClassRepository.findClassIdsByStudentId(studentId);
+            final List<Integer> result = StudentClassRepositoryImplTest.this.studentClassRepository
+                    .findClassIdsByStudentId(requestedStudentId);
 
-        assertNotNull(result);
-        assertEquals(3, result.size());
-        assertEquals(expectedClassIds, result);
-        verify(studentClassJPARepository).findClassIdsByStudentIdAndDeletionDateIsNull(studentId);
+            assertThat(result).isNotNull().hasSize(3).isEqualTo(expectedClassIds);
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository)
+                    .findClassIdsByStudentIdAndDeletionDateIsNull(requestedStudentId);
+        }
+
+        @Test
+        void when_no_classes_exist_expect_empty_list_returned() {
+            final Integer requestedStudentId = 1;
+            final List<Integer> emptyList = Collections.emptyList();
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository
+                    .findClassIdsByStudentIdAndDeletionDateIsNull(requestedStudentId)).thenReturn(emptyList);
+
+            final List<Integer> result = StudentClassRepositoryImplTest.this.studentClassRepository
+                    .findClassIdsByStudentId(requestedStudentId);
+
+            assertThat(result).isNotNull().isEmpty();
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository)
+                    .findClassIdsByStudentIdAndDeletionDateIsNull(requestedStudentId);
+        }
     }
 
-    @Test
-    void findClassIdsByStudentId_shouldReturnEmptyList_whenNoClassesFound() {
-        Integer studentId = 1;
-        List<Integer> emptyList = Collections.emptyList();
+    @Nested
+    class FindClassIdsByTeacherId {
 
-        when(studentClassJPARepository.findClassIdsByStudentIdAndDeletionDateIsNull(studentId))
-                .thenReturn(emptyList);
+        @Test
+        void when_associations_exist_expect_student_to_class_map_returned() {
+            final Integer teacherId = 1;
+            final StudentClassEntity entity1 = new StudentClassEntity(1, 10, 100, null);
+            final StudentClassEntity entity2 = new StudentClassEntity(2, 20, 100, null);
+            final StudentClassEntity entity3 = new StudentClassEntity(3, 30, 200, null);
+            final StudentClassEntity entity4 = new StudentClassEntity(4, 40, 200, null);
+            final List<StudentClassEntity> entities = Arrays.asList(entity1, entity2, entity3, entity4);
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository
+                    .findAllByTeacherIdAndDeletionDateIsNull(teacherId)).thenReturn(entities);
 
-        List<Integer> result = studentClassRepository.findClassIdsByStudentId(studentId);
+            final Map<Integer, List<Integer>> result = StudentClassRepositoryImplTest.this.studentClassRepository
+                    .findClassIdsByTeacherId(teacherId);
 
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(studentClassJPARepository).findClassIdsByStudentIdAndDeletionDateIsNull(studentId);
+            assertThat(result).isNotNull().hasSize(2).containsKeys(100, 200);
+            assertThat(result.get(100)).isEqualTo(Arrays.asList(10, 20));
+            assertThat(result.get(200)).isEqualTo(Arrays.asList(30, 40));
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository)
+                    .findAllByTeacherIdAndDeletionDateIsNull(teacherId);
+        }
+
+        @Test
+        void when_no_associations_exist_expect_empty_map_returned() {
+            final Integer teacherId = 1;
+            final List<StudentClassEntity> emptyList = Collections.emptyList();
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository
+                    .findAllByTeacherIdAndDeletionDateIsNull(teacherId)).thenReturn(emptyList);
+
+            final Map<Integer, List<Integer>> result = StudentClassRepositoryImplTest.this.studentClassRepository
+                    .findClassIdsByTeacherId(teacherId);
+
+            assertThat(result).isNotNull().isEmpty();
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository)
+                    .findAllByTeacherIdAndDeletionDateIsNull(teacherId);
+        }
+
+        @Test
+        void when_multiple_classes_belong_to_same_student_expect_grouped_class_ids_returned() {
+            final Integer teacherId = 1;
+            final Integer requestedStudentId = 100;
+            final StudentClassEntity entity1 = new StudentClassEntity(1, 10, requestedStudentId, null);
+            final StudentClassEntity entity2 = new StudentClassEntity(2, 20, requestedStudentId, null);
+            final StudentClassEntity entity3 = new StudentClassEntity(3, 30, requestedStudentId, null);
+            final List<StudentClassEntity> entities = Arrays.asList(entity1, entity2, entity3);
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository
+                    .findAllByTeacherIdAndDeletionDateIsNull(teacherId)).thenReturn(entities);
+
+            final Map<Integer, List<Integer>> result = StudentClassRepositoryImplTest.this.studentClassRepository
+                    .findClassIdsByTeacherId(teacherId);
+
+            assertThat(result).isNotNull().hasSize(1).containsKey(requestedStudentId);
+            assertThat(result.get(requestedStudentId)).hasSize(3).isEqualTo(Arrays.asList(10, 20, 30));
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository)
+                    .findAllByTeacherIdAndDeletionDateIsNull(teacherId);
+        }
     }
 
-    @Test
-    void findClassIdsByTeacherId_shouldReturnMapOfStudentIdsToClassIds() {
-        Integer teacherId = 1;
-        StudentClassEntity entity1 = new StudentClassEntity(1, 10, 100, null);
-        StudentClassEntity entity2 = new StudentClassEntity(2, 20, 100, null);
-        StudentClassEntity entity3 = new StudentClassEntity(3, 30, 200, null);
-        StudentClassEntity entity4 = new StudentClassEntity(4, 40, 200, null);
-        List<StudentClassEntity> entities = Arrays.asList(entity1, entity2, entity3, entity4);
+    @Nested
+    class FindById {
 
-        when(studentClassJPARepository.findAllByTeacherIdAndDeletionDateIsNull(teacherId))
-                .thenReturn(entities);
+        @Test
+        void when_student_class_exists_expect_student_class_returned() {
+            final Integer id = 1;
+            final StudentClassEntity entity = new StudentClassEntity(id, classId, studentId, null);
+            final StudentClass studentClass = StudentClass.builder().id(id).classId(classId).studentId(studentId)
+                    .build();
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository.findById(id))
+                    .thenReturn(Optional.of(entity));
+            when(StudentClassRepositoryImplTest.this.studentClassMapper.toModel(entity)).thenReturn(studentClass);
 
-        Map<Integer, List<Integer>> result = studentClassRepository.findClassIdsByTeacherId(teacherId);
+            final Optional<StudentClass> result = StudentClassRepositoryImplTest.this.studentClassRepository
+                    .findById(id);
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertTrue(result.containsKey(100));
-        assertTrue(result.containsKey(200));
-        assertEquals(Arrays.asList(10, 20), result.get(100));
-        assertEquals(Arrays.asList(30, 40), result.get(200));
-        verify(studentClassJPARepository).findAllByTeacherIdAndDeletionDateIsNull(teacherId);
+            assertThat(result).isPresent();
+            assertThat(result.get().getId()).isEqualTo(id);
+            assertThat(result.get().getClassId()).isEqualTo(classId);
+            assertThat(result.get().getStudentId()).isEqualTo(studentId);
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).findById(id);
+            verify(StudentClassRepositoryImplTest.this.studentClassMapper).toModel(entity);
+        }
+
+        @Test
+        void when_student_class_does_not_exist_expect_empty_optional_returned() {
+            final Integer id = 999;
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository.findById(id)).thenReturn(Optional.empty());
+
+            final Optional<StudentClass> result = StudentClassRepositoryImplTest.this.studentClassRepository
+                    .findById(id);
+
+            assertThat(result).isNotPresent();
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).findById(id);
+            verify(StudentClassRepositoryImplTest.this.studentClassMapper, never()).toModel(any());
+        }
     }
 
-    @Test
-    void findClassIdsByTeacherId_shouldReturnEmptyMap_whenNoAssociationsFound() {
-        Integer teacherId = 1;
-        List<StudentClassEntity> emptyList = Collections.emptyList();
+    @Nested
+    class SoftDeleteByClassId {
 
-        when(studentClassJPARepository.findAllByTeacherIdAndDeletionDateIsNull(teacherId))
-                .thenReturn(emptyList);
+        @Test
+        void when_associations_are_soft_deleted_expect_delete_delegated() {
+            StudentClassRepositoryImplTest.this.studentClassRepository.softDeleteByClassId(classId);
 
-        Map<Integer, List<Integer>> result = studentClassRepository.findClassIdsByTeacherId(teacherId);
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(studentClassJPARepository).findAllByTeacherIdAndDeletionDateIsNull(teacherId);
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).softDeleteByClassId(classId);
+        }
     }
 
-    @Test
-    void findClassIdsByTeacherId_shouldGroupMultipleClassesByStudent() {
-        Integer teacherId = 1;
-        Integer studentId = 100;
-        StudentClassEntity entity1 = new StudentClassEntity(1, 10, studentId, null);
-        StudentClassEntity entity2 = new StudentClassEntity(2, 20, studentId, null);
-        StudentClassEntity entity3 = new StudentClassEntity(3, 30, studentId, null);
-        List<StudentClassEntity> entities = Arrays.asList(entity1, entity2, entity3);
+    @Nested
+    class SoftDeleteByStudentId {
 
-        when(studentClassJPARepository.findAllByTeacherIdAndDeletionDateIsNull(teacherId))
-                .thenReturn(entities);
+        @Test
+        void when_associations_are_soft_deleted_expect_delete_delegated() {
+            StudentClassRepositoryImplTest.this.studentClassRepository.softDeleteByStudentId(studentId);
 
-        Map<Integer, List<Integer>> result = studentClassRepository.findClassIdsByTeacherId(teacherId);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertTrue(result.containsKey(studentId));
-        assertEquals(3, result.get(studentId).size());
-        assertEquals(Arrays.asList(10, 20, 30), result.get(studentId));
-        verify(studentClassJPARepository).findAllByTeacherIdAndDeletionDateIsNull(teacherId);
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).softDeleteByStudentId(studentId);
+        }
     }
 
-    @Test
-    void softDelete_shouldThrowException_whenAssociationNotFound() {
-        when(studentClassJPARepository.findByClassIdAndStudentId(classId, studentId))
-                .thenReturn(Optional.empty());
+    @Nested
+    class FindActiveStudentIdsByClassId {
 
-        assertThrows(IllegalArgumentException.class, () ->
-                studentClassRepository.softDelete(classId, studentId));
+        @Test
+        void when_students_exist_expect_student_ids_returned() {
+            final List<Integer> expected = List.of(1, 2, 3);
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository.findActiveStudentIdsByClassId(classId))
+                    .thenReturn(expected);
 
-        verify(studentClassJPARepository).findByClassIdAndStudentId(classId, studentId);
-        verify(studentClassJPARepository, never()).save(any());
+            final List<Integer> result = StudentClassRepositoryImplTest.this.studentClassRepository
+                    .findActiveStudentIdsByClassId(classId);
+
+            assertThat(result).isEqualTo(expected);
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).findActiveStudentIdsByClassId(classId);
+        }
+
+        @Test
+        void when_no_students_exist_expect_empty_list_returned() {
+            when(StudentClassRepositoryImplTest.this.studentClassJPARepository.findActiveStudentIdsByClassId(classId))
+                    .thenReturn(List.of());
+
+            final List<Integer> result = StudentClassRepositoryImplTest.this.studentClassRepository
+                    .findActiveStudentIdsByClassId(classId);
+
+            assertThat(result).isEmpty();
+            verify(StudentClassRepositoryImplTest.this.studentClassJPARepository).findActiveStudentIdsByClassId(classId);
+        }
     }
 }
-

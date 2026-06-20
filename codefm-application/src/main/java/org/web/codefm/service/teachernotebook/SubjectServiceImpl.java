@@ -11,9 +11,6 @@ import org.web.codefm.domain.exception.teachernotebook.SubjectForbiddenException
 import org.web.codefm.domain.exception.teachernotebook.SubjectNotFoundException;
 import org.web.codefm.domain.exception.teachernotebook.SubjectValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.ExerciseRepository;
-import org.web.codefm.domain.repository.teachernotebook.ScheduleRepository;
-import org.web.codefm.domain.repository.teachernotebook.SubjectClassRepository;
 import org.web.codefm.domain.repository.teachernotebook.SubjectRepository;
 import org.web.codefm.domain.service.teachernotebook.SubjectService;
 import org.web.codefm.domain.session.SessionParameter;
@@ -30,15 +27,12 @@ import java.util.Optional;
 public class SubjectServiceImpl implements SubjectService {
 
     private final SubjectRepository subjectRepository;
-    private final SubjectClassRepository subjectClassRepository;
-    private final ScheduleRepository scheduleRepository;
-    private final ExerciseRepository exerciseRepository;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
     @Override
     public List<Subject> getSubjectsByTeacher() {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         return subjectRepository.findByTeacherId(teacherId);
     }
 
@@ -53,7 +47,7 @@ public class SubjectServiceImpl implements SubjectService {
             throw new SubjectValidationException(errors);
         }
 
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         subject.setTeacherId(teacherId);
 
         return subjectRepository.save(subject);
@@ -67,26 +61,16 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     @Transactional
     public void softDeleteSubject(Integer subjectId) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
         validateSubjectOwnership(subjectId, teacherId, locale);
-
-        List<Integer> subjectClassIds = subjectClassRepository.findActiveIdsBySubjectId(subjectId);
-
-        if (!subjectClassIds.isEmpty()) {
-            exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);
-        }
-
-        subjectClassRepository.softDeleteBySubjectId(subjectId);
-        scheduleRepository.softDeleteBySubjectId(subjectId);
-
         subjectRepository.softDeleteSubject(subjectId, teacherId);
     }
 
     @Override
     @Transactional
     public Subject updateSubject(Integer subjectId, Subject subject) {
-        Integer teacherId = getTeacherId();
+        Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         Locale locale = sessionUser.getLocale();
         List<ErrorMessage> errors = new ArrayList<>();
 
@@ -101,10 +85,6 @@ public class SubjectServiceImpl implements SubjectService {
         existingSubject.setName(subject.getName());
 
         return subjectRepository.save(existingSubject);
-    }
-
-    private Integer getTeacherId() {
-        return sessionUser.getParameter(SessionParameter.TEACHER_ID, Integer.class);
     }
 
     private void validateSubject(Subject subject, List<ErrorMessage> errors, Locale locale) {

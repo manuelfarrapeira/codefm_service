@@ -25,6 +25,24 @@ tags:
     description: Operations related to Teacher Notebook Subject-Class associations
   - name: TeacherNoteBookExercises
     description: Operations related to Teacher Notebook Exercises
+  - name: TeacherNoteBookExerciseDocuments
+    description: Operations related to Teacher Notebook Exercise Documents
+  - name: TeacherNoteBookExerciseStudentDocuments
+    description: Operations related to Teacher Notebook Exercise Student Documents
+  - name: TeacherNoteBookCalendarAlerts
+    description: Operations related to Teacher Notebook Calendar Alerts
+  - name: TeacherNoteBookSkills
+    description: Operations related to Teacher Notebook Skills
+  - name: TeacherNoteBookSkillRubrics
+    description: Operations related to Teacher Notebook Skill Rubrics
+  - name: TeacherNoteBookClassRubrics
+    description: Operations related to Teacher Notebook Class Rubric assignments
+  - name: TeacherNoteBookStudentGroups
+    description: Operations related to Teacher Notebook Student Group generation
+  - name: TeacherNoteBookSavedStudentGroups
+    description: Operations related to Teacher Notebook Saved Student Groups
+  - name: TeacherNoteBookGroupAssignments
+    description: Operations related to Teacher Notebook Group Assignments
 
 paths:
   /greeting:
@@ -425,7 +443,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
-
   /teacher-notebook/v1/students:
     get:
       tags:
@@ -1021,6 +1038,529 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/skills:
+    get:
+      tags:
+        - TeacherNoteBookSkills
+      operationId: skills
+      summary: Get all skills for the authenticated teacher
+      description: Returns all skills belonging to the authenticated teacher that have not been soft-deleted.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSkills
+      operationId: createSkill
+      summary: Create a new skill
+      description: Creates a new skill for the authenticated teacher
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRequestDTO'
+      responses:
+        '201':
+          description: Skill created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/skills/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookSkills
+      operationId: updateSkill
+      summary: Update an existing skill
+      description: Updates an existing skill for the authenticated teacher
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the skill to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRequestDTO'
+      responses:
+        '200':
+          description: Skill updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Teacher does not own this skill
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Skill with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSkills
+      operationId: deleteSkill
+      summary: Soft-delete a skill
+      description: Marks a skill as deleted by setting its deletion_date. Only the owning teacher can delete a skill.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the skill to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Skill successfully soft-deleted (No Content)
+        '403':
+          description: Forbidden - Teacher does not own this skill
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Skill with the specified ID does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/skills/{skillId}/rubrics:
+    get:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: getRubricsBySkill
+      summary: Get all rubrics for a skill
+      description: Returns all active rubrics with their criteria for the specified skill.
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          description: The ID of the skill
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillRubricDTO'
+        '404':
+          description: Skill not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: createRubric
+      summary: Create a new rubric for a skill
+      description: Creates a new rubric (title only) for the specified skill.
+      parameters:
+        - name: skillId
+          in: path
+          required: true
+          description: The ID of the skill
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRubricRequestDTO'
+      responses:
+        '201':
+          description: Rubric created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillRubricDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Skill not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/rubrics/{rubricId}:
+    patch:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: updateRubric
+      summary: Update an existing rubric title
+      description: Updates the title of a rubric.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          description: The ID of the rubric to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRubricRequestDTO'
+      responses:
+        '200':
+          description: Rubric updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillRubricDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Rubric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: deleteRubric
+      summary: Delete a rubric
+      description: Soft-deletes a rubric and hard-deletes all its criteria.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          description: The ID of the rubric to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Rubric successfully deleted (No Content)
+        '404':
+          description: Rubric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/rubrics/{rubricId}/criteria:
+    get:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: getCriteriaByRubric
+      summary: Get all active criteria for a rubric
+      description: Returns all active evaluation criteria for the specified rubric.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          description: The ID of the rubric
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SkillRubricCriteriaDTO'
+        '404':
+          description: Rubric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: createCriterion
+      summary: Create a single criterion for a rubric
+      description: Creates one evaluation criterion. Validates that the grade range does not overlap with existing active criteria.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          description: The ID of the rubric
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRubricCriteriaRequestDTO'
+      responses:
+        '201':
+          description: Criterion created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillRubricCriteriaDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Rubric not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/rubrics/{rubricId}/criteria/{criterionId}:
+    patch:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: updateCriterion
+      summary: Update a single criterion
+      description: Updates one evaluation criterion. Validates that the new grade range does not overlap with other active criteria.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: criterionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRubricCriteriaRequestDTO'
+      responses:
+        '200':
+          description: Criterion updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillRubricCriteriaDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Criterion not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSkillRubrics
+      operationId: deleteCriterion
+      summary: Soft-delete a single criterion
+      description: Soft-deletes one evaluation criterion.
+      parameters:
+        - name: rubricId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - name: criterionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Criterion successfully deleted (No Content)
+        '404':
+          description: Criterion not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
   /teacher-notebook/v1/classes/{classId}/schedules:
     get:
       tags:
@@ -1253,7 +1793,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SubjectDTO'
+                  $ref: '#/components/schemas/SubjectClassDetailDTO'
         '403':
           description: Forbidden - Teacher does not own this class
           content:
@@ -1306,7 +1846,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SubjectDTO'
+                  $ref: '#/components/schemas/SubjectClassDetailDTO'
         '400':
           description: Validation error
           content:
@@ -1610,6 +2150,2212 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponseDTO'
 
+  /teacher-notebook/v1/exercises/{exerciseId}/documents:
+    post:
+      tags:
+        - TeacherNoteBookExerciseDocuments
+      operationId: uploadExerciseDocument
+      summary: Upload a document for an exercise
+      description: Uploads a document file for the specified exercise. Max size 2MB. Allowed formats doc, docx, pdf, xls, xlsx, jpeg, jpg, png.
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          description: The ID of the exercise
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The document file to upload
+                description:
+                  type: string
+                  description: Optional description for the document
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseDocumentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Exercise not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/exercises/{exerciseId}/documents/{documentId}/download:
+    get:
+      tags:
+        - TeacherNoteBookExerciseDocuments
+      operationId: downloadExerciseDocument
+      summary: Download a document
+      description: Downloads the document file for the specified exercise.
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          description: The ID of the exercise
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: Document downloaded successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/exercises/{exerciseId}/documents/{documentId}:
+    patch:
+      tags:
+        - TeacherNoteBookExerciseDocuments
+      operationId: updateExerciseDocumentDescription
+      summary: Update document description
+      description: Updates only the description of an exercise document.
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          description: The ID of the exercise
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseDocumentUpdateRequestDTO'
+      responses:
+        '200':
+          description: Document description updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseDocumentDTO'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookExerciseDocuments
+      operationId: deleteExerciseDocument
+      summary: Delete a document
+      description: Deletes the document record and file from disk (hard delete).
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          description: The ID of the exercise
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Document successfully deleted (No Content)
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/grades/{gradeId}/documents:
+    post:
+      tags:
+        - TeacherNoteBookExerciseStudentDocuments
+      operationId: uploadGradeDocument
+      summary: Upload a document for a student grade
+      description: Uploads a document file and associates it with the given student grade.
+      parameters:
+        - name: gradeId
+          in: path
+          required: true
+          description: The ID of the student grade
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: 'string'
+                  format: binary
+                description:
+                  type: 'string'
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseStudentDocumentDTO'
+        '404':
+          description: Grade not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/grades/{gradeId}/documents/{documentId}:
+    get:
+      tags:
+        - TeacherNoteBookExerciseStudentDocuments
+      operationId: downloadGradeDocument
+      summary: Download a document of a student grade
+      description: Downloads the file associated with the given document.
+      parameters:
+        - name: gradeId
+          in: path
+          required: true
+          description: The ID of the student grade
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: Document file content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    patch:
+      tags:
+        - TeacherNoteBookExerciseStudentDocuments
+      operationId: updateGradeDocumentDescription
+      summary: Update the description of a student grade document
+      description: Updates only the description field of the given document.
+      parameters:
+        - name: gradeId
+          in: path
+          required: true
+          description: The ID of the student grade
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseStudentDocumentUpdateRequestDTO'
+      responses:
+        '200':
+          description: Document updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseStudentDocumentDTO'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookExerciseStudentDocuments
+      operationId: deleteGradeDocument
+      summary: Delete a student grade document
+      description: Deletes the document record and file from disk (hard delete).
+      parameters:
+        - name: gradeId
+          in: path
+          required: true
+          description: The ID of the student grade
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Document successfully deleted (No Content)
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/grades/export:
+    get:
+      tags:
+        - TeacherNoteBookExerciseStudentGrades
+      operationId: exportGradesByClass
+      summary: Export student grades for a class as Excel
+      description: Generates an Excel file (.xlsx) with student grades for the specified class. One sheet per subject that has at least one grade.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Excel file generated successfully
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/grades:
+    get:
+      tags:
+        - TeacherNoteBookExerciseStudentGrades
+      operationId: getGradesByClass
+      summary: Get all student grades for a class
+      description: Returns all active student grades for the specified class, grouped by student, quarter, and subject.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentGradesDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/students/{studentId}/grades:
+    get:
+      tags:
+        - TeacherNoteBookExerciseStudentGrades
+      operationId: getGradesByClassAndStudent
+      summary: Get all grades for a student in a class
+      description: Returns all active grades for a specific student in the specified class, grouped by quarter and subject.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - name: studentId
+          in: path
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuarterGradesDTO'
+        '403':
+          description: Forbidden - Teacher does not own this class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '400':
+          description: Validation error - Student not in class
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/exercises/{exerciseId}/grades:
+    put:
+      tags:
+        - TeacherNoteBookExerciseStudentGrades
+      operationId: createGrade
+      summary: Create a student grade for an exercise
+      description: Creates a new student grade for the specified exercise.
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          description: The ID of the exercise
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseStudentGradeRequestDTO'
+      responses:
+        '201':
+          description: Grade created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseStudentGradeDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Exercise does not exist or does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/grades/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookExerciseStudentGrades
+      operationId: updateGrade
+      summary: Update a student grade
+      description: Updates the grade and/or description of an existing student grade.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student grade
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseStudentGradeUpdateRequestDTO'
+      responses:
+        '200':
+          description: Grade updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseStudentGradeDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Grade does not exist or does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookExerciseStudentGrades
+      operationId: deleteGrade
+      summary: Soft-delete a student grade
+      description: Marks a student grade as deleted by setting its deletion_date.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the student grade to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Grade successfully soft-deleted (No Content)
+        '404':
+          description: Not Found - Grade does not exist or does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/calendar-alerts:
+    get:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: calendarAlerts
+      summary: Get all calendar alerts for the authenticated teacher
+      description: Returns all calendar alerts belonging to the authenticated teacher ordered by date ascending.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarAlertDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    put:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: createCalendarAlert
+      summary: Create a new calendar alert
+      description: Creates a new calendar alert for the authenticated teacher
+      parameters:
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarAlertRequestDTO'
+      responses:
+        '201':
+          description: Calendar alert created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarAlertDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/calendar-alerts/{year}/{month}:
+    get:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: calendarAlertsByYearAndMonth
+      summary: Get calendar alerts for a specific year and month
+      description: Returns all calendar alerts belonging to the authenticated teacher for the specified year and month, ordered by date ascending.
+      parameters:
+        - name: year
+          in: path
+          required: true
+          description: The year to filter calendar alerts
+          schema:
+            type: integer
+            format: int32
+            example: 2026
+        - name: month
+          in: path
+          required: true
+          description: The month to filter calendar alerts (1-12)
+          schema:
+            type: integer
+            format: int32
+            example: 3
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarAlertDTO'
+        '400':
+          description: Validation error - invalid year or month
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/calendar-alerts/{year}/{startMonth}/{endMonth}:
+    get:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: calendarAlertsByYearAndMonthRange
+      summary: Get calendar alerts for a specific year and month range
+      description: Returns all calendar alerts belonging to the authenticated teacher for the specified year and month range (inclusive), ordered by date ascending.
+      parameters:
+        - name: year
+          in: path
+          required: true
+          description: The year to filter calendar alerts
+          schema:
+            type: integer
+            format: int32
+            example: 2026
+        - name: startMonth
+          in: path
+          required: true
+          description: The start month of the range (1-12)
+          schema:
+            type: integer
+            format: int32
+            example: 1
+        - name: endMonth
+          in: path
+          required: true
+          description: The end month of the range (1-12). Must be greater than or equal to startMonth
+          schema:
+            type: integer
+            format: int32
+            example: 6
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarAlertDTO'
+        '400':
+          description: Validation error - invalid year, months or range
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/calendar-alerts/{id}:
+    patch:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: updateCalendarAlert
+      summary: Update an existing calendar alert
+      description: Updates an existing calendar alert for the authenticated teacher
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the calendar alert to update
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarAlertRequestDTO'
+      responses:
+        '200':
+          description: Calendar alert updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarAlertDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Calendar alert does not exist or does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookCalendarAlerts
+      operationId: deleteCalendarAlert
+      summary: Delete a calendar alert
+      description: Permanently deletes a calendar alert (hard delete). Only the owning teacher can delete an alert.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the calendar alert to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '204':
+          description: Calendar alert successfully deleted (No Content)
+        '404':
+          description: Not Found - Calendar alert does not exist or does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/absences:
+    post:
+      tags:
+        - TeacherNoteBookStudentAbsences
+      operationId: createAbsences
+      summary: Create student absences
+      description: Creates one or more absence records for a student in a class. If subjectId is provided, creates a single absence for that subject. If subjectId is omitted, creates absences for all subjects scheduled on the given date.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentAbsenceRequestDTO'
+      responses:
+        '201':
+          description: Absences created successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentAbsenceDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Class does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    get:
+      tags:
+        - TeacherNoteBookStudentAbsences
+      operationId: getAbsences
+      summary: Get student absences for a class
+      description: Retrieves absences filtered by class. Optionally filter by studentId and/or date. If no filters are provided, returns all absences for the class.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - name: studentId
+          in: query
+          required: false
+          description: Filter by student ID
+          schema:
+            type: integer
+            format: int32
+        - name: date
+          in: query
+          required: false
+          description: Filter by date in format dd/MM/yyyy
+          schema:
+            type: string
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: List of absences
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentAbsenceDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '403':
+          description: Forbidden - Class does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookStudentAbsences
+      operationId: deleteAbsencesByStudentAndDate
+      summary: Delete all absences for a student in a class on a specific date
+      description: Deletes all absence records for the given student, class, and date combination.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - name: studentId
+          in: query
+          required: true
+          description: The ID of the student
+          schema:
+            type: integer
+            format: int32
+        - name: date
+          in: query
+          required: true
+          description: The date in format dd/MM/yyyy
+          schema:
+            type: string
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Absences successfully deleted
+        '403':
+          description: Forbidden - Class does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/absences/{id}:
+    delete:
+      tags:
+        - TeacherNoteBookStudentAbsences
+      operationId: deleteAbsence
+      summary: Delete a single absence by ID
+      description: Permanently deletes an absence record by its ID. Only the owning teacher can delete the absence.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the absence to delete
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Absence successfully deleted
+        '404':
+          description: Not Found - Absence does not exist or does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/rubrics:
+    get:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: getRubricsByClass
+      summary: Get all rubrics assigned to a class
+      description: Returns all rubrics assigned to the class enriched with skillId and active criteria list
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of class rubric assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassRubricDTO'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    post:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: assignRubricToClass
+      summary: Assign a rubric to a class
+      description: Assigns the given rubric to the class. Validates teacher ownership and no duplicates.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Accept-Language
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassRubricRequestDTO'
+      responses:
+        '201':
+          description: Rubric assigned to class successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassRubricDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '401':
+          description: Unauthorized
+  /teacher-notebook/v1/class-rubrics/{classRubricId}:
+    delete:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: removeRubricFromClass
+      summary: Remove a rubric assignment from a class
+      description: Soft-deletes the class-rubric assignment and cascades to student criterion assignments
+      parameters:
+        - name: classRubricId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Accept-Language
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Rubric assignment removed successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Class rubric assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/classes/{classId}/rubric-criteria:
+    get:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: getAllStudentCriteriaByClass
+      summary: Get all student criterion assignments for a class grouped by student
+      description: Returns all criterion assignments for all students in the class, grouped by student with nested rubric and criterion objects
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of student criterion groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentCriteriaGroupDTO'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/classes/{classId}/students/{studentId}/rubric-criteria:
+    get:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: getStudentCriteriaByStudent
+      summary: Get criterion assignments for a specific student in a class grouped
+      description: Returns all criterion assignments for the student in the class, grouped by student with nested rubric and criterion objects
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of student criterion groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentCriteriaGroupDTO'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/class-rubrics/{classRubricId}/students/{studentId}/criteria:
+    post:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: assignCriterionToStudent
+      summary: Assign a rubric criterion to a student
+      description: Assigns the given criterion to the student within the class-rubric assignment
+      parameters:
+        - name: classRubricId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Accept-Language
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentClassRubricCriteriaRequestDTO'
+      responses:
+        '201':
+          description: Criterion assigned to student successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentClassRubricCriteriaDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Class rubric assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+  /teacher-notebook/v1/student-criteria/{id}:
+    put:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: updateStudentCriterion
+      summary: Update the criterion assigned to a student
+      description: Replaces the current criterion with a new one belonging to the same rubric
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Accept-Language
+          in: header
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentClassRubricCriteriaRequestDTO'
+      responses:
+        '200':
+          description: Criterion updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentClassRubricCriteriaDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookClassRubrics
+      operationId: removeStudentCriterion
+      summary: Remove a student criterion assignment
+      description: Soft-deletes the student criterion assignment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Accept-Language
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Assignment removed successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/student-groups:
+    get:
+      tags:
+        - TeacherNoteBookStudentGroups
+      operationId: generateStudentGroups
+      summary: Generate balanced student groups for a class
+      description: Generates groups of 3-4 students balanced by gender and shape. Each group will have 1 CIRCLE student when possible. All students must have a shape assigned.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - name: prioritizeShapeDiversity
+          in: query
+          required: false
+          description: When true (default), shape diversity is prioritized over gender diversity. When false, gender diversity takes priority over shape diversity. Circle distribution (1 per group) is always the top priority.
+          schema:
+            type: boolean
+            default: true
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages (e.g., "es", "en"). Defaults to "en".
+      responses:
+        '200':
+          description: Groups generated successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: integer
+                    format: int32
+        '400':
+          description: Validation error - Not enough students, impossible count, or missing shapes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Not Found - Class does not exist or does not belong to teacher
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/saved-groups:
+    get:
+      tags:
+        - TeacherNoteBookSavedStudentGroups
+      operationId: getSavedStudentGroups
+      summary: Get all saved student groups for a class
+      description: Returns all saved student groups for the specified class, including student names.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+      responses:
+        '200':
+          description: Saved groups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedStudentGroupDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    post:
+      tags:
+        - TeacherNoteBookSavedStudentGroups
+      operationId: createSavedStudentGroups
+      summary: Create saved student groups for a class
+      description: Creates multiple saved student groups for the specified class.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/SavedStudentGroupRequestDTO'
+      responses:
+        '201':
+          description: Groups created successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedStudentGroupDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    patch:
+      tags:
+        - TeacherNoteBookSavedStudentGroups
+      operationId: updateAllSavedStudentGroups
+      summary: Replace all saved student groups for a class
+      description: Replaces all saved student groups for the specified class. Groups with an existing id are updated, groups without id are created, and existing groups not included are deleted. All students must be assigned and no student can appear in more than one group.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/SavedStudentGroupBulkUpdateItemDTO'
+      responses:
+        '200':
+          description: Groups updated successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedStudentGroupDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookSavedStudentGroups
+      operationId: deleteSavedStudentGroupsByClassId
+      summary: Delete all saved student groups for a class
+      description: Soft-deletes all saved student groups for the specified class and removes their members.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+      responses:
+        '204':
+          description: Groups deleted successfully
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/classes/{classId}/group-assignments:
+    get:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: getGroupAssignmentsByClass
+      summary: Get all group assignments for a class
+      description: Returns all active group assignments for the specified class.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupAssignmentDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    post:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: createGroupAssignment
+      summary: Create a group assignment for a class
+      description: Creates a new group assignment linked to the specified class.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          description: The ID of the class
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupAssignmentRequestDTO'
+      responses:
+        '201':
+          description: Group assignment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupAssignmentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Class not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}:
+    patch:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: updateGroupAssignment
+      summary: Update a group assignment
+      description: Updates an existing group assignment.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupAssignmentRequestDTO'
+      responses:
+        '200':
+          description: Group assignment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupAssignmentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Group assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: deleteGroupAssignment
+      summary: Soft-delete a group assignment
+      description: Soft-deletes a group assignment with cascade deletion of grades and documents.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Group assignment successfully soft-deleted (No Content)
+        '404':
+          description: Group assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/grades:
+    get:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: getGroupAssignmentGrades
+      summary: Get grades for a group assignment
+      description: Returns all active grades for the specified group assignment.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupAssignmentGradeDTO'
+        '404':
+          description: Group assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/groups/{groupId}/grade:
+    put:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: upsertGroupAssignmentGrade
+      summary: Create or update a grade for a group
+      description: Creates or updates the grade for the specified group in the assignment.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - name: groupId
+          in: path
+          required: true
+          description: The ID of the student group
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupAssignmentGradeRequestDTO'
+      responses:
+        '200':
+          description: Grade created or updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupAssignmentGradeDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Group assignment or group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+    delete:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: deleteGroupAssignmentGrade
+      summary: Soft-delete a grade for a group
+      description: Soft-deletes the grade for the specified group in the assignment.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - name: groupId
+          in: path
+          required: true
+          description: The ID of the student group
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Grade successfully soft-deleted (No Content)
+        '404':
+          description: Grade not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/documents:
+    post:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: uploadGroupAssignmentDocument
+      summary: Upload a document for a group assignment
+      description: Uploads a document for the assignment (assignment-level, groupDocument=false).
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The document file to upload
+                description:
+                  type: string
+                  description: Optional description for the document
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupAssignmentDocumentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Group assignment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/groups/{groupId}/documents:
+    post:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: uploadGroupAssignmentGroupDocument
+      summary: Upload a document for a group in an assignment
+      description: Uploads a document for a specific group (group-level, groupDocument=true).
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - name: groupId
+          in: path
+          required: true
+          description: The ID of the student group
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The document file to upload
+                description:
+                  type: string
+                  description: Optional description for the document
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupAssignmentDocumentDTO'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '404':
+          description: Group assignment or group not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/documents/{documentId}/download:
+    get:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: downloadGroupAssignmentDocument
+      summary: Download a group assignment document
+      description: Downloads the document file.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '200':
+          description: Document downloaded successfully
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
+  /teacher-notebook/v1/group-assignments/{assignmentId}/documents/{documentId}:
+    delete:
+      tags:
+        - TeacherNoteBookGroupAssignments
+      operationId: deleteGroupAssignmentDocument
+      summary: Delete a group assignment document
+      description: Hard-deletes the document record and removes the file from disk.
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          description: The ID of the group assignment
+          schema:
+            type: integer
+            format: int32
+        - name: documentId
+          in: path
+          required: true
+          description: The ID of the document
+          schema:
+            type: integer
+            format: int32
+        - in: header
+          name: Accept-Language
+          schema:
+            type: string
+            default: en
+          description: Language preference for error messages
+      responses:
+        '204':
+          description: Document successfully deleted (No Content)
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDTO'
+
 components:
   schemas:
     ErrorResponseDTO:
@@ -1683,6 +4429,9 @@ components:
           type: 'string'
         photo:
           type: 'string'
+        shape:
+          type: 'string'
+          description: 'Student shape (SQUARE, CIRCLE, TRIANGLE)'
         classIds:
           type: 'array'
           items:
@@ -1708,6 +4457,10 @@ components:
         additionalInfo:
           type: 'string'
           example: 'Additional information about the student'
+        shape:
+          type: 'string'
+          description: 'Student shape (SQUARE, CIRCLE, TRIANGLE)'
+          example: 'SQUARE'
     SubjectDTO:
       type: 'object'
       properties:
@@ -1811,7 +4564,16 @@ components:
         subjects:
           type: 'array'
           items:
-            $ref: '#/components/schemas/SubjectDTO'
+            $ref: '#/components/schemas/SubjectClassDetailDTO'
+    SubjectClassDetailDTO:
+      type: 'object'
+      properties:
+        subjectClassId:
+          type: 'integer'
+        subjectId:
+          type: 'integer'
+        subjectName:
+          type: 'string'
     SubjectClassAssignRequestDTO:
       type: 'object'
       required:
@@ -1849,6 +4611,10 @@ components:
           type: 'integer'
         maxGrade:
           type: 'integer'
+        documents:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ExerciseDocumentDTO'
     QuarterExercisesDTO:
       type: 'object'
       properties:
@@ -1905,3 +4671,517 @@ components:
         maxGrade:
           type: 'integer'
           example: 10
+    ExerciseDocumentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        exerciseId:
+          type: 'integer'
+        document:
+          type: 'string'
+        description:
+          type: 'string'
+    ExerciseDocumentUpdateRequestDTO:
+      type: 'object'
+      properties:
+        description:
+          type: 'string'
+          example: 'Updated description'
+    ExerciseStudentDocumentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        gradeId:
+          type: 'integer'
+        document:
+          type: 'string'
+        description:
+          type: 'string'
+    ExerciseStudentDocumentUpdateRequestDTO:
+      type: 'object'
+      properties:
+        description:
+          type: 'string'
+          example: 'Updated description'
+    ExerciseStudentGradeDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        studentId:
+          type: 'integer'
+        exerciseId:
+          type: 'integer'
+        grade:
+          type: 'number'
+          format: 'double'
+        description:
+          type: 'string'
+        documents:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ExerciseStudentDocumentDTO'
+    ExerciseStudentGradeRequestDTO:
+      type: 'object'
+      properties:
+        studentId:
+          type: 'integer'
+          example: 1
+        grade:
+          type: 'number'
+          format: 'double'
+          example: 8.5
+        description:
+          type: 'string'
+          example: 'Good performance'
+    ExerciseStudentGradeUpdateRequestDTO:
+      type: 'object'
+      properties:
+        grade:
+          type: 'number'
+          format: 'double'
+          example: 9.25
+        description:
+          type: 'string'
+          example: 'Updated grade after review'
+    StudentGradesDTO:
+      type: 'object'
+      properties:
+        studentId:
+          type: 'integer'
+        studentName:
+          type: 'string'
+        studentSurnames:
+          type: 'string'
+        quarters:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/QuarterGradesDTO'
+    QuarterGradesDTO:
+      type: 'object'
+      properties:
+        quarter:
+          type: 'integer'
+        subjects:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/SubjectGradesDTO'
+    SubjectGradesDTO:
+      type: 'object'
+      properties:
+        subjectId:
+          type: 'integer'
+        subjectName:
+          type: 'string'
+        exercises:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ExerciseGradeDTO'
+    ExerciseGradeDTO:
+      type: 'object'
+      properties:
+        gradeId:
+          type: 'integer'
+        exerciseId:
+          type: 'integer'
+        exerciseTitle:
+          type: 'string'
+        maxGrade:
+          type: 'integer'
+        percentageGrade:
+          type: 'integer'
+        grade:
+          type: 'number'
+          format: 'double'
+        description:
+          type: 'string'
+        documents:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/ExerciseStudentDocumentDTO'
+    CalendarAlertDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        date:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2026'
+        title:
+          type: 'string'
+        description:
+          type: 'string'
+        startTime:
+          type: 'string'
+          description: 'Start time in format HH:mm'
+          example: '09:00'
+        endTime:
+          type: 'string'
+          description: 'End time in format HH:mm'
+          example: '10:00'
+    CalendarAlertRequestDTO:
+      type: 'object'
+      properties:
+        date:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2026'
+        title:
+          type: 'string'
+          example: 'Parent meeting'
+        description:
+          type: 'string'
+          example: 'Meeting with parents about grades'
+        startTime:
+          type: 'string'
+          description: 'Start time in format HH:mm'
+          example: '09:00'
+        endTime:
+          type: 'string'
+          description: 'End time in format HH:mm'
+          example: '10:00'
+    StudentAbsenceDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+          format: 'int32'
+        studentId:
+          type: 'integer'
+          format: 'int32'
+        studentName:
+          type: 'string'
+        studentSurnames:
+          type: 'string'
+        classId:
+          type: 'integer'
+          format: 'int32'
+        subjectId:
+          type: 'integer'
+          format: 'int32'
+        subjectName:
+          type: 'string'
+        absenceDate:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2026'
+    StudentAbsenceRequestDTO:
+      type: 'object'
+      required:
+        - studentId
+      properties:
+        studentId:
+          type: 'integer'
+          format: 'int32'
+        subjectId:
+          type: 'integer'
+          format: 'int32'
+        date:
+          type: 'string'
+          description: 'Date in format dd/MM/yyyy'
+          example: '15/03/2026'
+    SkillDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        title:
+          type: 'string'
+        description:
+          type: 'string'
+    SkillRequestDTO:
+      type: 'object'
+      properties:
+        title:
+          type: 'string'
+          example: 'Critical thinking'
+        description:
+          type: 'string'
+          example: 'Ability to analyze information objectively'
+    SkillRubricDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        title:
+          type: 'string'
+        skillId:
+          type: 'integer'
+        criteria:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/SkillRubricCriteriaDTO'
+    SkillRubricCriteriaDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        description:
+          type: 'string'
+        qualification:
+          type: 'string'
+        gradeStart:
+          type: 'integer'
+        gradeEnd:
+          type: 'integer'
+    SkillRubricRequestDTO:
+      type: 'object'
+      properties:
+        title:
+          type: 'string'
+          example: 'Rubric for critical thinking'
+    SkillRubricCriteriaRequestDTO:
+      type: 'object'
+      properties:
+        description:
+          type: 'string'
+          example: 'Performs poorly'
+        qualification:
+          type: 'string'
+          example: 'Insuficiente'
+        gradeStart:
+          type: 'integer'
+          example: 0
+        gradeEnd:
+          type: 'integer'
+          example: 4
+    ClassRubricDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classId:
+          type: 'integer'
+        rubricId:
+          type: 'integer'
+        rubricTitle:
+          type: 'string'
+        skillId:
+          type: 'integer'
+        criteria:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/SkillRubricCriteriaDTO'
+    ClassRubricRequestDTO:
+      type: 'object'
+      required:
+        - rubricId
+      properties:
+        rubricId:
+          type: 'integer'
+          example: 1
+    StudentClassRubricCriteriaDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classRubricId:
+          type: 'integer'
+        rubricId:
+          type: 'integer'
+        studentId:
+          type: 'integer'
+        studentName:
+          type: 'string'
+        studentSurnames:
+          type: 'string'
+        criterionId:
+          type: 'integer'
+        criterionDescription:
+          type: 'string'
+        qualification:
+          type: 'string'
+        gradeStart:
+          type: 'integer'
+        gradeEnd:
+          type: 'integer'
+    StudentClassRubricCriteriaRequestDTO:
+      type: 'object'
+      required:
+        - criterionId
+      properties:
+        criterionId:
+          type: 'integer'
+          example: 1
+    StudentCriteriaGroupDTO:
+      type: 'object'
+      properties:
+        student:
+          $ref: '#/components/schemas/StudentSummaryDTO'
+        rubricCriteria:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/RubricCriterionAssignmentDTO'
+    StudentSummaryDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        name:
+          type: 'string'
+        surnames:
+          type: 'string'
+    RubricCriterionAssignmentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classRubricId:
+          type: 'integer'
+        rubric:
+          $ref: '#/components/schemas/RubricSummaryDTO'
+        criterion:
+          $ref: '#/components/schemas/CriterionSummaryDTO'
+    RubricSummaryDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        title:
+          type: 'string'
+    CriterionSummaryDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        description:
+          type: 'string'
+        qualification:
+          type: 'string'
+        gradeStart:
+          type: 'integer'
+        gradeEnd:
+          type: 'integer'
+    SavedStudentGroupDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classId:
+          type: 'integer'
+        name:
+          type: 'string'
+        members:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/SavedStudentGroupMemberDTO'
+    SavedStudentGroupMemberDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        studentId:
+          type: 'integer'
+        studentName:
+          type: 'string'
+        studentSurnames:
+          type: 'string'
+    SavedStudentGroupRequestDTO:
+      type: 'object'
+      properties:
+        name:
+          type: 'string'
+          example: 'Group A'
+        studentIds:
+          type: 'array'
+          items:
+            type: 'integer'
+          example: [ 1, 2, 3, 4 ]
+    SavedStudentGroupBulkUpdateItemDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+          description: 'ID of the existing group. Null or omitted for new groups.'
+          example: 1
+        name:
+          type: 'string'
+          example: 'Group A'
+        studentIds:
+          type: 'array'
+          items:
+            type: 'integer'
+          example: [ 1, 2, 3, 4 ]
+    GroupAssignmentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        classId:
+          type: 'integer'
+        title:
+          type: 'string'
+        description:
+          type: 'string'
+        quarter:
+          type: 'integer'
+        documents:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/GroupAssignmentDocumentSummaryDTO'
+    GroupAssignmentRequestDTO:
+      type: 'object'
+      properties:
+        title:
+          type: 'string'
+          example: 'Group Project Unit 1'
+        description:
+          type: 'string'
+          example: 'Collaborative project about ecosystems'
+        quarter:
+          type: 'integer'
+          example: 1
+    GroupAssignmentGradeDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        groupAssignmentId:
+          type: 'integer'
+        groupId:
+          type: 'integer'
+        grade:
+          type: 'number'
+          format: 'double'
+        groupName:
+          type: 'string'
+        documents:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/GroupAssignmentDocumentSummaryDTO'
+    GroupAssignmentGradeRequestDTO:
+      type: 'object'
+      properties:
+        grade:
+          type: 'number'
+          format: 'double'
+          example: 8.5
+    GroupAssignmentDocumentDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        groupAssignmentId:
+          type: 'integer'
+        groupId:
+          type: 'integer'
+        document:
+          type: 'string'
+        description:
+          type: 'string'
+        groupDocument:
+          type: 'boolean'
+    GroupAssignmentDocumentSummaryDTO:
+      type: 'object'
+      properties:
+        id:
+          type: 'integer'
+        document:
+          type: 'string'
+        description:
+          type: 'string'
+        groupDocument:
+          type: 'boolean'

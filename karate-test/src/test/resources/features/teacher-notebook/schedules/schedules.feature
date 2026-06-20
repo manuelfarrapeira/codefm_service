@@ -16,6 +16,7 @@ Feature: Schedule Endpoints
     Given path '/teacher-notebook/v1/classes/9999/schedules'
     When method GET
     Then status 404
+    And match response.code == "1003"
 
 #  Scenario: Create schedules for a class - Success
 #    * def createRequest = { day: 1, items: [{ subjectId: 1, start: '08:30', end: '09:30' }, { subjectId: 1, start: '09:30', end: '10:30' }] }

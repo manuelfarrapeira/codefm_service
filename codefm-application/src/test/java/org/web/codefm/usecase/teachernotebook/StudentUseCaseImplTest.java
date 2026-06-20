@@ -1,245 +1,216 @@
 package org.web.codefm.usecase.teachernotebook;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 import org.web.codefm.domain.entity.teachernotebook.Student;
+import org.web.codefm.domain.service.teachernotebook.CascadeSoftDeleteService;
 import org.web.codefm.domain.service.teachernotebook.StudentService;
 
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class StudentUseCaseImplTest {
 
+    private StudentUseCaseImpl studentUseCase;
+
     @Mock
     private StudentService studentService;
 
-    @InjectMocks
-    private StudentUseCaseImpl studentUseCase;
+    @Mock
+    private CascadeSoftDeleteService cascadeSoftDeleteService;
 
     private static final Integer TEACHER_ID = 1;
 
-
-    @Test
-    void createStudent_shouldCallServiceAndReturnStudent() {
-        Student studentToCreate = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .dateOfBirth(LocalDate.of(2010, 3, 15))
-                .build();
-
-        Student createdStudent = Student.builder()
-                .name("Juan")
-                .surnames("García López")
-                .teacherId(TEACHER_ID)
-                .dateOfBirth(LocalDate.of(2010, 3, 15))
-                .build();
-
-        when(studentService.createStudent(studentToCreate)).thenReturn(createdStudent);
-
-        Student result = studentUseCase.createStudent(studentToCreate);
-
-        assertNotNull(result);
-        assertEquals("Juan", result.getName());
-        assertEquals(TEACHER_ID, result.getTeacherId());
-        verify(studentService, times(1)).createStudent(studentToCreate);
+    @BeforeEach
+    void beforeEach() {
+        studentUseCase = new StudentUseCaseImpl(studentService, cascadeSoftDeleteService);
     }
 
-    @Test
-    void updateStudent_shouldCallServiceAndReturnUpdatedStudent() {
-        Integer studentId = 1;
-        Student studentToUpdate = Student.builder()
-                .name("Juan Carlos")
-                .surnames("García López")
-                .build();
+    @Nested
+    class CreateStudent {
 
-        when(studentService.updateStudent(studentId, studentToUpdate)).thenReturn(studentToUpdate);
+        @Test
+        void when_creating_student_expect_delegated_to_service() {
+            final Student studentToCreate = Student.builder()
+                    .name("Juan").surnames("García López").dateOfBirth(LocalDate.of(2010, 3, 15)).build();
+            final Student createdStudent = Student.builder()
+                    .name("Juan").surnames("García López").teacherId(TEACHER_ID).dateOfBirth(LocalDate.of(2010, 3, 15)).build();
+            when(studentService.createStudent(studentToCreate)).thenReturn(createdStudent);
 
-        Student result = studentUseCase.updateStudent(studentId, studentToUpdate);
+            final Student result = studentUseCase.createStudent(studentToCreate);
 
-        assertNotNull(result);
-        assertEquals("Juan Carlos", result.getName());
-        verify(studentService, times(1)).updateStudent(studentId, studentToUpdate);
+            assertThat(result).isNotNull();
+            assertThat(result.getName()).isEqualTo("Juan");
+            assertThat(result.getTeacherId()).isEqualTo(TEACHER_ID);
+            verify(studentService).createStudent(studentToCreate);
+        }
     }
 
-    @Test
-    void softDeleteStudent_shouldCallService() {
-        Integer studentId = 1;
+    @Nested
+    class UpdateStudent {
 
-        doNothing().when(studentService).softDeleteStudent(studentId);
+        @Test
+        void when_updating_student_expect_delegated_to_service() {
+            final Integer studentId = 1;
+            final Student studentToUpdate = Student.builder().name("Juan Carlos").surnames("García López").build();
+            when(studentService.updateStudent(studentId, studentToUpdate)).thenReturn(studentToUpdate);
 
-        studentUseCase.softDeleteStudent(studentId);
+            final Student result = studentUseCase.updateStudent(studentId, studentToUpdate);
 
-        verify(studentService, times(1)).softDeleteStudent(studentId);
+            assertThat(result).isNotNull();
+            assertThat(result.getName()).isEqualTo("Juan Carlos");
+            verify(studentService).updateStudent(studentId, studentToUpdate);
+        }
     }
 
-    @Test
-    void uploadStudentPhoto_shouldCallServiceAndReturnPhotoPath() {
-        Integer studentId = 1;
-        MultipartFile mockFile = mock(MultipartFile.class);
-        String expectedPhotoPath = "data/student-photos/1.jpg";
+    @Nested
+    class SoftDeleteStudent {
 
-        when(studentService.saveStudentPhoto(studentId, mockFile)).thenReturn(expectedPhotoPath);
+        @Test
+        void when_deleting_student_expect_cascade_before_service() {
+            final Integer studentId = 1;
+            doNothing().when(cascadeSoftDeleteService).cascadeDeleteChildrenOfStudent(studentId);
+            doNothing().when(studentService).softDeleteStudent(studentId);
 
-        String result = studentUseCase.uploadStudentPhoto(studentId, mockFile);
+            studentUseCase.softDeleteStudent(studentId);
 
-        assertNotNull(result);
-        assertEquals(expectedPhotoPath, result);
-        verify(studentService, times(1)).saveStudentPhoto(studentId, mockFile);
+            final var order = inOrder(cascadeSoftDeleteService, studentService);
+            order.verify(cascadeSoftDeleteService).cascadeDeleteChildrenOfStudent(studentId);
+            order.verify(studentService).softDeleteStudent(studentId);
+        }
     }
 
-    @Test
-    void searchStudents_shouldCallServiceAndReturnStudents_whenSearchingById() {
-        Integer studentId = 1;
-        Student student1 = Student.builder()
-                .id(1)
-                .teacherId(TEACHER_ID)
-                .name("Juan")
-                .surnames("García López")
-                .build();
-        List<Student> expectedStudents = Arrays.asList(student1);
+    @Nested
+    class UploadStudentPhoto {
 
-        when(studentService.searchStudents(studentId, null, null)).thenReturn(expectedStudents);
+        @Test
+        void when_uploading_photo_expect_delegated_to_service() {
+            final Integer studentId = 1;
+            final MultipartFile mockFile = mock(MultipartFile.class);
+            final String expectedPhotoPath = "data/student-photos/1.jpg";
+            when(studentService.saveStudentPhoto(studentId, mockFile)).thenReturn(expectedPhotoPath);
 
-        List<Student> result = studentUseCase.searchStudents(studentId, null, null);
+            final String result = studentUseCase.uploadStudentPhoto(studentId, mockFile);
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("Juan", result.get(0).getName());
-        verify(studentService, times(1)).searchStudents(studentId, null, null);
+            assertThat(result).isEqualTo(expectedPhotoPath);
+            verify(studentService).saveStudentPhoto(studentId, mockFile);
+        }
     }
 
-    @Test
-    void searchStudents_shouldCallServiceAndReturnStudents_whenSearchingByName() {
-        String name = "Juan";
-        Student student1 = Student.builder()
-                .id(1)
-                .teacherId(TEACHER_ID)
-                .name("Juan")
-                .surnames("García López")
-                .build();
-        Student student2 = Student.builder()
-                .id(2)
-                .teacherId(TEACHER_ID)
-                .name("Juan Carlos")
-                .surnames("Pérez Martín")
-                .build();
-        List<Student> expectedStudents = Arrays.asList(student1, student2);
+    @Nested
+    class SearchStudents {
 
-        when(studentService.searchStudents(null, name, null)).thenReturn(expectedStudents);
+        @Test
+        void when_searching_by_id_expect_matching_students_returned() {
+            final Integer studentId = 1;
+            final List<Student> expected = List.of(Student.builder().id(1).teacherId(TEACHER_ID).name("Juan").surnames("García López").build());
+            when(studentService.searchStudents(studentId, null, null)).thenReturn(expected);
 
-        List<Student> result = studentUseCase.searchStudents(null, name, null);
+            final List<Student> result = studentUseCase.searchStudents(studentId, null, null);
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        verify(studentService, times(1)).searchStudents(null, name, null);
+            assertThat(result).isNotNull().hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Juan");
+            verify(studentService).searchStudents(studentId, null, null);
+        }
+
+        @Test
+        void when_searching_by_name_expect_matching_students_returned() {
+            final String name = "Juan";
+            final List<Student> expected = List.of(
+                    Student.builder().id(1).teacherId(TEACHER_ID).name("Juan").surnames("García López").build(),
+                    Student.builder().id(2).teacherId(TEACHER_ID).name("Juan Carlos").surnames("Pérez Martín").build());
+            when(studentService.searchStudents(null, name, null)).thenReturn(expected);
+
+            final List<Student> result = studentUseCase.searchStudents(null, name, null);
+
+            assertThat(result).isNotNull().hasSize(2);
+            verify(studentService).searchStudents(null, name, null);
+        }
+
+        @Test
+        void when_searching_by_surnames_expect_matching_students_returned() {
+            final String surnames = "García";
+            final List<Student> expected = List.of(Student.builder().id(1).teacherId(TEACHER_ID).name("Juan").surnames("García López").build());
+            when(studentService.searchStudents(null, null, surnames)).thenReturn(expected);
+
+            final List<Student> result = studentUseCase.searchStudents(null, null, surnames);
+
+            assertThat(result).isNotNull().hasSize(1);
+            assertThat(result.get(0).getSurnames()).isEqualTo("García López");
+            verify(studentService).searchStudents(null, null, surnames);
+        }
+
+        @Test
+        void when_searching_by_multiple_filters_expect_matching_students_returned() {
+            final String name = "Juan";
+            final String surnames = "García";
+            final List<Student> expected = List.of(Student.builder().id(1).teacherId(TEACHER_ID).name("Juan").surnames("García López").build());
+            when(studentService.searchStudents(null, name, surnames)).thenReturn(expected);
+
+            final List<Student> result = studentUseCase.searchStudents(null, name, surnames);
+
+            assertThat(result).isNotNull().hasSize(1);
+            assertThat(result.get(0).getName()).isEqualTo("Juan");
+            verify(studentService).searchStudents(null, name, surnames);
+        }
     }
 
-    @Test
-    void searchStudents_shouldCallServiceAndReturnStudents_whenSearchingBySurnames() {
-        String surnames = "García";
-        Student student1 = Student.builder()
-                .id(1)
-                .teacherId(TEACHER_ID)
-                .name("Juan")
-                .surnames("García López")
-                .build();
-        List<Student> expectedStudents = Arrays.asList(student1);
+    @Nested
+    class GetAllStudents {
 
-        when(studentService.searchStudents(null, null, surnames)).thenReturn(expectedStudents);
+        @Test
+        void when_fetching_all_students_expect_delegated_to_service() {
+            final List<Student> expected = List.of(
+                    Student.builder().id(1).teacherId(TEACHER_ID).name("Juan").surnames("García López").build(),
+                    Student.builder().id(2).teacherId(TEACHER_ID).name("María").surnames("Pérez Martínez").build());
+            when(studentService.getAllStudents()).thenReturn(expected);
 
-        List<Student> result = studentUseCase.searchStudents(null, null, surnames);
+            final List<Student> result = studentUseCase.getAllStudents();
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("García López", result.get(0).getSurnames());
-        verify(studentService, times(1)).searchStudents(null, null, surnames);
+            assertThat(result).isNotNull().hasSize(2);
+            assertThat(result.get(0).getName()).isEqualTo("Juan");
+            assertThat(result.get(1).getName()).isEqualTo("María");
+            verify(studentService).getAllStudents();
+        }
     }
 
-    @Test
-    void searchStudents_shouldCallServiceAndReturnStudents_whenSearchingByMultipleFilters() {
-        String name = "Juan";
-        String surnames = "García";
-        Student student1 = Student.builder()
-                .id(1)
-                .teacherId(TEACHER_ID)
-                .name("Juan")
-                .surnames("García López")
-                .build();
-        List<Student> expectedStudents = Arrays.asList(student1);
+    @Nested
+    class DownloadStudentPhoto {
 
-        when(studentService.searchStudents(null, name, surnames)).thenReturn(expectedStudents);
+        @Test
+        void when_downloading_photo_expect_delegated_to_service() {
+            final Integer studentId = 1;
+            final byte[] expectedPhotoBytes = new byte[]{1, 2, 3, 4, 5};
+            when(studentService.getStudentPhoto(studentId)).thenReturn(expectedPhotoBytes);
 
-        List<Student> result = studentUseCase.searchStudents(null, name, surnames);
+            final byte[] result = studentUseCase.downloadStudentPhoto(studentId);
 
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("Juan", result.get(0).getName());
-        assertEquals("García López", result.get(0).getSurnames());
-        verify(studentService, times(1)).searchStudents(null, name, surnames);
+            assertThat(result).isNotNull();
+            assertThat(result.length).isEqualTo(expectedPhotoBytes.length);
+            verify(studentService).getStudentPhoto(studentId);
+        }
     }
 
-    @Test
-    void getAllStudents_shouldCallServiceAndReturnAllStudents() {
-        Student student1 = Student.builder()
-                .id(1)
-                .teacherId(TEACHER_ID)
-                .name("Juan")
-                .surnames("García López")
-                .build();
+    @Nested
+    class DeleteStudentPhoto {
 
-        Student student2 = Student.builder()
-                .id(2)
-                .teacherId(TEACHER_ID)
-                .name("María")
-                .surnames("Pérez Martínez")
-                .build();
+        @Test
+        void when_deleting_photo_expect_delegated_to_service() {
+            final Integer studentId = 1;
+            doNothing().when(studentService).deleteStudentPhoto(studentId);
 
-        List<Student> expectedStudents = Arrays.asList(student1, student2);
+            studentUseCase.deleteStudentPhoto(studentId);
 
-        when(studentService.getAllStudents()).thenReturn(expectedStudents);
-
-        List<Student> result = studentUseCase.getAllStudents();
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("Juan", result.get(0).getName());
-        assertEquals("María", result.get(1).getName());
-        verify(studentService, times(1)).getAllStudents();
+            verify(studentService).deleteStudentPhoto(studentId);
+        }
     }
-
-    @Test
-    void downloadStudentPhoto_shouldCallServiceAndReturnPhotoBytes() {
-        Integer studentId = 1;
-        byte[] expectedPhotoBytes = new byte[]{1, 2, 3, 4, 5};
-
-        when(studentService.getStudentPhoto(studentId)).thenReturn(expectedPhotoBytes);
-
-        byte[] result = studentUseCase.downloadStudentPhoto(studentId);
-
-        assertNotNull(result);
-        assertEquals(expectedPhotoBytes.length, result.length);
-        verify(studentService, times(1)).getStudentPhoto(studentId);
-    }
-
-    @Test
-    void deleteStudentPhoto_shouldCallService() {
-        Integer studentId = 1;
-
-        doNothing().when(studentService).deleteStudentPhoto(studentId);
-
-        studentUseCase.deleteStudentPhoto(studentId);
-
-        verify(studentService, times(1)).deleteStudentPhoto(studentId);
-    }
-
 }

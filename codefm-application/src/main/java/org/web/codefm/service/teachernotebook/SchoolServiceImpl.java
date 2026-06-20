@@ -9,7 +9,7 @@ import org.web.codefm.domain.entity.exception.ErrorMessage;
 import org.web.codefm.domain.entity.teachernotebook.School;
 import org.web.codefm.domain.exception.teachernotebook.SchoolValidationException;
 import org.web.codefm.domain.i18n.MessageKeys;
-import org.web.codefm.domain.repository.teachernotebook.*;
+import org.web.codefm.domain.repository.teachernotebook.SchoolRepository;
 import org.web.codefm.domain.service.teachernotebook.SchoolService;
 import org.web.codefm.domain.session.SessionUser;
 import org.web.codefm.util.SchoolValidationUtil;
@@ -25,11 +25,6 @@ import java.util.Optional;
 public class SchoolServiceImpl implements SchoolService {
 
     private final SchoolRepository schoolRepository;
-    private final ClassRepository classRepository;
-    private final SubjectClassRepository subjectClassRepository;
-    private final ScheduleRepository scheduleRepository;
-    private final StudentClassRepository studentClassRepository;
-    private final ExerciseRepository exerciseRepository;
     private final MessageSource messageSource;
     private final SessionUser sessionUser;
 
@@ -53,31 +48,10 @@ public class SchoolServiceImpl implements SchoolService {
     }
 
     @Override
-    @Transactional
     public void softDeleteSchool(Integer schoolId, Integer teacherId) {
         Locale locale = sessionUser.getLocale();
         SchoolValidationUtil.validateSchoolOwnership(schoolId, teacherId, this, messageSource, locale);
-
-        List<Integer> classIds = classRepository.findActiveIdsBySchoolId(schoolId);
-
-        for (Integer classId : classIds) {
-            cascadeDeleteClass(classId);
-        }
-
-        classRepository.softDeleteBySchoolId(schoolId);
         schoolRepository.softDeleteSchool(schoolId, teacherId);
-    }
-
-    private void cascadeDeleteClass(Integer classId) {
-        List<Integer> subjectClassIds = subjectClassRepository.findActiveIdsByClassId(classId);
-
-        if (!subjectClassIds.isEmpty()) {
-            exerciseRepository.softDeleteBySubjectClassIds(subjectClassIds);
-        }
-
-        studentClassRepository.softDeleteByClassId(classId);
-        subjectClassRepository.softDeleteByClassId(classId);
-        scheduleRepository.softDeleteByClassId(classId);
     }
 
     @Override

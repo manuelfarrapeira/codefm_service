@@ -12,12 +12,12 @@ import java.util.Optional;
 @Repository
 public interface SchoolJPARepository extends JpaRepository<SchoolEntity, Integer> {
 
-    @Query("SELECT s FROM SchoolEntity s LEFT JOIN FETCH s.classes WHERE s.teacherId = :teacherId AND s.deletionDate IS NULL")
+    @Query("SELECT s FROM SchoolEntity s WHERE s.teacherId = :teacherId AND s.deletionDate IS NULL")
     List<SchoolEntity> findByTeacherId(@Param("teacherId") Integer teacherId);
 
-    @Query("SELECT s FROM SchoolEntity s LEFT JOIN FETCH s.classes WHERE s.id = :id AND s.teacherId = :teacherId AND s.deletionDate IS NULL")
+    @Query("SELECT s FROM SchoolEntity s WHERE s.id = :id AND s.teacherId = :teacherId AND s.deletionDate IS NULL")
     Optional<SchoolEntity> findByIdAndTeacherIdAndDeletionDateIsNull(@Param("id") Integer id, @Param("teacherId") Integer teacherId);
 
-    @Query("SELECT s FROM SchoolEntity s LEFT JOIN FETCH s.classes WHERE s.id = :id AND s.deletionDate IS NULL")
+    @Query("SELECT s FROM SchoolEntity s WHERE s.id = :id AND s.deletionDate IS NULL")
     Optional<SchoolEntity> findByIdAndDeletionDateIsNull(@Param("id") Integer id);
 }

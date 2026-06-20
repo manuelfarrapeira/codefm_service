@@ -28,6 +28,12 @@ public class StudentClassRepositoryImpl implements StudentClassRepository {
     }
 
     @Override
+    public Optional<StudentClass> findById(Integer id) {
+        return studentClassJPARepository.findById(id)
+                .map(studentClassMapper::toModel);
+    }
+
+    @Override
     public List<Integer> findClassIdsByStudentId(Integer studentId) {
         return studentClassJPARepository.findClassIdsByStudentIdAndDeletionDateIsNull(studentId);
     }
@@ -72,5 +78,10 @@ public class StudentClassRepositoryImpl implements StudentClassRepository {
     @Override
     public void softDeleteByStudentId(Integer studentId) {
         studentClassJPARepository.softDeleteByStudentId(studentId);
+    }
+
+    @Override
+    public List<Integer> findActiveStudentIdsByClassId(Integer classId) {
+        return studentClassJPARepository.findActiveStudentIdsByClassId(classId);
     }
 }

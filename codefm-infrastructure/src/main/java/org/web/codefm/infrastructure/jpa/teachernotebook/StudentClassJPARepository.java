@@ -32,4 +32,13 @@ public interface StudentClassJPARepository extends JpaRepository<StudentClassEnt
     @Transactional
     @Query("UPDATE StudentClassEntity sc SET sc.deletionDate = CURRENT_DATE WHERE sc.studentId = :studentId AND sc.deletionDate IS NULL")
     void softDeleteByStudentId(@Param("studentId") Integer studentId);
+
+    @Query("SELECT sc.studentId FROM StudentClassEntity sc WHERE sc.classId = :classId AND sc.deletionDate IS NULL")
+    List<Integer> findActiveStudentIdsByClassId(@Param("classId") Integer classId);
+
+    @Query("SELECT DISTINCT sc.classId FROM StudentClassEntity sc WHERE sc.id IN :ids")
+    List<Integer> findDistinctClassIdsByStudentClassIds(@Param("ids") List<Integer> ids);
+
+    @Query("SELECT DISTINCT sc.classId FROM StudentClassEntity sc WHERE sc.studentId = :studentId")
+    List<Integer> findDistinctClassIdsByStudentId(@Param("studentId") Integer studentId);
 }

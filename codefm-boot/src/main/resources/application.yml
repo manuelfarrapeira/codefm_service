@@ -63,7 +63,25 @@ spring:
         profileSeparator: ','
   data:
     rest:
-      detection-strategy: ANNOTATED #esto es para evitar la generación de endpoints relacionados con los JPA
+      detection-strategy: ANNOTATED
+    redis:
+      host: 192.168.18.10
+      port: 6380
+      password: ${REDIS_PASSWORD}
+  cache:
+    type: redis
+    redis:
+      key-prefix: "codefm::"
+      time-to-live: 1800000
+      ttl:
+        studentsByTeacher: 3600000
+        studentClassRubricCriteriaByClass: 3600000
+        exerciseStudentGradesByClass: 3600000
+        exercisesByClass: 3600000
+        classRubricsByClass: 3600000
+        subjectClassesByClass: 3600000
+        classesWithSubjectsByTeacher: 3600000
+        studentAbsencesByClass: 3600000
   datasource:
     codefm:
       driver-class-name: com.p6spy.engine.spy.P6SpyDriver
@@ -118,3 +136,14 @@ kafka:
 student:
   photos:
     directory: ./data/student-photos
+
+exercise:
+  documents:
+    directory: ./data/exercise-documents
+  student-documents:
+    directory: ./data/exercise-student-document
+
+group:
+  documents:
+    directory: ./data/group-documents
+

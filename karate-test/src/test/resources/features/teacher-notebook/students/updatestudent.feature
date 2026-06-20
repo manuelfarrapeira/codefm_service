@@ -14,7 +14,8 @@ Feature: Teacher Notebook - Update Student
         "surnames": "Ramilo Vicente",
         "dateOfBirth": "20/05/2012",
         "gender": "M",
-        "additionalInfo": "Aditional info"
+        "additionalInfo": "Aditional info",
+        "shape": "SQUARE"
       }
       """
     Given path '/teacher-notebook/v1/students/' + 8
@@ -27,6 +28,7 @@ Feature: Teacher Notebook - Update Student
     And match response.dateOfBirth == "20/05/2012"
     And match response.gender == "M"
     And match response.additionalInfo == "Aditional info"
+    And match response.shape == "SQUARE"
 
   Scenario: Fail to update a non-existent student
     * def updateRequestBody =
@@ -69,4 +71,23 @@ Feature: Teacher Notebook - Update Student
       | "Juan"   | "AB"            | "15/03/2010" | "M"    | [{ field: 'surnames', reason: 'Los apellidos del estudiante deben tener al menos 3 caracteres.' }]  |
       | "Juan"   | "García López"  | "15/03/2010" | null   | [{ field: 'gender', reason: 'El género del estudiante es obligatorio.' }]                           |
       | "Juan"   | "García López"  | "15/03/2010" | "X"    | [{ field: 'gender', reason: 'El género debe ser M (masculino) o F (femenino).' }]                   |
+
+  Scenario: Fail to update a student with invalid shape
+    * def updateRequestBody =
+      """
+      {
+        "name": "Juan",
+        "surnames": "García López",
+        "dateOfBirth": "15/03/2010",
+        "gender": "M",
+        "shape": "HEXAGON"
+      }
+      """
+    Given path '/teacher-notebook/v1/students/' + 8
+    And request updateRequestBody
+    When method PATCH
+    Then status 400
+    And match response.code == "1006"
+    And match response.description == "VALIDATION_ERROR"
+    And match response.details contains deep [{ field: 'shape', reason: 'La figura debe ser Cuadrado, Círculo o Triángulo.' }]
 

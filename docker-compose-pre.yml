@@ -23,11 +23,15 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./data/student-photos:/app/data/student-photos
+      - ./data/exercise-documents:/app/data/exercise-documents
+      - ./data/exercise-student-document:/app/data/exercise-student-document
+      - ./data/group-documents:/app/data/group-documents
     networks:
       - logging
       - infisical_external
       - keycloak
       - kafka-network
+      - redis-network
 
 
 networks:
@@ -40,6 +44,8 @@ networks:
   sonarqube:
     external: true
   kafka-network:
+    external: true
+  redis-network:
     external: true
 
 

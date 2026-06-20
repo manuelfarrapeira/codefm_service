@@ -22,6 +22,14 @@ public interface StudentClassRepository {
     Optional<StudentClass> findByClassIdAndStudentId(Integer classId, Integer studentId);
 
     /**
+     * Finds a student-class association by its ID.
+     *
+     * @param id The unique identifier of the association
+     * @return Optional containing the association if found
+     */
+    Optional<StudentClass> findById(Integer id);
+
+    /**
      * Finds all active class IDs for a student.
      *
      * @param studentId The unique identifier of the student
@@ -75,4 +83,12 @@ public interface StudentClassRepository {
      * @param studentId The unique identifier of the student
      */
     void softDeleteByStudentId(Integer studentId);
+
+    /**
+     * Finds all active student IDs enrolled in a specific class.
+     *
+     * @param classId The unique identifier of the class
+     * @return List of student IDs enrolled in the class (excluding soft-deleted associations)
+     */
+    List<Integer> findActiveStudentIdsByClassId(Integer classId);
 }
