@@ -15,7 +15,8 @@ Feature: Teacher Notebook - Update Student
         "dateOfBirth": "20/05/2012",
         "gender": "M",
         "additionalInfo": "Aditional info",
-        "shape": "SQUARE"
+        "shape": "SQUARE",
+        "classNumber": 5
       }
       """
     Given path '/teacher-notebook/v1/students/' + 8
@@ -29,6 +30,7 @@ Feature: Teacher Notebook - Update Student
     And match response.gender == "M"
     And match response.additionalInfo == "Aditional info"
     And match response.shape == "SQUARE"
+    And match response.classNumber == 5
 
   Scenario: Fail to update a non-existent student
     * def updateRequestBody =

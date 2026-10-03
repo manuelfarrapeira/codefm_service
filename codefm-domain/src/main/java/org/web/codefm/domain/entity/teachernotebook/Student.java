@@ -20,6 +20,7 @@ public class Student {
     private String additionalInfo;
     private String photo;
     private String shape;
+    private Integer classNumber;
     private LocalDate deletionDate;
     private List<Integer> classIds;
 }

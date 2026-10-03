@@ -94,7 +94,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"name\": \"Juan\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"gender\": \"M\",\n    \"additionalInfo\": \"Información adicional del estudiante\",\n    \"shape\": \"SQUARE\"\n}"
+          "raw": "{\n    \"name\": \"Juan\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"gender\": \"M\",\n    \"additionalInfo\": \"Información adicional del estudiante\",\n    \"shape\": \"SQUARE\",\n    \"classNumber\": 5\n}"
         },
         "url": {
           "raw": "{{host}}/teacher-notebook/v1/students",
@@ -107,7 +107,7 @@
             "students"
           ]
         },
-        "description": "Crea un nuevo estudiante. El campo gender es obligatorio (M=Masculino, F=Femenino)."
+        "description": "Crea un nuevo estudiante. Campos obligatorios: name, surnames, gender. El campo dateOfBirth es opcional (formato dd/MM/yyyy)."
       },
       "response": []
     },
@@ -128,7 +128,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"name\": \"Juan Carlos\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"gender\": \"M\",\n    \"additionalInfo\": \"Información actualizada\",\n    \"shape\": \"CIRCLE\"\n}"
+          "raw": "{\n    \"name\": \"Juan Carlos\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"gender\": \"M\",\n    \"additionalInfo\": \"Información actualizada\",\n    \"shape\": \"CIRCLE\",\n    \"classNumber\": 3\n}"
         },
         "url": {
           "raw": "{{host}}/teacher-notebook/v1/students/:id",
@@ -149,7 +149,7 @@
             }
           ]
         },
-        "description": "Actualiza un estudiante existente. El campo gender es obligatorio (M=Masculino, F=Femenino)."
+        "description": "Actualiza un estudiante existente. Campos obligatorios: name, surnames, gender. El campo dateOfBirth es opcional (formato dd/MM/yyyy)."
       },
       "response": []
     },

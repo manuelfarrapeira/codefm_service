@@ -6,7 +6,7 @@ Feature: Teacher Notebook - Get Subjects
     Given url baseHttpsUrl
 
   Scenario: Get subjects for the authenticated teacher
-    * def subjectSchema = { id: '#number', name: '#string' }
+    * def subjectSchema = { id: '#number', name: '#string', notAssessable: '##boolean' }
 
     Given path '/teacher-notebook/v1/subjects'
     When method GET

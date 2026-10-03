@@ -411,23 +411,21 @@ class StudentServiceImplTest {
             final Student student2 = Student.builder()
                     .id(2).teacherId(teacherId).name("María").surnames("Pérez Martínez").build();
             final List<Student> expectedStudents = Arrays.asList(student1, student2);
-            final Map<Integer, List<Integer>> studentClassMap = new HashMap<>();
-            studentClassMap.put(1, Arrays.asList(1, 2));
-            studentClassMap.put(2, Arrays.asList(3));
 
             when(studentRepository.findAllByTeacherId(teacherId)).thenReturn(expectedStudents);
-            when(studentClassRepository.findClassIdsByTeacherId(teacherId)).thenReturn(studentClassMap);
+            when(studentClassRepository.findClassIdsByTeacherId(teacherId))
+                    .thenReturn(Map.of(1, List.of(10, 20)));
 
             final List<Student> result = studentService.getAllStudents();
 
             assertThat(result).isNotNull().hasSize(2);
             assertThat(result.get(0).getName()).isEqualTo("Juan");
+            assertThat(result.get(0).getTeacherId()).isEqualTo(1);
+            assertThat(result.get(0).getClassIds()).containsExactly(10, 20);
             assertThat(result.get(1).getName()).isEqualTo("María");
-            assertThat(result.get(0).getClassIds()).hasSize(2).isEqualTo(Arrays.asList(1, 2));
-            assertThat(result.get(1).getClassIds()).hasSize(1).isEqualTo(Arrays.asList(3));
+            assertThat(result.get(1).getTeacherId()).isEqualTo(1);
+            assertThat(result.get(1).getClassIds()).isEmpty();
             verify(studentRepository, times(1)).findAllByTeacherId(teacherId);
-            verify(studentClassRepository, times(1)).findClassIdsByTeacherId(teacherId);
-            verify(studentClassRepository, never()).findClassIdsByStudentId(any());
         }
 
         @Test
@@ -435,14 +433,12 @@ class StudentServiceImplTest {
             final Integer teacherId = 1;
 
             when(studentRepository.findAllByTeacherId(teacherId)).thenReturn(List.of());
-            when(studentClassRepository.findClassIdsByTeacherId(teacherId)).thenReturn(new HashMap<>());
+            when(studentClassRepository.findClassIdsByTeacherId(teacherId)).thenReturn(Map.of());
 
             final List<Student> result = studentService.getAllStudents();
 
             assertThat(result).isNotNull().isEmpty();
             verify(studentRepository, times(1)).findAllByTeacherId(teacherId);
-            verify(studentClassRepository, times(1)).findClassIdsByTeacherId(teacherId);
-            verify(studentClassRepository, never()).findClassIdsByStudentId(any());
         }
     }
 

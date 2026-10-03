@@ -281,7 +281,6 @@ public class StudentServiceImpl implements StudentService {
     public List<Student> getAllStudents() {
         Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         List<Student> students = studentRepository.findAllByTeacherId(teacherId);
-
         Map<Integer, List<Integer>> studentClassMap = studentClassRepository.findClassIdsByTeacherId(teacherId);
 
         students.forEach(student -> {

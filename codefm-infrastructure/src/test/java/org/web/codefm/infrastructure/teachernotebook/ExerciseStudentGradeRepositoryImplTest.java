@@ -76,7 +76,7 @@ class ExerciseStudentGradeRepositoryImplTest {
             final ExerciseStudentGradeEntity gradeEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, "Good", null);
             final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
             final ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
-            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null, false);
             final StudentEntity studentEntity = new StudentEntity();
 
             studentEntity.setId(5);
@@ -120,7 +120,7 @@ class ExerciseStudentGradeRepositoryImplTest {
             final ExerciseStudentGradeEntity gradeEntity = new ExerciseStudentGradeEntity(1, 5, 100, 8.0, "Good", null);
             final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
             final ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
-            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null, false);
             final StudentEntity studentEntity = new StudentEntity();
 
             studentEntity.setId(5);
@@ -162,7 +162,7 @@ class ExerciseStudentGradeRepositoryImplTest {
             final ExerciseStudentGrade grade = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
             final ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
             final SubjectClassEntity scEntity = new SubjectClassEntity(10, 1, 1, null);
-            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null, false);
             final StudentEntity studentEntity = new StudentEntity();
 
             studentEntity.setId(5);
@@ -206,7 +206,7 @@ class ExerciseStudentGradeRepositoryImplTest {
             final ExerciseStudentGrade saved = ExerciseStudentGrade.builder().id(1).studentId(5).exerciseId(100).grade(8.0).build();
             final ExerciseEntity exerciseEntity = new ExerciseEntity(100, 10, "Exam", "Desc", 1, 30, 10, null);
             final SubjectClassEntity scEntity = new SubjectClassEntity(10, 1, 1, null);
-            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Math", 1, null, false);
             final StudentEntity studentEntity = new StudentEntity();
 
             studentEntity.setId(5);

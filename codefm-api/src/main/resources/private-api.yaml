@@ -4432,11 +4432,36 @@ components:
         shape:
           type: 'string'
           description: 'Student shape (SQUARE, CIRCLE, TRIANGLE)'
+        classNumber:
+          type: 'integer'
+          description: 'Class number'
         classIds:
           type: 'array'
           items:
             type: 'integer'
           description: 'List of class IDs the student belongs to'
+        classList:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/StudentSchoolDTO'
+          description: 'List of schools the student belongs to with their classes'
+    StudentSchoolDTO:
+      type: 'object'
+      properties:
+        schoolName:
+          type: 'string'
+          description: 'School name'
+        classes:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/StudentClassDTO'
+          description: 'Classes in this school where the student is enrolled'
+    StudentClassDTO:
+      type: 'object'
+      properties:
+        className:
+          type: 'string'
+          description: 'Class name'
     StudentRequestDTO:
       type: 'object'
       properties:
@@ -4461,6 +4486,10 @@ components:
           type: 'string'
           description: 'Student shape (SQUARE, CIRCLE, TRIANGLE)'
           example: 'SQUARE'
+        classNumber:
+          type: 'integer'
+          description: 'Class number'
+          example: 1
     SubjectDTO:
       type: 'object'
       properties:
@@ -4468,12 +4497,19 @@ components:
           type: 'integer'
         name:
           type: 'string'
+        notAssessable:
+          type: 'boolean'
+          description: 'Whether the subject is not assessable'
     SubjectRequestDTO:
       type: 'object'
       properties:
         name:
           type: 'string'
           example: 'Mathematics'
+        notAssessable:
+          type: 'boolean'
+          description: 'Whether the subject is not assessable. Defaults to false'
+          example: false
     ScheduleDTO:
       type: 'object'
       properties:

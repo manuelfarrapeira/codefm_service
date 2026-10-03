@@ -55,8 +55,8 @@ class SubjectRepositoryImplTest {
         @Test
         void when_teacher_has_subjects_expect_subjects_returned() {
             final Integer teacherId = 1;
-            final SubjectEntity entity1 = new SubjectEntity(1, "Math", teacherId, null);
-            final SubjectEntity entity2 = new SubjectEntity(2, "Science", teacherId, null);
+            final SubjectEntity entity1 = new SubjectEntity(1, "Math", teacherId, null, false);
+            final SubjectEntity entity2 = new SubjectEntity(2, "Science", teacherId, null, false);
             final List<SubjectEntity> entities = Arrays.asList(entity1, entity2);
             final Subject subject1 = Subject.builder().id(1).name("Math").teacherId(teacherId).build();
             final Subject subject2 = Subject.builder().id(2).name("Science").teacherId(teacherId).build();
@@ -94,7 +94,7 @@ class SubjectRepositoryImplTest {
         void when_subject_is_saved_expect_model_returned() {
             final Subject subjectToSave = Subject.builder().name("History").teacherId(1).build();
             final SubjectEntity subjectEntity = new SubjectEntity();
-            final SubjectEntity savedSubjectEntity = new SubjectEntity(1, "History", 1, null);
+            final SubjectEntity savedSubjectEntity = new SubjectEntity(1, "History", 1, null, false);
             final Subject savedSubject = Subject.builder().id(1).name("History").teacherId(1).build();
             when(SubjectRepositoryImplTest.this.subjectMapper.toEntity(subjectToSave)).thenReturn(subjectEntity);
             when(SubjectRepositoryImplTest.this.subjectJPARepository.save(subjectEntity)).thenReturn(savedSubjectEntity);
@@ -123,7 +123,7 @@ class SubjectRepositoryImplTest {
         @Test
         void when_subject_exists_expect_subject_returned() {
             final Integer subjectId = 1;
-            final SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Math", 1, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Math", 1, null, false);
             final Subject expectedSubject = Subject.builder().id(subjectId).name("Math").teacherId(1).build();
             when(SubjectRepositoryImplTest.this.subjectJPARepository.findByIdAndDeletionDateIsNull(subjectId))
                     .thenReturn(Optional.of(subjectEntity));
@@ -160,7 +160,7 @@ class SubjectRepositoryImplTest {
         void when_subject_exists_and_is_owned_expect_subject_returned() {
             final Integer subjectId = 1;
             final Integer teacherId = 101;
-            final SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Physics", teacherId, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Physics", teacherId, null, false);
             final Subject expectedSubject = Subject.builder().id(subjectId).name("Physics").teacherId(teacherId)
                     .build();
             when(SubjectRepositoryImplTest.this.subjectJPARepository.findByIdAndTeacherIdAndDeletionDateIsNull(
@@ -201,7 +201,7 @@ class SubjectRepositoryImplTest {
         void when_subject_exists_expect_deletion_date_set_and_subject_returned() {
             final Integer subjectId = 1;
             final Integer teacherId = 101;
-            final SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Chemistry", teacherId, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(subjectId, "Chemistry", teacherId, null, false);
             final Subject updatedSubject = Subject.builder().id(subjectId).name("Chemistry").teacherId(teacherId)
                     .deletionDate(LocalDate.now()).build();
             when(SubjectRepositoryImplTest.this.subjectClassJPARepository
