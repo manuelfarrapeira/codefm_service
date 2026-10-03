@@ -94,7 +94,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"name\": \"Juan\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"gender\": \"M\",\n    \"additionalInfo\": \"Información adicional del estudiante\",\n    \"shape\": \"SQUARE\"\n}"
+          "raw": "{\n    \"name\": \"Juan\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"gender\": \"M\",\n    \"additionalInfo\": \"Información adicional del estudiante\",\n    \"shape\": \"SQUARE\",\n    \"classNumber\": 5\n}"
         },
         "url": {
           "raw": "{{host}}/teacher-notebook/v1/students",
@@ -128,7 +128,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"name\": \"Juan Carlos\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"gender\": \"M\",\n    \"additionalInfo\": \"Información actualizada\",\n    \"shape\": \"CIRCLE\"\n}"
+          "raw": "{\n    \"name\": \"Juan Carlos\",\n    \"surnames\": \"García López\",\n    \"dateOfBirth\": \"15/03/2010\",\n    \"gender\": \"M\",\n    \"additionalInfo\": \"Información actualizada\",\n    \"shape\": \"CIRCLE\",\n    \"classNumber\": 3\n}"
         },
         "url": {
           "raw": "{{host}}/teacher-notebook/v1/students/:id",

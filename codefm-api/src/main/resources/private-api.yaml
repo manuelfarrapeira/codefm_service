@@ -4432,6 +4432,10 @@ components:
         shape:
           type: 'string'
           description: 'Student shape (SQUARE, CIRCLE, TRIANGLE)'
+        classNumber:
+          type: 'integer'
+          description: 'Class number (Número de clase)'
+          nullable: true
         classIds:
           type: 'array'
           items:
@@ -4461,6 +4465,11 @@ components:
           type: 'string'
           description: 'Student shape (SQUARE, CIRCLE, TRIANGLE)'
           example: 'SQUARE'
+        classNumber:
+          type: 'integer'
+          description: 'Class number (Número de clase)'
+          example: 1
+          nullable: true
     SubjectDTO:
       type: 'object'
       properties:

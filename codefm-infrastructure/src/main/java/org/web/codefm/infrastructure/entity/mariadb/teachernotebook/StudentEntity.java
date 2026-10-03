@@ -44,6 +44,9 @@ public class StudentEntity {
     @Column(length = 20)
     private String shape;
 
+    @Column(name = "class_number")
+    private Integer classNumber;
+
     @Column(name = "deletion_date")
     private LocalDate deletionDate;
 }
