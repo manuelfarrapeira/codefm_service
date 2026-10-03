@@ -107,7 +107,7 @@
             "students"
           ]
         },
-        "description": "Crea un nuevo estudiante. El campo gender es obligatorio (M=Masculino, F=Femenino)."
+        "description": "Crea un nuevo estudiante. Campos obligatorios: name, surnames, gender. El campo dateOfBirth es opcional (formato dd/MM/yyyy)."
       },
       "response": []
     },
@@ -149,7 +149,7 @@
             }
           ]
         },
-        "description": "Actualiza un estudiante existente. El campo gender es obligatorio (M=Masculino, F=Femenino)."
+        "description": "Actualiza un estudiante existente. Campos obligatorios: name, surnames, gender. El campo dateOfBirth es opcional (formato dd/MM/yyyy)."
       },
       "response": []
     },
