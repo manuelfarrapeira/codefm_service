@@ -6,9 +6,10 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jdk-noble
 
 #esto instala el cliente de infisical para poder acceder al server
+ARG INFISICAL_CLI_VERSION=0.43.50
 RUN apt-get update && apt-get install -y bash curl && curl -1sLf \
 'https://artifacts-cli.infisical.com/setup.deb.sh' | bash \
-&& apt-get update && apt-get install -y infisical
+&& apt-get update && apt-get install -y infisical=${INFISICAL_CLI_VERSION}
 
 
 WORKDIR /app
