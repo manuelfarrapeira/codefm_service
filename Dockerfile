@@ -3,7 +3,7 @@ WORKDIR /app
 COPY . .
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:17-jdk
+FROM eclipse-temurin:17-jdk-noble
 
 #esto instala el cliente de infisical para poder acceder al server
 RUN apt-get update && apt-get install -y bash curl && curl -1sLf \
