@@ -76,7 +76,7 @@ class ExerciseRepositoryImplTest {
             final SubjectClassEntity scEntity = new SubjectClassEntity(5, 1, classId, null);
             final ExerciseEntity exerciseEntity = new ExerciseEntity(1, 5, "Exam", "Desc", 1, 30, 10, null);
             final Exercise exercise = Exercise.builder().id(1).subjectClassId(5).title("Exam").percentageGrade(30).maxGrade(10).build();
-            final SubjectEntity subjectEntity = new SubjectEntity(1, "Mathematics", 1, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Mathematics", 1, null, false);
             final List<ExerciseDocumentEntity> documentEntities = List.of();
             final List<ExerciseDocument> documents = List.of();
 
@@ -119,7 +119,7 @@ class ExerciseRepositoryImplTest {
             final ExerciseEntity entity = new ExerciseEntity(id, 5, "Exam", "Desc", 1, 30, 10, null);
             final Exercise exercise = Exercise.builder().id(id).subjectClassId(5).title("Exam").percentageGrade(30).maxGrade(10).build();
             final SubjectClassEntity scEntity = new SubjectClassEntity(5, 1, 10, null);
-            final SubjectEntity subjectEntity = new SubjectEntity(1, "Mathematics", 1, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Mathematics", 1, null, false);
 
             when(ExerciseRepositoryImplTest.this.exerciseJPARepository.findByIdAndTeacherId(id, teacherId)).thenReturn(Optional.of(entity));
             when(ExerciseRepositoryImplTest.this.exerciseMapper.toModel(entity)).thenReturn(exercise);
@@ -154,7 +154,7 @@ class ExerciseRepositoryImplTest {
             final ExerciseEntity savedEntity = new ExerciseEntity(1, 5, "Exam", null, 1, 30, 10, null);
             final Exercise savedExercise = Exercise.builder().id(1).subjectClassId(5).title("Exam").quarter(1).percentageGrade(30).maxGrade(10).build();
             final SubjectClassEntity scEntity = new SubjectClassEntity(5, 1, 10, null);
-            final SubjectEntity subjectEntity = new SubjectEntity(1, "Mathematics", 1, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Mathematics", 1, null, false);
 
             when(ExerciseRepositoryImplTest.this.exerciseMapper.toEntity(exercise)).thenReturn(entity);
             when(ExerciseRepositoryImplTest.this.exerciseJPARepository.save(entity)).thenReturn(savedEntity);
@@ -183,7 +183,7 @@ class ExerciseRepositoryImplTest {
             final ExerciseEntity savedEntity = new ExerciseEntity(1, 5, "Updated", null, 2, 50, 12, null);
             final Exercise updatedExercise = Exercise.builder().id(1).subjectClassId(5).title("Updated").quarter(2).percentageGrade(50).maxGrade(12).build();
             final SubjectClassEntity scEntity = new SubjectClassEntity(5, 1, 10, null);
-            final SubjectEntity subjectEntity = new SubjectEntity(1, "Mathematics", 1, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(1, "Mathematics", 1, null, false);
 
             when(ExerciseRepositoryImplTest.this.exerciseMapper.toEntity(exercise)).thenReturn(entity);
             when(ExerciseRepositoryImplTest.this.exerciseJPARepository.save(entity)).thenReturn(savedEntity);

@@ -28,4 +28,7 @@ public class SubjectEntity {
 
     @Column(name = "deletion_date")
     private LocalDate deletionDate;
+
+    @Column(name = "not_assessable")
+    private Boolean notAssessable;
 }

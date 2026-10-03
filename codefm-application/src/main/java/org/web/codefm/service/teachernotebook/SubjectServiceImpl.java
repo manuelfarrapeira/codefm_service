@@ -49,6 +49,7 @@ public class SubjectServiceImpl implements SubjectService {
 
         Integer teacherId = sessionUser.getParameter(SessionParameter.TEACHER_ID);
         subject.setTeacherId(teacherId);
+        subject.setNotAssessable(Boolean.TRUE.equals(subject.getNotAssessable()));
 
         return subjectRepository.save(subject);
     }
@@ -83,6 +84,7 @@ public class SubjectServiceImpl implements SubjectService {
         Subject existingSubject = validateSubjectOwnership(subjectId, teacherId, locale);
 
         existingSubject.setName(subject.getName());
+        existingSubject.setNotAssessable(Boolean.TRUE.equals(subject.getNotAssessable()));
 
         return subjectRepository.save(existingSubject);
     }

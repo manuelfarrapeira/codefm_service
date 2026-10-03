@@ -4497,12 +4497,19 @@ components:
           type: 'integer'
         name:
           type: 'string'
+        notAssessable:
+          type: 'boolean'
+          description: 'Whether the subject is not assessable'
     SubjectRequestDTO:
       type: 'object'
       properties:
         name:
           type: 'string'
           example: 'Mathematics'
+        notAssessable:
+          type: 'boolean'
+          description: 'Whether the subject is not assessable. Defaults to false'
+          example: false
     ScheduleDTO:
       type: 'object'
       properties:

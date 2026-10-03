@@ -5,6 +5,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
@@ -98,6 +100,25 @@ class SubjectServiceImplTest {
             assertThat(createdSubject.getName()).isEqualTo("Valid Subject");
             assertThat(createdSubject.getTeacherId()).isEqualTo(TEACHER_ID);
             verify(subjectRepository, times(1)).save(any(Subject.class));
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+                ",false",
+                "false,false",
+                "true,true"
+        })
+        void when_not_assessable_is_provided_expect_value_saved_with_false_as_default(
+                Boolean requestedNotAssessable, Boolean expectedNotAssessable) {
+            final Subject subjectToCreate = Subject.builder()
+                    .name("Valid Subject").notAssessable(requestedNotAssessable).build();
+
+            when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
+            when(subjectRepository.save(any(Subject.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            final Subject createdSubject = subjectService.createSubject(subjectToCreate);
+
+            assertThat(createdSubject.getNotAssessable()).isEqualTo(expectedNotAssessable);
         }
 
         @Test
@@ -269,6 +290,30 @@ class SubjectServiceImplTest {
             assertThat(result.getName()).isEqualTo("New Name");
             verify(subjectRepository, times(1)).findById(subjectId);
             verify(subjectRepository, times(1)).save(existingSubject);
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+                ",false",
+                "false,false",
+                "true,true"
+        })
+        void when_not_assessable_is_provided_expect_existing_subject_updated_with_false_as_default(
+                Boolean requestedNotAssessable, Boolean expectedNotAssessable) {
+            final Integer subjectId = 1;
+            final Subject existingSubject = Subject.builder()
+                    .id(subjectId).teacherId(TEACHER_ID).name("Old Name").notAssessable(!expectedNotAssessable).build();
+            final Subject updatedSubjectData = Subject.builder()
+                    .name("New Name").notAssessable(requestedNotAssessable).build();
+
+            when(sessionUser.getParameter(SessionParameter.TEACHER_ID)).thenReturn(TEACHER_ID);
+            when(sessionUser.getLocale()).thenReturn(Locale.ENGLISH);
+            when(subjectRepository.findById(subjectId)).thenReturn(Optional.of(existingSubject));
+            when(subjectRepository.save(any(Subject.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            final Subject result = subjectService.updateSubject(subjectId, updatedSubjectData);
+
+            assertThat(result.getNotAssessable()).isEqualTo(expectedNotAssessable);
         }
 
         @Test

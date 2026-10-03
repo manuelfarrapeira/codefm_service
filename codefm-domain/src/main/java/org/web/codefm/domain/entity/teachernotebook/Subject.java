@@ -14,4 +14,5 @@ public class Subject {
     private String name;
     private Integer teacherId;
     private LocalDate deletionDate;
+    private Boolean notAssessable;
 }

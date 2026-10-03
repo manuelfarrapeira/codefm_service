@@ -75,8 +75,8 @@ class SubjectClassRepositoryImplTest {
             final SubjectClassEntity scEntity1 = new SubjectClassEntity(1, SUBJECT_ID_1, CLASS_ID, null);
             final SubjectClassEntity scEntity2 = new SubjectClassEntity(2, SUBJECT_ID_2, CLASS_ID, null);
             final List<SubjectClassEntity> scEntities = Arrays.asList(scEntity1, scEntity2);
-            final SubjectEntity subjectEntity1 = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null);
-            final SubjectEntity subjectEntity2 = new SubjectEntity(SUBJECT_ID_2, "Science", TEACHER_ID, null);
+            final SubjectEntity subjectEntity1 = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null, false);
+            final SubjectEntity subjectEntity2 = new SubjectEntity(SUBJECT_ID_2, "Science", TEACHER_ID, null, false);
             when(SubjectClassRepositoryImplTest.this.subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(
                     CLASS_ID)).thenReturn(scEntities);
             when(SubjectClassRepositoryImplTest.this.subjectJPARepository.findAllById(Arrays.asList(SUBJECT_ID_1,
@@ -111,9 +111,9 @@ class SubjectClassRepositoryImplTest {
         void when_deleted_subjects_exist_expect_deleted_subjects_filtered_out() {
             final SubjectClassEntity scEntity1 = new SubjectClassEntity(1, SUBJECT_ID_1, CLASS_ID, null);
             final SubjectClassEntity scEntity2 = new SubjectClassEntity(2, SUBJECT_ID_2, CLASS_ID, null);
-            final SubjectEntity activeSubject = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null);
+            final SubjectEntity activeSubject = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null, false);
             final SubjectEntity deletedSubject = new SubjectEntity(SUBJECT_ID_2, "Science", TEACHER_ID,
-                    LocalDate.now());
+                    LocalDate.now(), false);
             when(SubjectClassRepositoryImplTest.this.subjectClassJPARepository.findByClassIdAndDeletionDateIsNull(
                     CLASS_ID)).thenReturn(Arrays.asList(scEntity1, scEntity2));
             when(SubjectClassRepositoryImplTest.this.subjectJPARepository.findAllById(Arrays.asList(SUBJECT_ID_1,
@@ -226,7 +226,7 @@ class SubjectClassRepositoryImplTest {
             final List<ClassEntity> classEntities = Arrays.asList(classEntity);
             final Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").schoolYear("24/25").build();
             final SubjectClassEntity scEntity = new SubjectClassEntity(1, SUBJECT_ID_1, CLASS_ID, null);
-            final SubjectEntity subjectEntity = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null, false);
             when(SubjectClassRepositoryImplTest.this.subjectClassJPARepository.findClassIdsByTeacherId(TEACHER_ID))
                     .thenReturn(classIds);
             when(SubjectClassRepositoryImplTest.this.classJPARepository.findAllById(classIds))
@@ -266,7 +266,7 @@ class SubjectClassRepositoryImplTest {
             final ClassEntity deletedClass = new ClassEntity(20, 1, "2B", "24/25", LocalDate.now());
             final Class clazz = Class.builder().id(CLASS_ID).schoolId(1).name("1A").schoolYear("24/25").build();
             final SubjectClassEntity scEntity = new SubjectClassEntity(1, SUBJECT_ID_1, CLASS_ID, null);
-            final SubjectEntity subjectEntity = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null);
+            final SubjectEntity subjectEntity = new SubjectEntity(SUBJECT_ID_1, "Math", TEACHER_ID, null, false);
             when(SubjectClassRepositoryImplTest.this.subjectClassJPARepository.findClassIdsByTeacherId(TEACHER_ID))
                     .thenReturn(classIds);
             when(SubjectClassRepositoryImplTest.this.classJPARepository.findAllById(classIds))

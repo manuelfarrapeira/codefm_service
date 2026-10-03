@@ -18,7 +18,16 @@ Feature: Teacher Notebook - Update Subject
     Then status 200
     And match response.id == '#number'
     And match response.name == "Matemáticas"
+    And match response.notAssessable == false
 
+  Scenario: Update a subject setting it as not assessable
+    * def requestBody = { name: 'Tutoría', notAssessable: true }
+    Given path '/teacher-notebook/v1/subjects/1'
+    And request requestBody
+    When method PATCH
+    Then status 200
+    And match response.name == 'Tutoría'
+    And match response.notAssessable == true
   Scenario Outline: Update subject with invalid data
     * def requestBody = { name: <name> }
     * if (requestBody.name == null) karate.remove('requestBody', 'name')
