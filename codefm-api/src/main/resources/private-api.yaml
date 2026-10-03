@@ -4422,7 +4422,6 @@ components:
           type: 'string'
           description: 'Date in format dd/MM/yyyy'
           example: '15/03/2010'
-          nullable: true
         gender:
           type: 'string'
           description: 'Gender (M=Male, F=Female)'
@@ -4435,13 +4434,34 @@ components:
           description: 'Student shape (SQUARE, CIRCLE, TRIANGLE)'
         classNumber:
           type: 'integer'
-          description: 'Class number (Número de clase)'
-          nullable: true
+          description: 'Class number'
         classIds:
           type: 'array'
           items:
             type: 'integer'
           description: 'List of class IDs the student belongs to'
+        classList:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/StudentSchoolDTO'
+          description: 'List of schools the student belongs to with their classes'
+    StudentSchoolDTO:
+      type: 'object'
+      properties:
+        schoolName:
+          type: 'string'
+          description: 'School name'
+        classes:
+          type: 'array'
+          items:
+            $ref: '#/components/schemas/StudentClassDTO'
+          description: 'Classes in this school where the student is enrolled'
+    StudentClassDTO:
+      type: 'object'
+      properties:
+        className:
+          type: 'string'
+          description: 'Class name'
     StudentRequestDTO:
       type: 'object'
       properties:
@@ -4455,7 +4475,6 @@ components:
           type: 'string'
           description: 'Date in format dd/MM/yyyy'
           example: '15/03/2010'
-          nullable: true
         gender:
           type: 'string'
           description: 'Gender (M=Male, F=Female)'
@@ -4469,9 +4488,8 @@ components:
           example: 'SQUARE'
         classNumber:
           type: 'integer'
-          description: 'Class number (Número de clase)'
+          description: 'Class number'
           example: 1
-          nullable: true
     SubjectDTO:
       type: 'object'
       properties:

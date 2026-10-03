@@ -76,7 +76,7 @@ class StudentClassRubricCriteriaRepositoryImplTest {
             when(StudentClassRubricCriteriaRepositoryImplTest.this.skillRubricJPARepository.findById(50))
                     .thenReturn(Optional.of(new SkillRubricEntity(50, "Rubric Title", 1, null)));
             when(StudentClassRubricCriteriaRepositoryImplTest.this.studentJPARepository.findById(200))
-                    .thenReturn(Optional.of(new StudentEntity(200, 1, "Juan", "García", null, "M", null, null, null, null)));
+                    .thenReturn(Optional.of(new StudentEntity(200, 1, "Juan", "García", null, "M", null, null, null, null, null)));
             when(StudentClassRubricCriteriaRepositoryImplTest.this.skillRubricCriteriaJPARepository.findById(300))
                     .thenReturn(Optional.of(new SkillRubricCriteriaEntity(300, "Lo hace bien", "Notable", 50, 5, 10, null)));
 
@@ -189,9 +189,9 @@ class StudentClassRubricCriteriaRepositoryImplTest {
             when(StudentClassRubricCriteriaRepositoryImplTest.this.skillRubricJPARepository.findById(51))
                     .thenReturn(Optional.of(new SkillRubricEntity(51, "Rubric B", 2, null)));
             when(StudentClassRubricCriteriaRepositoryImplTest.this.studentJPARepository.findById(200))
-                    .thenReturn(Optional.of(new StudentEntity(200, 1, "Juan", "García", null, "M", null, null, null, null)));
+                    .thenReturn(Optional.of(new StudentEntity(200, 1, "Juan", "García", null, "M", null, null, null, null, null)));
             when(StudentClassRubricCriteriaRepositoryImplTest.this.studentJPARepository.findById(201))
-                    .thenReturn(Optional.of(new StudentEntity(201, 1, "Ana", "López", null, "F", null, null, null, null)));
+                    .thenReturn(Optional.of(new StudentEntity(201, 1, "Ana", "López", null, "F", null, null, null, null, null)));
             when(StudentClassRubricCriteriaRepositoryImplTest.this.skillRubricCriteriaJPARepository.findById(300))
                     .thenReturn(Optional.of(new SkillRubricCriteriaEntity(300, "Mal", "Insuficiente", 50, 0, 4, null)));
             when(StudentClassRubricCriteriaRepositoryImplTest.this.skillRubricCriteriaJPARepository.findById(301))
@@ -232,7 +232,7 @@ class StudentClassRubricCriteriaRepositoryImplTest {
                     .thenReturn(Optional.of(new SkillRubricEntity(50, "Rubric Title", 1, null)));
             when(StudentClassRubricCriteriaRepositoryImplTest.this.studentJPARepository.findById(studentId))
                     .thenReturn(Optional.of(new StudentEntity(studentId, 1, "Ana", "López", null, "F", null, null, null,
-                            null)));
+                            null, null)));
             when(StudentClassRubricCriteriaRepositoryImplTest.this.skillRubricCriteriaJPARepository.findById(300))
                     .thenReturn(Optional.of(new SkillRubricCriteriaEntity(300, "Lo hace regular", "Suficiente", 50, 5, 6,
                             null)));
@@ -328,7 +328,7 @@ class StudentClassRubricCriteriaRepositoryImplTest {
             when(StudentClassRubricCriteriaRepositoryImplTest.this.skillRubricJPARepository.findById(50))
                     .thenReturn(Optional.of(new SkillRubricEntity(50, "Rubric Title", 1, null)));
             when(StudentClassRubricCriteriaRepositoryImplTest.this.studentJPARepository.findById(200))
-                    .thenReturn(Optional.of(new StudentEntity(200, 1, "Juan", "García", null, "M", null, null, null, null)));
+                    .thenReturn(Optional.of(new StudentEntity(200, 1, "Juan", "García", null, "M", null, null, null, null, null)));
             when(StudentClassRubricCriteriaRepositoryImplTest.this.skillRubricCriteriaJPARepository.findById(300))
                     .thenReturn(Optional.of(new SkillRubricCriteriaEntity(300, "Lo hace bien", "Notable", 50, 7, 10,
                             null)));
